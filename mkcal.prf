@@ -1,0 +1,3 @@
+LIBS += -L/usr/lib/ -lmkcal
+DEPENDPATH += /usr/include/mkcal
+INCLUDEPATH += /usr/include/mkcal

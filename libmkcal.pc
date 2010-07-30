@@ -1,0 +1,12 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+          
+Name: libmkcal
+Description: Mobile version an extension to KCalCore
+Version: 0.1.0
+Requires: libical >= 0.43 QtCore QtGui QtTest sqlite3 uuid 
+Libs: -L${libdir} -lmkcal
+Cflags: -I${includedir}/mkcal
+
