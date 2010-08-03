@@ -86,12 +86,12 @@ class mKCal::ExtendedCalendar::Private
 };
 
 ExtendedCalendar::ExtendedCalendar( const KDateTime::Spec &timeSpec )
-  : MemoryCalendar( timeSpec ), d( new mKCal::ExtendedCalendar::Private )
+  : Calendar( timeSpec ), d( new mKCal::ExtendedCalendar::Private )
 {
 }
 
 ExtendedCalendar::ExtendedCalendar( const QString &timeZoneId )
-  : MemoryCalendar( timeZoneId ), d( new mKCal::ExtendedCalendar::Private )
+  : Calendar( timeZoneId ), d( new mKCal::ExtendedCalendar::Private )
 {
 }
 
@@ -453,7 +453,7 @@ bool ExtendedCalendar::addTodo( const Todo::Ptr &aTodo )
 void ExtendedCalendar::Private::insertTodo( const Todo::Ptr &todo, const KDateTime::Spec &timeSpec )
 {
   QString uid = todo->uid();
-  if ( !mTodos.contains( uid, todo ) ) {
+  if ( !mTodos.contains( uid ) ) {
     mTodos.insert( uid, todo );
     if ( todo->hasDueDate() ) {
       mTodosForDate.insert( todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo );
@@ -767,9 +767,11 @@ void ExtendedCalendar::Private::insertEvent( const Event::Ptr &event,
                                              const KDateTime::Spec &timeSpec )
 {
   QString uid = event->uid();
-  if ( !mEvents.contains( uid, event ) ) {
+  if ( !mEvents.contains( uid ) ) {
 
+    kDebug() << mEvents.size() << "BEFORE";
     mEvents.insert( uid, event );
+    kDebug() << mEvents.size() << "AFTER";
     if ( !event->recurs() && !event->isMultiDay() ) {
       mEventsForDate.insert( event->dtStart().toTimeSpec( timeSpec ).date().toString(), event );
     }
@@ -1131,7 +1133,7 @@ void ExtendedCalendar::Private::insertJournal( const Journal::Ptr &journal,
                                                const KDateTime::Spec &timeSpec )
 {
   QString uid = journal->uid();
-  if ( !mJournals.contains( uid, journal ) ) {
+  if ( !mJournals.contains( uid ) ) {
     mJournals.insert( uid, journal );
     mJournalsForDate.insert( journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal );
 
@@ -1418,6 +1420,12 @@ Incidence::List ExtendedCalendar::geoIncidences( float geoLatitude, float geoLon
   return list;
 }
 
+bool ExtendedCalendar::deleteIncidenceInstances( const Incidence::Ptr &incidence )
+{
+  Q_UNUSED(incidence);
+  return false;
+}
+
 void ExtendedCalendar::deleteAllIncidences()
 {
   deleteAllEvents();
@@ -1491,6 +1499,8 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 #endif
     int appended = 0;
 
+    int skipped = 0;
+
     if ( (*iit)->type() == Incidence::TypeTodo ) {
       Todo::Ptr todo = (*iit).staticCast<Todo>();
       if ( todo->hasDueDate() ) {
@@ -1535,7 +1545,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 
     if ( (*iit)->recurs() ) {
       KDateTime dtr = dt, dtr2;
-      KDateTime dtre;
+      KDateTime dtre, dtro;
 
       // If the original entry wasn't part of the time window, try to get more
       // appropriate first item to add. Else, start the next-iteration from the 'dt'
@@ -1560,8 +1570,16 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
         }
       }
       while ( appended < maxExpand ) {
+        dtro = dtr;
         dtr = (*iit)->recurrence()->getNextDateTime( dtr );
         if ( !dtr.isValid() || ( dtEnd.isValid() && dtr >= dtEnd ) ) {
+          break;
+        }
+
+        /* If 'next' results in wrong date, give up. We have
+        * to be moving forward. */
+        if (dtr <= dtro) {
+          kDebug() << "--getNextDateTime broken - " << dtr << (*iit);
           break;
         }
 
@@ -1575,9 +1593,15 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
         // As incidences are in sorted order, the [1] condition was
         // already met as we're still iterating. Have to check [2].
         if ( !dtre.isValid() || dtre > dtStart ) {
-          kDebug() << "---appending(recurrence)" << (*iit)->summary() << dtr;
+          kDebug() << "---appending(recurrence)" << (*iit)->summary() << dtr.toString();
           returnList.append( ExpandedIncidence( dtr.toLocalZone().dateTime(), *iit ) );
           appended++;
+        } else {
+          kDebug() << "---skipping(recurrence)" << skipped << (*iit)->summary() << duration << dtr.toString() << dtStart.toString() << dtEnd.toString();
+          if (skipped++ >= 100) {
+            kDebug() << "--- skip count exceeded, breaking loop";
+            break;
+          }
         }
       }
     }
@@ -1591,7 +1615,7 @@ Incidence::List ExtendedCalendar::incidences( const QDate &start, const QDate &e
   return mergeIncidenceList( events( start, end ), todos( start, end ), journals( start ) );
 }
 
-ExtendedStorage *ExtendedCalendar::defaultStorage()
+ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::Ptr &calendar )
 {
   // This is the place where we configure our default backend
   QString dbFile = QLatin1String( qgetenv( "SQLITESTORAGEDB" ) );
@@ -1599,9 +1623,9 @@ ExtendedStorage *ExtendedCalendar::defaultStorage()
     dbFile = QDir::homePath() + QLatin1String( "/.calendardb" );
   }
 
-  SqliteStorage *ss = new SqliteStorage( ExtendedCalendar::Ptr( this ), dbFile, true );
+  SqliteStorage::Ptr ss = SqliteStorage::Ptr( new SqliteStorage ( calendar , dbFile, true ) );
 
-  return ss;
+  return ss.staticCast<ExtendedStorage>();
 }
 
 Todo::List ExtendedCalendar::uncompletedTodos( bool hasDate, int hasGeo )
@@ -1612,6 +1636,9 @@ Todo::List ExtendedCalendar::uncompletedTodos( bool hasDate, int hasGeo )
   while ( i.hasNext() ) {
     i.next();
     Todo::Ptr todo = i.value();
+    if ( !isVisible (todo) )
+      continue;
+
     if ( !todo->isCompleted() ) {
       if ( ( hasDate && todo->hasDueDate() ) || ( !hasDate && !todo->hasDueDate() ) ) {
         if ( hasGeo < 0 || ( hasGeo && todo->hasGeo() ) || ( !hasGeo && !todo->hasGeo() ) ) {
@@ -1632,6 +1659,9 @@ Todo::List ExtendedCalendar::completedTodos( bool hasDate, int hasGeo,
   while ( i.hasNext() ) {
     i.next();
     Todo::Ptr todo = i.value();
+    if ( !isVisible (todo) )
+      continue;
+
     if ( todo->isCompleted() ) {
       if ( hasDate && todo->hasDueDate() ) {
         if ( hasGeo < 0 || ( hasGeo && todo->hasGeo() ) || ( !hasGeo && !todo->hasGeo() ) ) {

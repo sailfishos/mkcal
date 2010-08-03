@@ -2,7 +2,7 @@ Source: libmkcal
 Section: libs
 Priority: optional
 Maintainer: Alvaro Manera <alvaro.manera@nokia.com>
-Build-Depends: debhelper (>= 5), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev, libqmf-dev, libmeegotouch-dev (>= 0.20.12.1-2), doxygen, aegis-builder (>= 1.4)
+Build-Depends: debhelper (>= 5), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev, libqmf-dev, libmeegotouch-dev (>= 0.20.12.1-2), doxygen, aegis-builder (>= 1.4), libkcalcoren 
 Standards-Version: 3.8.0
 
 Package: libmkcal
@@ -15,14 +15,14 @@ Description: Extended KDE kcal calendar library port for Maemo.
 Package: libmkcal-dev
 Section: devel
 Architecture: any
-Depends: libkcalcoren (= ${binary:Version}), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev
+Depends: libmkcal (= ${binary:Version}), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev
 Description: Extended KDE kcal calendar library development files.
  KDE kcal calendar library development files.
 
 Package: libmkcal-dbg
 Section: devel
 Architecture: any
-Depends: libkcalcoren (= ${binary:Version})
+Depends: libmkcal (= ${binary:Version})
 Description: Extended KDE kcal calendar library debug symbols.
  KDE kcal calendar library debug symbols.
 

@@ -36,7 +36,7 @@
 
 #include <exceptions.h>
 #include <icalformat.h>
-#include <memorycalendar.h>
+#include <calendar.h>
 #include <vcalformat.h>
 using namespace KCalCore;
 
@@ -69,7 +69,7 @@ class mKCal::DirectoryStorage::Private
     ~Private() { if (mFormat) delete mFormat; }
 
     QStringList open( const QDir &dir );
-    bool load( const MemoryCalendar::Ptr &calendar, QFile *file, bool deleted,
+    bool load( const Calendar::Ptr &calendar, QFile *file, bool deleted,
                const QString &notebook );
     void close();
     bool check( const QFile &file );
@@ -330,7 +330,7 @@ bool DirectoryStorage::load( const QString &notebook )
   return true;
 }
 
-bool DirectoryStorage::Private::load( const MemoryCalendar::Ptr &calendar, QFile *file,
+bool DirectoryStorage::Private::load( const Calendar::Ptr &calendar, QFile *file,
                                       bool deleted, const QString &notebook )
 {
   QTextStream ts( file );

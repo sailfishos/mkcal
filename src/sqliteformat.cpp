@@ -225,6 +225,9 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         sqlite3_bind_text( stmt1, index, "", 0, SQLITE_STATIC );
       }
 
+      // set HasDueDate to false
+      sqlite3_bind_int(stmt1, index, 0);
+
       if ( incidence->type() == Incidence::TypeEvent ) {
         Event::Ptr event = incidence.staticCast<Event>();
         if ( event->hasEndDate() ) {
@@ -260,6 +263,8 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         sqlite3_bind_int( stmt1, index, 0 );
         sqlite3_bind_text( stmt1, index, "", 0, SQLITE_STATIC ); // timezone
       }
+
+      sqlite3_bind_int(stmt1, index, todo->hasDueDate());
 
       if ( todo->hasDueDate() ) {
         secs = d->mStorage->toOriginTime( todo->dtDue( true ) );
@@ -1040,8 +1045,8 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       KDateTime start = d->mStorage->fromOriginTime( date, timezone );
       event->setDtStart( start );
 
-      date = sqlite3_column_int64( stmt1, 7 );
-      timezone = QString::fromUtf8( (const char *)sqlite3_column_text( stmt1, 8 ) );
+      date = sqlite3_column_int64(stmt1, 8);
+      timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 9));
       KDateTime end = d->mStorage->fromOriginTime( date, timezone );
       event->setDtEnd( end );
 
@@ -1069,11 +1074,15 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           todo->setHasStartDate( true );
           todo->setDtStart( start );
         }
-        date = sqlite3_column_int64( stmt1, 7 );
-        timezone = QString::fromUtf8( (const char *)sqlite3_column_text( stmt1, 8 ) );
+
+        todo->setHasDueDate((bool)sqlite3_column_int(stmt1, 7));
+
+        date = sqlite3_column_int64(stmt1, 8);
+        timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 9));
+
         KDateTime due = d->mStorage->fromOriginTime( date, timezone );
         if ( due.isValid() ) {
-          if ( start.isValid() && due == start ) {
+          if ( start.isValid() && due == start && !todo->hasDueDate()) {
             due = KDateTime();
           } else {
             todo->setDtDue( due, true );
@@ -1129,6 +1138,7 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
     incidence->setCategories(
       QString::fromUtf8( (const char *)sqlite3_column_text( stmt1, index++ ) ) );
 
+    index++;
     index++;
     index++;
     index++;

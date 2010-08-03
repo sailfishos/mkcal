@@ -220,18 +220,19 @@
 
 #include "mkcal_export.h"
 
-#include <memorycalendar.h>
+#include <calendar.h>
 #include <icaltimezones.h>
 
 namespace mKCal {
 
 class ExtendedStorage;
+class Notebook;
 
 /**
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar
+class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
 {
   public:
     /**
@@ -655,6 +656,15 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar
     void deleteAllIncidences();
 
     /**
+       @copydoc
+       Calendar::deleteIncidenceInstances
+
+       Dummy function, does not do anything in ExtendedCalendar
+
+    */
+    bool deleteIncidenceInstances( const KCalCore::Incidence::Ptr &incidence );
+
+    /**
       Sort a list of Incidences.
 
       @param list is a pointer to a list of Incidences.
@@ -701,7 +711,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar
                                              const KDateTime &end,
                                              int maxExpand = 1000 );
 
-    using KCalCore::MemoryCalendar::incidences;
+    using KCalCore::Calendar::incidences;
 
     /**
       Returns a filtered list of all Incidences occurring within a date range.
@@ -718,11 +728,12 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar
       Creates the default Storage Object used in Maemo.
       The Storage is already linked to this calendar object.
 
+      @param The parent calendar that you want to use with the storage
       @return Object used as storage in Maemo. It should be transparent
       to the user which type it is.
-      @warning The object has to be freed by the caller.
+      @warning A new storage is created with each call.
     */
-    ExtendedStorage *defaultStorage();
+    static QSharedPointer<ExtendedStorage> defaultStorage( const ExtendedCalendar::Ptr &calendar );  //No typedef to avoid cyclic includes
 
   // Smart Loading Methods, see ExtendedStorage.h for more //
 

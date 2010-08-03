@@ -43,7 +43,7 @@ INCLUDEPATH += . \
     /usr/include/dbus-1.0 \
     /usr/include/qt4/QtDBus
 
-DEFINES += MEEGO UUID
+DEFINES += MEEGO UUID MKCAL_FOR_MEEGO
 LIBS += -lQtDBus \
     -lical \
     -licalss \

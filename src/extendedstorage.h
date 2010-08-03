@@ -40,6 +40,10 @@
 
 #include <kdatetime.h>
 
+#if defined(MKCAL_FOR_MEEGO)
+#include <MLocale>
+#endif
+
 namespace KCalCore {
   class Incidence;
 }
@@ -92,6 +96,12 @@ class MKCAL_EXPORT ExtendedStorage
   Q_OBJECT
 
   public:
+
+    /**
+      A shared pointer to a ExtendedStorage
+    */
+    typedef QSharedPointer<ExtendedStorage> Ptr;
+
     /**
       Constructs a new ExtendedStorage object.
 
@@ -603,6 +613,17 @@ class MKCAL_EXPORT ExtendedStorage
       @param incidence incidence
     */
     void resetAlarms( const KCalCore::Incidence::Ptr &incidence );
+
+    /**
+      Creates and sets a default notebook. Usually called for an empty
+      calendar.
+
+      @param name notebook's name, if empty default used
+      @param color notebook's color in format "#FF0042", if empty default used
+      @return pointer to the created notebook
+    */
+    Notebook::Ptr createDefaultNotebook( QString name = "",
+                                         QString color = "");
 
   protected:
     virtual bool loadNotebooks() = 0;

@@ -12,7 +12,7 @@ doc.depends = FORCE
 
 # Install rules
 htmldocs.files = ./doc/html/*
-htmldocs.path = /${DESTDIR}/usr/share/doc/libkcalcoren-doc
+htmldocs.path = /${DESTDIR}/usr/share/doc/libmkcal-doc
 htmldocs.CONFIG += no_check_exist
 
 INSTALLS += htmldocs    

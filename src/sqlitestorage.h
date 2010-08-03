@@ -40,7 +40,7 @@
 
 namespace mKCal {
 
-const int VersionMajor = 7; // Major version, if different than stored in database, open fails
+const int VersionMajor = 9; // Major version, if different than stored in database, open fails
 const int VersionMinor = 0; // Minor version, if different than stored in database, open warning
 
 /**
@@ -54,6 +54,12 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
   Q_OBJECT
 
   public:
+
+    /**
+      A shared pointer to a SqliteStorage
+    */
+    typedef QSharedPointer<SqliteStorage> Ptr;
+
     /**
       Constructs a new SqliteStorage object for Calendar @p calendar with format
       @p format, and storage to file @p fileName.
@@ -437,9 +443,9 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
-  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT)"
+   "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT)"
 #define CREATE_COMPONENTS \
-  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, StartTimeZone TEXT, DateEndDue INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER)"
 #define CREATE_RDATES \
   "CREATE TABLE IF NOT EXISTS Rdates(ComponentId INTEGER, Type INTEGER, Date INTEGER, TimeZone TEXT)"
 #define CREATE_CUSTOMPROPERTIES \
@@ -477,11 +483,11 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define INSERT_TIMEZONES \
 "insert into Timezones values (1, '')"
 #define INSERT_CALENDARS \
-"insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+"insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_INVITATIONS \
 "insert into Invitations values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_RDATES \
@@ -498,7 +504,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define UPDATE_CALENDARS \
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, StartTimeZone=?, DateEndDue=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
+"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
 
 #define DELETE_TIMEZONES \
 "delete from Timezones where TzId=1"

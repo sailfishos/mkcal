@@ -34,7 +34,7 @@
 #include "extendedstorage.h"
 
 #include <exceptions.h>
-#include <memorycalendar.h>
+#include <calendar.h>
 using namespace KCalCore;
 
 #include <kdebug.h>
@@ -500,7 +500,7 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
   clearAlarms( incidence );
 
   Alarm::List alarms = incidence->alarms();
-  foreach ( Alarm *alarm, alarms ) {
+  foreach ( const Alarm::Ptr alarm, alarms ) {
     if ( !alarm->enabled() ) {
       continue;
     }
@@ -556,9 +556,12 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
     if ( incidence->dtStart().isValid() ) {
       e.setAttribute( "time", incidence->dtStart().toString() );
     } else {
-      if ( ( incidence->type() == Incidence::TypeTodo ) &&
-           ( static_cast<const Todo*>( incidence )->hasDueDate() ) ) {
-        e.setAttribute( "time", static_cast<const Todo*>( incidence )->dtDue( true ).toString() );
+      if ( ( incidence->type() == Incidence::TypeTodo ) ) {
+          Todo::Ptr todo = incidence.staticCast<Todo>();
+
+           if ( todo->hasDueDate() ) {
+              e.setAttribute( "time", todo->dtDue( true ).toString() );
+          }
       }
     }
     if ( incidence->hasRecurrenceId() ) {
@@ -702,4 +705,28 @@ Incidence::Ptr ExtendedStorage::checkAlarm( const QString &uid, const QString &r
     return incidence;
   }
   return Incidence::Ptr();
+}
+
+
+Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString color )
+{
+#ifdef MKCAL_FOR_MEEGO
+  if (name.isEmpty()) {
+    MLocale locale;
+    locale.installTrCatalog("calendar");
+    MLocale::setDefault(locale);
+    name = qtTrId("qtn_caln_personal_caln");
+  }
+  if (color.isEmpty())
+      color = "#63B33B";
+#else
+  if (name.isEmpty())
+    name = "Default";
+  if (color.isEmpty())
+    color = "#0000FF";
+#endif
+  Notebook::Ptr nbDefault = Notebook::Ptr( new Notebook(QString(), name, QString(), color, false, true, false, false, true) );
+  addNotebook(nbDefault, false);
+  setDefaultNotebook(nbDefault);
+  return nbDefault;
 }

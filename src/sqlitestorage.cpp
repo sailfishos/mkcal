@@ -34,6 +34,7 @@
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
 #include "trackermodify.h"
+#include <memorycalendar.h>
 
 #include <icalformat.h>
 using namespace KCalCore;
@@ -58,10 +59,6 @@ using namespace std;
 #endif
 
 using namespace mKCal;
-
-#if defined(MKCAL_FOR_MEEGO)
-#include <MLocale>
-#endif
 
 /**
  * \brief What have we loaded?
@@ -1617,9 +1614,9 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
   while ( ( incidence =
             mFormat->selectComponents( stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, notebookUid ) ) ) {
     bool hasNotebook = mCalendar->hasValidNotebook( notebookUid );
-    if ( mIncidencesToInsert.contains( incidence->uid(), incidence ) ||
-         mIncidencesToUpdate.contains( incidence->uid(), incidence ) ||
-         mIncidencesToDelete.contains( incidence->uid(), incidence ) ||
+    if ( mIncidencesToInsert.contains( incidence->uid() ) ||
+         mIncidencesToUpdate.contains( incidence->uid() ) ||
+         mIncidencesToDelete.contains( incidence->uid() ) ||
          ( mStorage->validateNotebooks() && !hasNotebook ) ) {
       kWarning() << "not loading" << incidence->uid() << notebookUid
                  << ( !hasNotebook ? "(invalidated notebook)" : "(local changes)" );
@@ -2146,8 +2143,8 @@ void SqliteStorage::calendarIncidenceAdded( const Incidence::Ptr &incidence )
 
 void SqliteStorage::calendarIncidenceChanged( const Incidence::Ptr &incidence )
 {
-  if ( !d->mIncidencesToUpdate.contains( incidence->uid(), incidence ) &&
-       !d->mIncidencesToInsert.contains( incidence->uid(), incidence ) &&
+  if ( !d->mIncidencesToUpdate.contains( incidence->uid() ) &&
+       !d->mIncidencesToInsert.contains( incidence->uid() ) &&
        !d->mIsLoading ) {
     kDebug() << "appending incidence" << incidence->uid() << "for database update";
     d->mIncidencesToUpdate.insert( incidence->uid(), incidence );
@@ -2157,7 +2154,7 @@ void SqliteStorage::calendarIncidenceChanged( const Incidence::Ptr &incidence )
 
 void SqliteStorage::calendarIncidenceDeleted( const Incidence::Ptr &incidence )
 {
-  if (!d->mIncidencesToDelete.contains( incidence->uid(), incidence ) && !d->mIsLoading ) {
+  if (!d->mIncidencesToDelete.contains( incidence->uid() ) && !d->mIsLoading ) {
     kDebug() << "appending incidence" << incidence->uid() << "for database delete";
     d->mIncidencesToDelete.insert( incidence->uid(), incidence );
   }
@@ -2165,7 +2162,7 @@ void SqliteStorage::calendarIncidenceDeleted( const Incidence::Ptr &incidence )
 
 void SqliteStorage::calendarIncidenceAdditionCanceled( const Incidence::Ptr &incidence )
 {
-  if ( d->mIncidencesToInsert.contains( incidence->uid(), incidence ) && !d->mIsLoading ) {
+  if ( d->mIncidencesToInsert.contains( incidence->uid() ) && !d->mIsLoading ) {
     kDebug() << "duplicate - removing incidence from inserted" << incidence->uid();
     d->mIncidencesToInsert.remove( incidence->uid(), incidence );
   }
@@ -2744,13 +2741,13 @@ bool SqliteStorage::Private::saveTimezones()
   sqlite3_stmt *stmt1 = NULL;
   const char *tail1 = NULL;
 
-  ExtendedCalendar temp( mCalendar->timeSpec() );
+  MemoryCalendar::Ptr temp = MemoryCalendar::Ptr ( new MemoryCalendar( mCalendar->timeSpec() ) );
   ICalTimeZones *zones = mCalendar->timeZones();
   if ( zones->count() > 0 ) {
     ICalTimeZones *copy = new ICalTimeZones( *zones );
-    temp.setTimeZones( copy );
+    temp->setTimeZones( copy );
     ICalFormat ical;
-    QByteArray data = ical.toString( ExtendedCalendar::Ptr( &temp ), QString() ).toUtf8();
+    QByteArray data = ical.toString( temp , QString() ).toUtf8();
 
     // Semaphore is already locked here.
     sqlite3_prepare_v2( mDatabase, query1, qsize1, &stmt1, &tail1 );
@@ -2791,11 +2788,11 @@ bool SqliteStorage::Private::loadTimezones()
   if ( rv == SQLITE_ROW ) {
     QString zoneData = QString::fromUtf8( (const char *)sqlite3_column_text( stmt, 1 ) );
     if ( !zoneData.isEmpty() ) {
-      ExtendedCalendar temp( mCalendar->timeSpec() );
+      MemoryCalendar::Ptr temp = MemoryCalendar::Ptr ( new MemoryCalendar( mCalendar->timeSpec() ) );
       ICalFormat ical;
-      if ( ical.fromString( ExtendedCalendar::Ptr( &temp ), zoneData ) ) {
+      if ( ical.fromString( temp , zoneData ) ) {
         kDebug() << "loaded timezones from database";
-        ICalTimeZones *zones = temp.timeZones();
+        ICalTimeZones *zones = temp->timeZones();
         ICalTimeZones *copy = new ICalTimeZones( *zones );
         mCalendar->setTimeZones( copy );
       } else {
@@ -2923,21 +2920,8 @@ KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds, QString zonename
 bool SqliteStorage::initializeDatabase()
 {
   kDebug() << "Storage is empty, initializing";
-
-#if defined(MKCAL_FOR_MEEGO)
-  MLocale locale;
-  locale.installTrCatalog( "calendar" );
-  Notebook::Ptr nbPersonal = Notebook::Ptr(
-    new Notebook( QString(), qtTrId( "qtn_caln_personal_caln" ), QString(),
-                  "#FF0000", false, true, false, false, true ) );
-  addNotebook( nbPersonal, false );
-  setDefaultNotebook( nbPersonal );
-#else
-  Notebook::Ptr nbDefault = Notebook::Ptr(
-    new Notebook( QString(), QLatin1String( "Default" ), QString(),
-                  "#0000FF", false, true, false, false, true ) );
-  addNotebook( nbDefault, false );
-  setDefaultNotebook( nbDefault );
-#endif
-  return true;
+  if (createDefaultNotebook()) {
+    return true;
+  }
+  return false;
 }
