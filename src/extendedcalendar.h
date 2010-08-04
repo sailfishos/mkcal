@@ -726,6 +726,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       @param start start time for expansion+filtering
       @param end end time for expansion+filtering
       @param maxExpand maximum expanded entries per incidence
+      @param expandLimitHit (if available) is set to true if and only
+      if we hit maxExpand when expanding some incidence
 
       @return a list of ExpandedIncidences sorted by start time (the
       first item in the ExpandedIncidence tuple) in ascending order.
@@ -733,7 +735,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     ExpandedIncidenceList expandRecurrences( KCalCore::Incidence::List *list,
                                              const KDateTime &start,
                                              const KDateTime &end,
-                                             int maxExpand = 1000 );
+                                             int maxExpand = 1000,
+                                             bool *expandLimitHit = 0);
 
     using KCalCore::Calendar::incidences;
 
@@ -861,6 +864,30 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     KCalCore::Incidence::List addIncidences( KCalCore::Incidence::List *list,
                                              const QString &notebookUid,
                                              bool duplicateRemovalEnabled = true );
+
+/**
+      Return the count of event incidences.
+
+      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
+      @return count of incidences
+    */
+    int eventCount( const QString &notebookUid = QString());
+
+    /**
+      Return the count of todo incidences.
+
+      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
+      @return count of incidences
+    */
+    int todoCount( const QString &notebookUid = QString());
+
+    /**
+      Return the count of journal incidences.
+
+      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
+      @return count of incidences
+    */
+    int journalCount( const QString &notebookUid = QString());
 
   protected:
 

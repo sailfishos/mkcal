@@ -40,7 +40,7 @@
 
 namespace mKCal {
 
-const int VersionMajor = 9; // Major version, if different than stored in database, open fails
+const int VersionMajor = 10; // Major version, if different than stored in database, open fails
 const int VersionMinor = 0; // Minor version, if different than stored in database, open warning
 
 /**
@@ -323,6 +323,14 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
     sqlite3_int64 toOriginTime( KDateTime dt );
 
     /**
+      Convert local datetime to seconds relative to the origin.
+
+      @param dt datetime
+      @return seconds relative to origin
+    */
+    sqlite3_int64 toLocalOriginTime(KDateTime dt);
+
+    /**
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
@@ -449,17 +457,17 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
-   "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT)"
+  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT)"
 #define CREATE_COMPONENTS \
-  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER)"
 #define CREATE_RDATES \
-  "CREATE TABLE IF NOT EXISTS Rdates(ComponentId INTEGER, Type INTEGER, Date INTEGER, TimeZone TEXT)"
+  "CREATE TABLE IF NOT EXISTS Rdates(ComponentId INTEGER, Type INTEGER, Date INTEGER, DateLocal INTEGER, TimeZone TEXT)"
 #define CREATE_CUSTOMPROPERTIES \
   "CREATE TABLE IF NOT EXISTS Customproperties(ComponentId INTEGER, Name TEXT, Value TEXT, Parameters TEXT)"
 #define CREATE_RECURSIVE \
-  "CREATE TABLE IF NOT EXISTS Recursive(ComponentId INTEGER, RuleType INTEGER, Frequency INTEGER, Until INTEGER, untilTimeZone TEXT, Count INTEGER, Interval INTEGER, BySecond TEXT, ByMinute TEXT, ByHour TEXT, ByDay TEXT, ByDayPos Text, ByMonthDay TEXT, ByYearDay TEXT, ByWeekNum TEXT, ByMonth TEXT, BySetPos TEXT, WeekStart INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Recursive(ComponentId INTEGER, RuleType INTEGER, Frequency INTEGER, Until INTEGER, UntilLocal INTEGER, untilTimeZone TEXT, Count INTEGER, Interval INTEGER, BySecond TEXT, ByMinute TEXT, ByHour TEXT, ByDay TEXT, ByDayPos Text, ByMonthDay TEXT, ByYearDay TEXT, ByWeekNum TEXT, ByMonth TEXT, BySetPos TEXT, WeekStart INTEGER)"
 #define CREATE_ALARM \
-  "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, Offset INTEGER, Relation TEXT, DateTrigger INTEGER, triggerTimeZone TEXT, Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, Offset INTEGER, Relation TEXT, DateTrigger INTEGER, DateTriggerLocal INTEGER, triggerTimeZone TEXT, Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
 #define CREATE_ATTENDEE \
 "CREATE TABLE IF NOT EXISTS Attendee(ComponentId INTEGER, Email TEXT, Name TEXT, IsOrganizer INTEGER, Role INTEGER, PartStat INTEGER, Rsvp INTEGER, DelegatedTo TEXT, DelegatedFrom TEXT)"
 
@@ -470,7 +478,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define INDEX_COMPONENT \
 "CREATE INDEX IF NOT EXISTS IDX_COMPONENT on Components(ComponentId, Notebook, DateStart, DateEndDue, DateDeleted)"
 #define INDEX_COMPONENT_UID \
-"CREATE UNIQUE INDEX IF NOT EXISTS IDX_COMPONENT_UID on Components(UID, RecurId)"
+"CREATE UNIQUE INDEX IF NOT EXISTS IDX_COMPONENT_UID on Components(UID, RecurId, DateDeleted)"
 #define INDEX_COMPONENT_NOTEBOOK \
 "CREATE INDEX IF NOT EXISTS IDX_COMPONENT_NOTEBOOK on Components(Notebook)"
 #define INDEX_RDATES \
@@ -493,24 +501,24 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define INSERT_INVITATIONS \
 "insert into Invitations values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_RDATES \
-"insert into Rdates values (?, ?, ?, ?)"
+"insert into Rdates values (?, ?, ?, ?, ?)"
 #define INSERT_RECURSIVE \
-"insert into Recursive values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+"insert into Recursive values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_ALARM \
-"insert into Alarm values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+"insert into Alarm values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_ATTENDEE \
 "insert into Attendee values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 #define UPDATE_TIMEZONES \
 "update Timezones set ICalData=? where TzId=1"
 #define UPDATE_CALENDARS \
-"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=? where CalendarId=?"
+"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
+"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
 
 #define DELETE_TIMEZONES \
 "delete from Timezones where TzId=1"
@@ -568,7 +576,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select * from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
-#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
+#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID	\
 "select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
 "select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"
@@ -617,7 +625,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define SELECT_COMPONENTS_BY_DELETED \
 "select * from Components where DateDeleted>=? and DateCreated<?"
 #define SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK \
-"select * from Components where DateDeleted>? and DateCreated<=? and Notebook=?"
+"select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_ATTENDEE_AND_COUNT \
 "select Email, Name, count(Email) from Attendee where Email<>0 group by Email"
 

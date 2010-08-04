@@ -2210,21 +2210,28 @@ void SqliteStorage::calendarIncidenceAdded( const Incidence::Ptr &incidence )
 
 void SqliteStorage::calendarIncidenceChanged( const Incidence::Ptr &incidence )
 {
-  if ( !d->mIncidencesToUpdate.contains( incidence->uid() ) &&
-       !d->mIncidencesToInsert.contains( incidence->uid() ) &&
-       !d->mIsLoading ) {
-    kDebug() << "appending incidence" << incidence->uid() << "for database update";
-    d->mIncidencesToUpdate.insert( incidence->uid(), incidence );
-    d->mUidMappings.insert( incidence->uid(), incidence->uid() );
-  }
+    if (!d->mIncidencesToUpdate.contains(incidence->uid(), incidence) &&
+        !d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
+        !d->mIsLoading) {
+      kDebug() << "appending incidence" << incidence->uid() << "for database update";
+      d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
+      d->mUidMappings.insert(incidence->uid(), incidence->uid());
+    }
 }
 
 void SqliteStorage::calendarIncidenceDeleted( const Incidence::Ptr &incidence )
 {
-  if (!d->mIncidencesToDelete.contains( incidence->uid() ) && !d->mIsLoading ) {
-    kDebug() << "appending incidence" << incidence->uid() << "for database delete";
-    d->mIncidencesToDelete.insert( incidence->uid(), incidence );
-  }
+    if (d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
+        !d->mIsLoading) {
+      kDebug() << "removing incidence from inserted" << incidence->uid();
+      d->mIncidencesToInsert.remove(incidence->uid(), incidence);
+    } else {
+      if (!d->mIncidencesToDelete.contains(incidence->uid(), incidence) &&
+          !d->mIsLoading) {
+        kDebug() << "appending incidence" << incidence->uid() << "for database delete";
+        d->mIncidencesToDelete.insert(incidence->uid(), incidence);
+      }
+    }
 }
 
 void SqliteStorage::calendarIncidenceAdditionCanceled( const Incidence::Ptr &incidence )
@@ -2930,6 +2937,16 @@ sqlite3_int64 SqliteStorage::toOriginTime( KDateTime dt )
 {
   //kDebug() << "toOriginTime" << dt << d->mOriginTime.secsTo_long( dt );
   return d->mOriginTime.secsTo_long(dt);
+}
+
+sqlite3_int64 SqliteStorage::toLocalOriginTime(KDateTime dt)
+{
+  QDateTime dt1, dt2;
+  dt1 = d->mOriginTime.dateTime();
+  dt2 = dt.dateTime();
+
+  return static_cast<qint64>(dt1.date().daysTo(dt2.date())) * 86400
+    + dt1.time().secsTo(dt2.time());
 }
 
 KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds )

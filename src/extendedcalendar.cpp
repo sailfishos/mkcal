@@ -1485,10 +1485,13 @@ static bool expandedIncidenceSortLessThan( const ExtendedCalendar::ExpandedIncid
 }
 
 ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
-  Incidence::List *incidenceList, const KDateTime &dtStart, const KDateTime &dtEnd, int maxExpand )
+  Incidence::List *incidenceList, const KDateTime &dtStart, const KDateTime &dtEnd, int maxExpand, bool *expandLimitHit )
 {
   ExtendedCalendar::ExpandedIncidenceList returnList;
   Incidence::List::Iterator iit;
+
+  if (expandLimitHit)
+    *expandLimitHit = false;
 
   for ( iit = incidenceList->begin(); iit != incidenceList->end(); ++iit ) {
     KDateTime dt = (*iit)->dtStart();
@@ -1539,7 +1542,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
     // also included.
 
     if ( ( !dtEnd.isValid() || dt < dtEnd ) && ( !dte.isValid() || dte > dtStart ) ) {
-      kDebug() << "---appending" << (*iit)->summary() << dt;
+      kDebug() << "---appending" << (*iit)->summary() << dt.toString() << dt.timeZone().name() << dt.toLocalZone().toString();
       returnList.append( ExpandedIncidence( dt.toLocalZone().dateTime(), *iit ) );
       appended++;
     }
@@ -1551,11 +1554,12 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
       // If the original entry wasn't part of the time window, try to get more
       // appropriate first item to add. Else, start the next-iteration from the 'dt'
       // (=current item).
-      if ( !appended ) {
+      if ( appended ) {
         dtr = (*iit)->recurrence()->getPreviousDateTime( dtStart );
-        if ( dtr.isValid() ) {
-          dtr2 = (*iit)->recurrence()->getPreviousDateTime( dtr );
-          if ( dtr2.isValid() ) {
+        if (dtr.isValid())
+        {
+          dtr2 = (*iit)->recurrence()->getPreviousDateTime(dtr);
+          if (dtr2.isValid()) {
             dtr = dtr2;
           }
         } else {
@@ -1604,6 +1608,10 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
             break;
           }
         }
+      }
+      if (appended == maxExpand && expandLimitHit) {
+       kDebug() << "!!! HIT LIMIT" << maxExpand;
+       *expandLimitHit = true;
       }
     }
   }
@@ -1847,6 +1855,9 @@ Journal::List ExtendedCalendar::journals( const QDate &start, const QDate &end )
     if (!isVisible( journal ))
       continue;
     KDateTime st = journal->dtStart();
+    // If start time is not valid, try to use the creation time.
+    if (!st.isValid())
+      st = journal->created();
     if (!st.isValid())
       continue;
     if (startK.isValid() && st < startK)
@@ -2167,3 +2178,52 @@ void ExtendedCalendar::storageModified( ExtendedStorage *storage, const QString 
     // want - clears the in-memory contents of the calendar.
     close();
 }
+
+int ExtendedCalendar::eventCount( const QString &notebookUid )
+{
+  if (notebookUid.isEmpty())
+    return d->mEvents.size();
+
+  int count = 0;
+  QHashIterator<QString, Event::Ptr> i( d->mEvents );
+  while ( i.hasNext() ) {
+    i.next();
+    if ( notebook(i.value()) == notebookUid )
+      count++;
+  }
+
+  return count;
+}
+
+int ExtendedCalendar::todoCount( const QString &notebookUid )
+{
+  if (notebookUid.isEmpty())
+    return d->mTodos.size();
+
+  int count = 0;
+  QHashIterator<QString, Todo::Ptr> i( d->mTodos );
+  while ( i.hasNext() ) {
+    i.next();
+    if ( notebook(i.value()) == notebookUid )
+      count++;
+  }
+
+  return count;
+}
+
+int ExtendedCalendar::journalCount( const QString &notebookUid )
+{
+  if (notebookUid.isEmpty())
+    return d->mJournals.size();
+
+  int count = 0;
+  QHashIterator<QString, Journal::Ptr> i( d->mJournals );
+  while ( i.hasNext() ) {
+    i.next();
+    if ( notebook(i.value()) == notebookUid )
+      count++;
+  }
+
+  return count;
+}
+

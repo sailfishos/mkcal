@@ -347,6 +347,24 @@ class MKCAL_EXPORT Notebook
     void setSharedWithStr( const QString &sharedWith );
 
     /**
+      Gets the sync profile of the notebook.
+
+       @return string sync profile.
+
+       @see setSyncProfile()
+    */
+    QString syncProfile() const;
+
+    /**
+      Sets the sync profile of  the notebook.
+
+      @param syncProfile string of sync profile
+
+      @see syncProfile();
+      */
+    void setSyncProfile(const QString &syncProfile);
+
+    /**
       Set whether the events are allowed to this notebook or not. By
       default, this is true.
     */

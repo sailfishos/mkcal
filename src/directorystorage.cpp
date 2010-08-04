@@ -769,6 +769,14 @@ bool DirectoryStorage::loadJournals()
     return load();
 }
 
+int DirectoryStorage::loadJournals( int limit, KDateTime *last )
+{
+    Q_UNUSED(limit);
+    *last = KDateTime();
+    load();
+    return 0;
+}
+
 bool DirectoryStorage::loadPlainIncidences()
 {
   return load();

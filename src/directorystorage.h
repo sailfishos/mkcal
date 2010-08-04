@@ -153,6 +153,12 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::loadJournals()
+    */
+    int loadJournals( int limit, KDateTime *last );
+
+    /**
+      @copydoc
       ExtendedStorage::loadPlainIncidences()
     */
     bool loadPlainIncidences();

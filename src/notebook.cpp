@@ -89,7 +89,8 @@ class mKCal::Notebook::Private
         mAccount( QString() ),
         mAttachmentSize(-1),
         mModifiedDate( KDateTime() ),
-        mSharedWith( QStringList() )
+        mSharedWith( QStringList() ),
+        mSyncProfile( QString() )
     {}
 
     Private( const Private &other )
@@ -103,7 +104,8 @@ class mKCal::Notebook::Private
         mAccount( other.mAccount ),
         mAttachmentSize( other.mAttachmentSize ),
         mModifiedDate( other.mModifiedDate ),
-        mSharedWith( other.mSharedWith )
+        mSharedWith( other.mSharedWith ),
+        mSyncProfile( other.mSyncProfile )
     {}
 
   QString mUid;
@@ -117,6 +119,7 @@ class mKCal::Notebook::Private
   int mAttachmentSize;
   KDateTime mModifiedDate;
   QStringList mSharedWith;
+  QString mSyncProfile;
 
 };
 //@endcond
@@ -419,6 +422,17 @@ void Notebook::setSharedWithStr( const QString &sharedWithStr )
   for ( it = d->mSharedWith.begin();it != d->mSharedWith.end(); ++it ) {
     *it = (*it).trimmed();
   }
+}
+
+QString Notebook::syncProfile() const
+{
+  return d->mSyncProfile;
+}
+
+void Notebook::setSyncProfile( const QString &syncProfile )
+{
+  d->mModifiedDate = KDateTime::currentUtcDateTime();
+  d->mSyncProfile = syncProfile;
 }
 
 void Notebook::setEventsAllowed( bool eventsAllowed )
