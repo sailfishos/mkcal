@@ -76,6 +76,7 @@ class mKCal::ExtendedStorage::Private
         mIsGeoCreatedLoaded( false ),
         mIsUnreadIncidencesLoaded ( false ),
         mIsInvitationIncidencesLoaded ( false ),
+        mIsJournalsLoaded( false ),
         mDefaultNotebook( 0 )
     {}
     ExtendedCalendar::Ptr mCalendar;
@@ -91,6 +92,7 @@ class mKCal::ExtendedStorage::Private
     bool mIsGeoCreatedLoaded;
     bool mIsUnreadIncidencesLoaded;
     bool mIsInvitationIncidencesLoaded;
+    bool mIsJournalsLoaded;
     QList<StorageObserver*> mObservers;
     QHash<QString,Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
@@ -108,6 +110,22 @@ ExtendedStorage::ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validat
 ExtendedStorage::~ExtendedStorage()
 {
   delete d;
+}
+
+void ExtendedStorage::clearLoaded()
+{
+  d->mStart = QDate();
+  d->mEnd = QDate();
+  d->mIsUncompletedTodosLoaded = false;
+  d->mIsCompletedTodosDateLoaded = false;
+  d->mIsCompletedTodosCreatedLoaded = false;
+  d->mIsDateLoaded = false;
+  d->mIsCreatedLoaded = false;
+  d->mIsGeoDateLoaded = false;
+  d->mIsGeoCreatedLoaded = false;
+  d->mIsUnreadIncidencesLoaded  = false;
+  d->mIsInvitationIncidencesLoaded  = false;
+  d->mIsJournalsLoaded = false;
 }
 
 bool ExtendedStorage::getLoadDates( const QDate &start, const QDate &end,
@@ -191,6 +209,16 @@ bool ExtendedStorage::isDateLoaded()
 void ExtendedStorage::setIsDateLoaded( bool loaded )
 {
   d->mIsDateLoaded = loaded;
+}
+
+bool ExtendedStorage::isJournalsLoaded()
+{
+  return d->mIsJournalsLoaded;
+}
+
+void ExtendedStorage::setIsJournalsLoaded( bool loaded )
+{
+  d->mIsJournalsLoaded = loaded;
 }
 
 bool ExtendedStorage::isCreatedLoaded()

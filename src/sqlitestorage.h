@@ -213,6 +213,12 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::loadJournals()
+    */
+    int loadJournals( int limit, KDateTime *last );
+
+    /**
+      @copydoc
       ExtendedStorage::notifyOpened( const KCalCore::Incidence::Ptr & )
     */
     bool notifyOpened( const KCalCore::Incidence::Ptr &incidence );
@@ -544,6 +550,8 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select * from Components where GeoLatitude>=? and GeoLongitude>=? and GeoLatitude<=? and GeoLongitude<=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_JOURNAL \
 "select * from Components where Type='Journal' and DateDeleted=0"
+#define SELECT_COMPONENTS_BY_JOURNAL_DATE \
+"select * from Components where Type='Journal' and DateDeleted=0 and datestart<=? order by DateStart desc"
 #define SELECT_COMPONENTS_BY_PLAIN \
 "select * from Components where DateStart=0 and DateEndDue=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_RECURSIVE \

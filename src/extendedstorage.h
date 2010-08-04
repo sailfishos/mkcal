@@ -295,6 +295,17 @@ class MKCAL_EXPORT ExtendedStorage
                                        int limit, KDateTime *last ) = 0;
 
     /**
+      Load journal entries based on parameters. Load direction is
+      descending, i.e. starting from the most recently modified
+      journal.
+
+      @param limit load only that many incidences
+      @param last last loaded incidence due/creation date in return
+      @return number of loaded incidences, or -1 on error
+    */
+    virtual int loadJournals( int limit, KDateTime *last ) = 0;
+
+    /**
       @copydoc
       CalStorage::save()
     */
@@ -650,6 +661,9 @@ class MKCAL_EXPORT ExtendedStorage
     bool isCompletedTodosCreatedLoaded();
     void setIsCompletedTodosCreatedLoaded( bool loaded );
 
+    bool isJournalsLoaded();
+    void setIsJournalsLoaded( bool loaded );
+
     bool isDateLoaded();
     void setIsDateLoaded( bool loaded );
     bool isCreatedLoaded();
@@ -666,6 +680,7 @@ class MKCAL_EXPORT ExtendedStorage
     bool isInvitationIncidencesLoaded();
     void setIsInvitationIncidencesLoaded( bool loaded );
 
+    void clearLoaded();
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedStorage )

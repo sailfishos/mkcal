@@ -260,13 +260,19 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence( const Incidence::Pt
 
 bool ExtendedCalendar::addEvent( const Event::Ptr &aEvent )
 {
+  return addEvent(aEvent, defaultNotebook());
+}
+
+bool ExtendedCalendar::addEvent( const Event::Ptr &aEvent, const QString &notebookUid  )
+{
   if ( !aEvent ) {
     return false;
   }
 
-  Event::Ptr eventToAdd = aEvent;
-
-  notifyIncidenceAdded( aEvent );
+  if ( notebookUid.isEmpty() ) {
+    kWarning() << "ExtendedCalendar::addEvent(): NotebookUid empty";
+    return false;
+  }
 
   if ( d->mEvents.contains( aEvent->uid() ) ) {
     Event::Ptr old;
@@ -276,27 +282,18 @@ bool ExtendedCalendar::addEvent( const Event::Ptr &aEvent )
       old = event( aEvent->uid(), aEvent->recurrenceId() );
     }
     if ( old ) {
-      if ( aEvent->revision() > old->revision() ) {
-        deleteEvent( old ); // move old to deleted
-      } else {
-        notifyIncidenceAdditionCanceled( aEvent );
-        eventToAdd = old;
-        return true;
-      }
+      kDebug() << "Duplicate found, event was not added";
+      return false;
     }
   }
 
-  d->insertEvent( eventToAdd, timeSpec() );
-
-  eventToAdd->registerObserver( this );
+  notifyIncidenceAdded( aEvent );
+  d->insertEvent( aEvent, timeSpec() );
+  aEvent->registerObserver( this );
 
   setModified( true );
 
-  if ( !defaultNotebook().isEmpty() ) {
-    return setNotebook( eventToAdd, defaultNotebook() );
-  }
-
-  return true;
+  return setNotebook(aEvent, notebookUid);
 }
 
 bool ExtendedCalendar::deleteEvent( const Event::Ptr &event )
@@ -407,13 +404,19 @@ Event::Ptr ExtendedCalendar::deletedEvent( const QString &uid, const KDateTime &
 
 bool ExtendedCalendar::addTodo( const Todo::Ptr &aTodo )
 {
+  return addTodo(aTodo, defaultNotebook());
+}
+
+bool ExtendedCalendar::addTodo( const Todo::Ptr &aTodo, const QString &notebookUid  )
+{
   if ( !aTodo ) {
     return false;
   }
 
-  Todo::Ptr todoToAdd = aTodo;
-
-  notifyIncidenceAdded( aTodo );
+  if ( notebookUid.isEmpty() ) {
+    kWarning() << "ExtendedCalendar::addTodo(): NotebookUid empty";
+    return false;
+  }
 
   if ( d->mTodos.contains( aTodo->uid() ) ) {
     Todo::Ptr old;
@@ -426,27 +429,23 @@ bool ExtendedCalendar::addTodo( const Todo::Ptr &aTodo )
       if ( aTodo->revision() > old->revision() ) {
         deleteTodo( old ); // move old to deleted
       } else {
-        notifyIncidenceAdditionCanceled( aTodo );
-        todoToAdd = old;
-        return true;
+        kDebug() << "Duplicate found, todo was not added";
+        return false;
       }
     }
   }
 
-  d->insertTodo( todoToAdd, timeSpec() );
 
-  todoToAdd->registerObserver( this );
+  notifyIncidenceAdded( aTodo );
+  d->insertTodo( aTodo, timeSpec() );
+  aTodo->registerObserver( this );
 
   // Set up sub-to-do relations
-  setupRelations( todoToAdd );
+  setupRelations( aTodo );
 
   setModified( true );
 
-  if ( !defaultNotebook().isEmpty() ) {
-    return setNotebook( todoToAdd, defaultNotebook() );
-  }
-
-  return true;
+  return setNotebook(aTodo, notebookUid);
 }
 
 //@cond PRIVATE
@@ -1089,13 +1088,20 @@ Event::List ExtendedCalendar::eventInstances( const Incidence::Ptr &event,
 
 bool ExtendedCalendar::addJournal( const Journal::Ptr &aJournal )
 {
+  return addJournal( aJournal, defaultNotebook());
+}
+
+bool ExtendedCalendar::addJournal( const Journal::Ptr &aJournal, const QString &notebookUid )
+{
   if ( !aJournal ) {
     return false;
   }
 
-  Journal::Ptr journalToAdd = aJournal;
+  if ( notebookUid.isEmpty() ) {
+    kWarning() << "ExtendedCalendar::addJournal(): NotebookUid empty";
+    return false;
+  }
 
-  notifyIncidenceAdded( aJournal );
 
   if ( d->mJournals.contains( aJournal->uid() ) ) {
     Journal::Ptr old;
@@ -1108,24 +1114,19 @@ bool ExtendedCalendar::addJournal( const Journal::Ptr &aJournal )
       if ( aJournal->revision() > old->revision() ) {
         deleteJournal( old ); // move old to deleted
       } else {
-        notifyIncidenceAdditionCanceled( aJournal );
-        journalToAdd = old;
-        return true;
+          kDebug() << "Duplicate found, journal was not added";
+          return false;
       }
     }
   }
 
+  notifyIncidenceAdded( aJournal );
   d->insertJournal( aJournal, timeSpec() );
-
-  journalToAdd->registerObserver( this );
+  aJournal->registerObserver( this );
 
   setModified( true );
 
-  if ( !defaultNotebook().isEmpty() ) {
-    return setNotebook( journalToAdd, defaultNotebook() );
-  }
-
-  return true;
+  return setNotebook(aJournal, notebookUid);;
 }
 
 //@cond PRIVATE
@@ -1612,7 +1613,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 
 Incidence::List ExtendedCalendar::incidences( const QDate &start, const QDate &end )
 {
-  return mergeIncidenceList( events( start, end ), todos( start, end ), journals( start ) );
+  return mergeIncidenceList( events( start, end ), todos( start, end ), journals( start, end ) );
 }
 
 ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::Ptr &calendar )
@@ -1829,6 +1830,32 @@ Incidence::List ExtendedCalendar::incidences( bool hasDate,
     }
   }
   return list;
+}
+
+Journal::List ExtendedCalendar::journals( const QDate &start, const QDate &end )
+{
+  QHashIterator<QString, Journal::Ptr>i( d->mJournals );
+  Journal::Ptr journal;
+  Journal::List journalList;
+  KDateTime startK(start);
+  KDateTime endK(end);
+
+  while (i.hasNext())
+  {
+    i.next();
+    journal = i.value();
+    if (!isVisible( journal ))
+      continue;
+    KDateTime st = journal->dtStart();
+    if (!st.isValid())
+      continue;
+    if (startK.isValid() && st < startK)
+      continue;
+    if (endK.isValid() && st > endK)
+      continue;
+    journalList << journal;
+  }
+  return journalList;
 }
 
 Incidence::List ExtendedCalendar::geoIncidences( bool hasDate,

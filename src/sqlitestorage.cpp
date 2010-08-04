@@ -61,18 +61,6 @@ using namespace std;
 using namespace mKCal;
 
 /**
- * \brief What have we loaded?
- *
- * This is useful for making the reloading be transparent when the
- * on-disk storage changes.
- */
-enum {
-  LOADED_LOAD = ( 1 << 0 ),
-  LOADED_LOAD_JOURNALS = ( 1 << 1 ),
-  LOADED_LOAD_RECURRING_INCIDENCES = ( 1 << 2 )
-};
-
-/**
   Private class that helps to provide binary compatibility between releases.
   @internal
 */
@@ -93,8 +81,7 @@ class mKCal::SqliteStorage::Private
         mUseTracker( useTracker ),
         mDBusIf( 0 ),
         mIsLoading( false ),
-        mIsOpened( false ),
-        mLoaded( 0 )
+        mIsOpened( false )
     {}
     ~Private()
     {}
@@ -158,7 +145,6 @@ class mKCal::SqliteStorage::Private
     QHash<QString, QString> mUidMappings;
     bool mIsLoading;
     bool mIsOpened;
-    int mLoaded;
     KDateTime mOriginTime;
     QDateTime mPreWatcherDbTime;
 
@@ -388,7 +374,6 @@ bool SqliteStorage::open()
 
 bool SqliteStorage::load()
 {
-  d->mLoaded |= LOADED_LOAD;
   if ( !d->mIsOpened ) {
     return false;
   }
@@ -680,7 +665,6 @@ bool SqliteStorage::loadNotebookIncidences( const QString &notebookUid )
 
 bool SqliteStorage::loadJournals()
 {
-  d->mLoaded |= LOADED_LOAD_JOURNALS;
 
   if ( !d->mIsOpened ) {
     return false;
@@ -792,7 +776,6 @@ bool SqliteStorage::loadPlainIncidences()
 
 bool SqliteStorage::loadRecurringIncidences()
 {
-  d->mLoaded |= LOADED_LOAD_RECURRING_INCIDENCES;
   if ( !d->mIsOpened ) {
     return false;
   }
@@ -1158,6 +1141,72 @@ int SqliteStorage::loadCompletedTodos( bool hasDate, int limit, KDateTime *last 
     }
   }
 
+ error:
+  d->mIsLoading = false;
+
+  return count;
+}
+int SqliteStorage::loadJournals( int limit, KDateTime *last )
+{
+  if (!d->mIsOpened || !last)
+    return -1;
+
+  if (isJournalsLoaded())
+    return 0;
+
+  int rv = 0;
+  int count = 0;
+  d->mIsLoading = true;
+
+  const char *query1 = NULL;
+  const char *query2 = NULL;
+  const char *query3 = NULL;
+  const char *query4 = NULL;
+  const char *query5 = NULL;
+  const char *query6 = NULL;
+  int qsize1 = 0;
+  int qsize2 = 0;
+  int qsize3 = 0;
+  int qsize4 = 0;
+  int qsize5 = 0;
+  int qsize6 = 0;
+
+  sqlite3_stmt *stmt1 = NULL;
+  const char *tail1 = NULL;
+  int index = 1;
+  qint64 secsStart;
+
+  if (last->isValid())
+    secsStart = toOriginTime(*last);
+  else
+    secsStart = LLONG_MAX; // largest time
+
+  query1 = SELECT_COMPONENTS_BY_JOURNAL_DATE;
+  qsize1 = sizeof(SELECT_COMPONENTS_BY_JOURNAL_DATE);
+
+  sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+  sqlite3_bind_int64(stmt1, index, secsStart);
+
+  query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
+  qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
+
+  query3 = SELECT_ATTENDEE_BY_ID;
+  qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
+
+  query4 = SELECT_ALARM_BY_ID;
+  qsize4 = sizeof(SELECT_ALARM_BY_ID);
+
+  query5 = SELECT_RECURSIVE_BY_ID;
+  qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
+
+  query6 = SELECT_RDATES_BY_ID;
+  qsize6 = sizeof(SELECT_RDATES_BY_ID);
+
+  count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3, query4, qsize4, query5, qsize5, query6, qsize6, limit, last, true);
+
+  if (count >= 0 && count < limit) {
+    setIsJournalsLoaded(true);
+  }
  error:
   d->mIsLoading = false;
 
@@ -1597,7 +1646,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
   const char *tail5 = NULL;
   const char *tail6 = NULL;
   Incidence::Ptr incidence;
-  KDateTime previous;
+  KDateTime previous, date;
   QString notebookUid;
 
   if ( !mSem.acquire() ) {
@@ -1614,6 +1663,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
   while ( ( incidence =
             mFormat->selectComponents( stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, notebookUid ) ) ) {
     bool hasNotebook = mCalendar->hasValidNotebook( notebookUid );
+    bool added = true;
     if ( mIncidencesToInsert.contains( incidence->uid() ) ||
          mIncidencesToUpdate.contains( incidence->uid() ) ||
          mIncidencesToDelete.contains( incidence->uid() ) ||
@@ -1649,13 +1699,15 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         }
         if ( event != old ) {
           count++; // added into calendar
+        } else {
+          added = false;
         }
         if ( useDate && event->dtEnd().isValid() ) {
-          previous = event->dtEnd();
+          date = event->dtEnd();
         } else if ( useDate && event->dtStart().isValid() ) {
-          previous = event->dtStart();
+          date = event->dtStart();
         } else {
-          previous = event->created();
+          date = event->created();
         }
       } else if ( incidence->type() == Incidence::TypeTodo ) {
         Todo::Ptr todo = incidence.staticCast<Todo>();
@@ -1685,13 +1737,15 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         }
         if ( todo != old ) {
           count++; // added into calendar
+        } else {
+          added = false;
         }
         if ( useDate && todo->dtDue().isValid() ) {
-          previous = todo->dtDue();
+          date = todo->dtDue();
         } else if ( useDate && todo->dtStart().isValid() ) {
-            previous = todo->dtStart();
+          date = todo->dtStart();
         } else {
-          previous = todo->created();
+          date = todo->created();
         }
       } else if ( incidence->type() == Incidence::TypeJournal ) {
         Journal::Ptr journal = incidence.staticCast<Journal>();
@@ -1721,15 +1775,17 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         }
         if ( journal != old ) {
           count++; // added into calendar
+        } else {
+          added = false;
         }
 
         if ( useDate && journal->dateTime( Incidence::RoleEnd ).isValid() ) {
           // TODO_ALVARO: journals don't have dtEnd, bug ?
-          previous = journal->dateTime( Incidence::RoleEnd );
+          date = journal->dateTime( Incidence::RoleEnd );
         } else if ( useDate && journal->dtStart().isValid() ) {
-          previous = journal->dtStart();
+          date = journal->dtStart();
         } else {
-          previous = journal->created();
+          date = journal->created();
         }
       }
     }
@@ -1739,13 +1795,24 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
     sqlite3_reset( stmt5 );
     sqlite3_reset( stmt6 );
 
-    if ( count == limit ) {
-      // Stop when we have loaded requested number of new incidences.
-      break;
+    if (previous != date) {
+        if (!previous.isValid() || limit <= 0 || count <= limit) {
+            // If we don't have previous date, or we're within limits,
+            // we can just set the 'previous' and move onward
+            previous = date;
+        } else {
+            // Move back to old date
+            date = previous;
+            // Delete the incidence from calendar
+            if (added)
+                mCalendar->deleteIncidence(incidence);
+            // And break out of loop
+            break;
+        }
     }
   }
   if ( last ) {
-    *last = previous;
+    *last = date;
   }
 
   sqlite3_reset( stmt1 );
@@ -2848,6 +2915,7 @@ void SqliteStorage::fileChanged( const QString &path )
     return;
   }
 
+  clearLoaded();
   if ( !d->loadTimezones() ) {
     kError() << "loading timezones failed";
   }
@@ -2856,21 +2924,6 @@ void SqliteStorage::fileChanged( const QString &path )
   }
   setModified( path );
   kDebug() << path << "has been modified";
-
-  // Based on what we've loaded, re-load things; the calendar observer
-  // should be done by now and we should not have ANYTHING loaded.
-  if ( d->mLoaded ) {
-    if ( d->mLoaded & LOADED_LOAD ) {
-      load();
-    } else {
-      if ( d->mLoaded & LOADED_LOAD_JOURNALS ) {
-        loadJournals();
-      }
-      if ( d->mLoaded & LOADED_LOAD_RECURRING_INCIDENCES ) {
-        loadRecurringIncidences();
-      }
-    }
-  }
 }
 
 sqlite3_int64 SqliteStorage::toOriginTime( KDateTime dt )

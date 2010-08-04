@@ -328,6 +328,14 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
 
     /**
       @copydoc
+      Calendar::addEvent()
+
+      @param notebookUid The notebook uid where you want to add the event to.
+    */
+    bool addEvent( const KCalCore::Event::Ptr &event, const QString &notebookUid  );
+
+    /**
+      @copydoc
       Calendar::deleteEventInstances()
     */
     bool deleteEventInstances( const KCalCore::Event::Ptr &event );
@@ -419,6 +427,14 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
 
     /**
       @copydoc
+      Calendar::addTodo()
+
+      @param notebookUid The notebook uid where you want to add the Todo to.
+    */
+    bool addTodo( const KCalCore::Todo::Ptr &todo, const QString &notebookUid  );
+
+    /**
+      @copydoc
       Calendar::deleteTodo()
     */
     bool deleteTodo( const KCalCore::Todo::Ptr &todo );
@@ -497,6 +513,14 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       Calendar::addJournal()
     */
     bool addJournal( const KCalCore::Journal::Ptr &journal );
+
+    /**
+      @copydoc
+      Calendar::addJournal()
+
+      @param notebookUid The notebook uid where you want to add the Journal to.
+    */
+    bool addJournal( const KCalCore::Journal::Ptr &journal, const QString &notebookUid  );
 
     /**
       @copydoc
@@ -813,6 +837,15 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     */
     KCalCore::Incidence::List contactIncidences( const KCalCore::Person::Ptr &person,
                                                  const KDateTime &start, const KDateTime &end );
+
+    /**
+      Get journals between given times.
+
+      @param start start datetime
+      @param end end datetime
+      @return list of journals
+    */
+    KCalCore::Journal::List journals( const QDate &start, const QDate &end );
 
     /**
       Add incidences into calendar from a list of Incidences.
