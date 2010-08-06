@@ -9,7 +9,7 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-CFLAGS = -Werror -g -fPIC -DUUID -DMEEGO -DMKCAL_FOR_MEEGO -fvisibility=hidden -fvisibility-inlines-hidden 
+CFLAGS = -Werror -g -fPIC -DUUID -DMEEGO -DMKCAL_FOR_MEEGO -DTIMED_SUPPORT -fvisibility=hidden -fvisibility-inlines-hidden 
 
 comma :=,
 empty :=

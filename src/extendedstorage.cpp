@@ -48,7 +48,9 @@ using namespace KCalCore;
 #include <QtDBus/QDBusConnection>
 #include <QtDBus/QDBusInterface>
 #include <QtDBus/QDBusReply>
+#endif
 
+#ifdef TIMED_SUPPORT
 #include <timed/interface>
 #include <timed/event>
 using namespace Maemo;
@@ -517,7 +519,7 @@ bool ExtendedStorage::isValidNotebook( const QString &notebookUid )
 
 void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
 {
-#if defined(MKCAL_FOR_MEEGO)
+#if defined(TIMED_SUPPORT)
   Timed::Interface timed;
   if ( !timed.isValid() ) {
     kError() << "cannot reset alarms for" << incidence->uid()
@@ -643,7 +645,7 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
 
 void ExtendedStorage::clearAlarms( const Incidence::Ptr &incidence )
 {
-#if defined(MKCAL_FOR_MEEGO)
+#if defined(TIMED_SUPPORT)
   QMap<QString,QVariant> map;
   map["APPLICATION"] = "libextendedkcal";
   map["uid"] = incidence->uid();
@@ -685,7 +687,7 @@ void ExtendedStorage::clearAlarms( const Incidence::Ptr &incidence )
 
 void ExtendedStorage::clearAlarms( const QString &nb )
 {
-#if defined(MKCAL_FOR_MEEGO)
+#if defined(TIMED_SUPPORT)
   QMap<QString,QVariant> map;
   map["APPLICATION"] = "libextendedkcal";
   map["notebook"] = nb;

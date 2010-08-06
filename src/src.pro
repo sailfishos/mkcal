@@ -43,14 +43,17 @@ INCLUDEPATH += . \
     /usr/include/dbus-1.0 \
     /usr/include/qt4/QtDBus
 
-DEFINES += MEEGO UUID MKCAL_FOR_MEEGO
+DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
 LIBS += -lQtDBus \
     -lsqlite3 \
     -luuid \
 
-contains (DEFINES, MEEGO) {
-    LIBS += -ltimed  \
-            -lmeegotouchcore
+contains (DEFINES, TIMED_SUPPORT) {
+     LIBS += -ltimed
+}
+
+contains (DEFINES, MKCAL_FOR_MEEGO) {
+    LIBS += -lmeegotouchcore
     INCLUDEPATH += /usr/include/meegotouch
 }
 
