@@ -107,6 +107,14 @@ class MKCAL_EXPORT TrackerStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::loadJournals( int limit, KDateTime *last )
+
+      Dummy, doesn't do anything. Always returns 0
+    */
+    int loadJournals( int limit, KDateTime *last );
+
+    /**
+      @copydoc
       ExtendedStorage::loadPlainIncidences()
     */
     bool loadPlainIncidences();

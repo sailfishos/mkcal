@@ -9,16 +9,16 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-CFLAGS = -Wall -g -fPIC
+CFLAGS = -Werror -g -fPIC -DUUID -DMEEGO -DMKCAL_FOR_MEEGO -fvisibility=hidden -fvisibility-inlines-hidden 
 
 comma :=,
 empty :=
 space := $(empty) $(empty)
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0 -DMEEGO -DUUID
+	CFLAGS += -O0 
 else
-	CFLAGS += -O2 -DMEEGO -DUUID
+	CFLAGS += -O2 
 endif
 
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))

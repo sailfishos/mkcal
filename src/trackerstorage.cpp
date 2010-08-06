@@ -264,6 +264,13 @@ bool TrackerStorage::loadJournals()
   return load();
 }
 
+int TrackerStorage::loadJournals( int limit, KDateTime *last )
+{
+    Q_UNUSED(limit);
+    Q_UNUSED(last);
+    return 0;
+}
+
 bool TrackerStorage::loadPlainIncidences()
 {
   if ( !d->mIsOpened || d->mOperation != StorageNone ) {

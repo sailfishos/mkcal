@@ -45,16 +45,16 @@ INCLUDEPATH += . \
 
 DEFINES += MEEGO UUID MKCAL_FOR_MEEGO
 LIBS += -lQtDBus \
-    -lical \
-    -licalss \
     -lsqlite3 \
     -luuid \
 
 contains (DEFINES, MEEGO) {
     LIBS += -ltimed  \
-    -lmeegotouchcore
+            -lmeegotouchcore
     INCLUDEPATH += /usr/include/meegotouch
 }
+
+QT -= gui
 
 QMAKE_CLEAN += lib*.so*
 libraries.path += /${DESTDIR}/usr/lib
@@ -69,7 +69,8 @@ CONFIG += kcalcoren
 INSTALLS += libraries \
     headers \
     pkgconfig
-QMAKE_CXXFLAGS += -Werror
+#QMAKE_CXXFLAGS += -Werror  #in the debian/rules now
+QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
 HEADERS += extendedcalendar.h \
     directorystorage.h \
     extendedstorage.h \
