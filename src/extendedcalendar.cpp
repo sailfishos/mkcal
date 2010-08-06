@@ -768,9 +768,7 @@ void ExtendedCalendar::Private::insertEvent( const Event::Ptr &event,
   QString uid = event->uid();
   if ( !mEvents.contains( uid ) ) {
 
-    kDebug() << mEvents.size() << "BEFORE";
     mEvents.insert( uid, event );
-    kDebug() << mEvents.size() << "AFTER";
     if ( !event->recurs() && !event->isMultiDay() ) {
       mEventsForDate.insert( event->dtStart().toTimeSpec( timeSpec ).date().toString(), event );
     }

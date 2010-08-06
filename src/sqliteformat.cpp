@@ -1653,7 +1653,7 @@ bool SqliteFormat::Private::selectAlarms( Incidence::Ptr incidence, int rowid, s
           QByteArray key;
           QString value;
           key = list.at(i).toUtf8();
-          if (list.size() > i) {
+          if ((i + 1) < list.size()) {
             value = list.at(i+1);
             customProperties[key] = value;
           }
