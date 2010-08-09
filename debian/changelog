@@ -1,3 +1,9 @@
+libmkcal (0.1.0-2) unstable; urgency=low
+
+  * The changelog was missing. Fixed now
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 09 Aug 2010 09:06:47 +0300
+
 libmkcal (0.1.0-1) unstable; urgency=low
 
   * Initial debianized version
