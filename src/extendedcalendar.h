@@ -674,6 +674,16 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
                                              float diffLatitude, float diffLongitude );
 
     /**
+      Returns a filtered list of all Incidences which occur on the given date.
+
+      @param date request filtered Incidence list for this QDate only.
+      @param types request filtered Incidence list for these types only.
+
+      @return the list of filtered Incidences occurring on the specified date.
+    */
+    virtual KCalCore::Incidence::List incidences( const QDate &date, const QList<KCalCore::Incidence::IncidenceType> &types );
+
+    /**
       Delete all incidences from the memory cache. They will be deleted from
       database when save is called.
     */
@@ -849,6 +859,11 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       @return list of journals
     */
     KCalCore::Journal::List journals( const QDate &start, const QDate &end );
+
+    /**
+      @see Calendar::journals()
+    */
+    KCalCore::Journal::List journals( const QDate &date ) const;
 
     /**
       Add incidences into calendar from a list of Incidences.

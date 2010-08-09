@@ -20,7 +20,7 @@
   Boston, MA 02110-1301, USA.
 */
 
-#if 0 //Waiting for final invitationhandlerif
+
 #include "invitationhandler.h"
 #include <invitationhandlerif.h>
 #include "extendedcalendar.h"
@@ -33,6 +33,7 @@ using namespace KCalCore;
 #include <QtCore/QPluginLoader>
 
 using namespace mKCal;
+using namespace KCalCore;
 
 enum ExecutedPlugin {
   None = 0,
@@ -52,8 +53,8 @@ class InvitationHandlerPrivate
 
     void loadPlugins();
     void unloadPlugins();
-    bool executePlugin( Incidence::Ptr invitation, const QString body,
-                        const ExtendedCalendar::Ptr &calendar, ExtendedStorage *storage );
+    bool executePlugin( const Incidence::Ptr &invitation, const QString body,
+                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage );
     InvitationHandlerPrivate();
 };
 
@@ -79,9 +80,9 @@ void InvitationHandlerPrivate::loadPlugins()
   mLoaded = true;
 }
 
-bool InvitationHandlerPrivate::executePlugin( Incidence::Ptr invitation, const QString body,
+bool InvitationHandlerPrivate::executePlugin( const Incidence::Ptr &invitation, const QString body,
                                               const ExtendedCalendar::Ptr &calendar,
-                                              ExtendedStorage *storage )
+                                              const ExtendedStorage::Ptr &storage )
 {
   QString pluginName;
   QString accountId;
@@ -111,7 +112,7 @@ bool InvitationHandlerPrivate::executePlugin( Incidence::Ptr invitation, const Q
       return false;
     }
   } else {
-    return false;
+    return false;   //TODO Here we need to send with default one
   }
 }
 
@@ -122,7 +123,7 @@ InvitationHandler::InvitationHandler()
 
 bool InvitationHandler::sendInvitation( const Incidence::Ptr &invitation, const QString &body,
                                         const ExtendedCalendar::Ptr &calendar,
-                                        ExtendedStorage *storage )
+                                        const ExtendedStorage::Ptr &storage )
 {
   if ( !d->mLoaded ) {
     d->loadPlugins();
@@ -134,7 +135,7 @@ bool InvitationHandler::sendInvitation( const Incidence::Ptr &invitation, const 
 
 bool InvitationHandler::sendUpdate( const Incidence::Ptr &invitation, const QString &body,
                                     const ExtendedCalendar::Ptr &calendar,
-                                    ExtendedStorage *storage )
+                                    const ExtendedStorage::Ptr &storage )
 {
   Q_UNUSED( invitation );
   Q_UNUSED( calendar );
@@ -146,7 +147,7 @@ bool InvitationHandler::sendUpdate( const Incidence::Ptr &invitation, const QStr
 
 bool InvitationHandler::sendResponse( const Incidence::Ptr &invitation, const QString &body,
                                       const ExtendedCalendar::Ptr &calendar,
-                                      ExtendedStorage *storage )
+                                      const ExtendedStorage::Ptr &storage )
 {
   if ( !d->mLoaded ) {
     d->loadPlugins();
@@ -157,36 +158,15 @@ bool InvitationHandler::sendResponse( const Incidence::Ptr &invitation, const QS
 }
 
 bool InvitationHandler::shareNotebook( const Notebook::Ptr &notebook, const QStringList &sharedWith,
-                                       ExtendedStorage *storage )
+                                       const ExtendedStorage::Ptr &storage )
 {
-  if ( !d->mLoaded ) {
-    d->loadPlugins();
-  }
+  Q_UNUSED(notebook);
+  Q_UNUSED(sharedWith);
+  Q_UNUSED(storage);
 
-  QString pluginName;
-  QString accountId;
 
-  if ( storage->isValidNotebook( notebook->uid() ) ) {
-    pluginName = notebook->pluginName();
-    accountId = notebook->account();
-  }
+  //TODO Implement this with new interface defined in mKCal
 
-  if ( pluginName.isEmpty() ) {
-    pluginName = defaultName;
-  }
-  kDebug() <<  "Using plugin:" << pluginName;
-
-  QHash<QString,InvitationHandlerInterface*>::const_iterator i;
-  i = d->mPlugins.find( pluginName );
-  if ( i == d->mPlugins.end() && pluginName != defaultName ) {
-    i = d->mPlugins.find( defaultName );
-  }
-
-  if ( i != d->mPlugins.end() ) {
-    return i.value()->shareNotebook( accountId, notebook, sharedWith );
-  } else {
-    return false;
-  }
 }
 
 InvitationHandler::~InvitationHandler()
@@ -197,4 +177,3 @@ InvitationHandler::~InvitationHandler()
   delete d;
 }
 
-#endif

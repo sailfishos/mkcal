@@ -1419,6 +1419,27 @@ Incidence::List ExtendedCalendar::geoIncidences( float geoLatitude, float geoLon
   return list;
 }
 
+Incidence::List ExtendedCalendar::incidences( const QDate &date, const QList<KCalCore::Incidence::IncidenceType> &types )
+{
+  Event::List elist;
+  Todo::List tlist;
+  Journal::List jlist;
+
+  if ( types.contains(Incidence::TypeEvent ) ) {
+    elist = events( date );
+  }
+
+  if ( types.contains(Incidence::TypeTodo ) ) {
+    tlist = todos( date );
+  }
+
+  if ( types.contains(Incidence::TypeJournal ) ) {
+    jlist = journals( date );
+  }
+
+  return mergeIncidenceList( elist, tlist, jlist );
+}
+
 bool ExtendedCalendar::deleteIncidenceInstances( const Incidence::Ptr &incidence )
 {
   Q_UNUSED(incidence);
@@ -1865,6 +1886,11 @@ Journal::List ExtendedCalendar::journals( const QDate &start, const QDate &end )
     journalList << journal;
   }
   return journalList;
+}
+
+Journal::List ExtendedCalendar::journals( const QDate &date ) const
+{
+  return Calendar::journals(date);
 }
 
 Incidence::List ExtendedCalendar::geoIncidences( bool hasDate,

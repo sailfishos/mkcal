@@ -1,3 +1,9 @@
+libmkcal (0.1.0-3) unstable; urgency=low
+
+  * Bump version 
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 09 Aug 2010 14:51:02 +0300
+
 libmkcal (0.1.0-2) unstable; urgency=low
 
   * The changelog was missing. Fixed now

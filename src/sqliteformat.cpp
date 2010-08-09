@@ -717,6 +717,7 @@ bool SqliteFormat::Private::modifyAlarm( int rowid, Alarm::Ptr alarm,
       relation = QString("startTriggerRelation").toUtf8();
       sqlite3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
       sqlite3_bind_int(stmt, index, 0); // time
+      sqlite3_bind_int(stmt, index, 0); // localtime
       sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
     }
     else if (alarm->endOffset().value()) {
@@ -724,6 +725,7 @@ bool SqliteFormat::Private::modifyAlarm( int rowid, Alarm::Ptr alarm,
       relation = QString("endTriggerRelation").toUtf8();
       sqlite3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
       sqlite3_bind_int(stmt, index, 0); // time
+      sqlite3_bind_int(stmt, index, 0); // localtime
       sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
     }
     else {

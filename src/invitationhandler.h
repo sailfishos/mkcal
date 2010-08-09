@@ -32,6 +32,7 @@
 
 #include "mkcal_export.h"
 #include "extendedcalendar.h"
+#include "extendedstorage.h"
 #include "notebook.h"
 
 #include <incidence.h>
@@ -87,7 +88,7 @@ class MKCAL_EXPORT InvitationHandler
       @return True if OK, false in case of error
     */
     bool sendInvitation( const KCalCore::Incidence::Ptr &invitation, const QString &body,
-                         const ExtendedCalendar::Ptr &calendar, ExtendedStorage *storage );
+                         const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage );
 
     /** Send the updated invitation to the list of people stated as attendees.
       It would load the appropriate plugin to do it, and if there
@@ -99,7 +100,7 @@ class MKCAL_EXPORT InvitationHandler
       @return True if OK, false in case of error
     */
     bool sendUpdate( const KCalCore::Incidence::Ptr &invitation, const QString &body,
-                     const ExtendedCalendar::Ptr &calendar, ExtendedStorage *storage );
+                     const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage );
 
     /** Send the updated invitation to the organiser.
       It would load the appropriate plugin to do it, and if there
@@ -111,7 +112,7 @@ class MKCAL_EXPORT InvitationHandler
       @return True if OK, false in case of error
     */
     bool sendResponse( const KCalCore::Incidence::Ptr &invitation, const QString &body,
-                       const ExtendedCalendar::Ptr &calendar, ExtendedStorage *storage );
+                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage );
 
     /** Share notebook
       It would load the appropriate plugin to do it
@@ -122,7 +123,7 @@ class MKCAL_EXPORT InvitationHandler
       @return True if OK, false in case of error
     */
     bool shareNotebook( const Notebook::Ptr &notebook, const QStringList &sharedWith,
-                        ExtendedStorage *storage );
+                        const ExtendedStorage::Ptr &storage );
 };
 
 }
