@@ -346,7 +346,10 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
       sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
     }
 
-    secs = d->mStorage->toOriginTime( incidence->created() );
+    if (dbop == DBInsert)
+      secs = d->mStorage->toOriginTime( KDateTime::currentUtcDateTime() );
+    else
+      secs = d->mStorage->toOriginTime( incidence->created() );
     sqlite3_bind_int64( stmt1, index, secs );
 
     secs = d->mStorage->toOriginTime( KDateTime::currentUtcDateTime() );
@@ -2023,7 +2026,10 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
       sqlite3_bind_text( stmt1, index, "", 0, SQLITE_STATIC );
     }
 
-    secs = d->mStorage->toOriginTime( incidence->created() );
+    if (dbop == DBInsert)
+      secs = d->mStorage->toOriginTime( KDateTime::currentUtcDateTime() );
+    else
+      secs = d->mStorage->toOriginTime( incidence->created() );
     sqlite3_bind_int64( stmt1, index, secs );
 
     secs = d->mStorage->toOriginTime( KDateTime::currentUtcDateTime() );
