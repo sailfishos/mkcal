@@ -1,3 +1,9 @@
+libmkcal (0.1.1) unstable; urgency=low
+
+  * Fixes after the porting. Observer fixes
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 13 Aug 2010 15:17:08 +0300
+
 libmkcal (0.1.0-4) unstable; urgency=low
 
   * Fixes: NB#176388 - CREATED property of incidences' is kept with the original time
