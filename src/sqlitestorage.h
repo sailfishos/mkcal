@@ -70,7 +70,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
       @param validateNotebooks set to true for saving only those incidences
              that belong to an existing notebook of this storage
     */
-    explicit SqliteStorage( const ExtendedCalendar::Ptr cal,
+    explicit SqliteStorage( const ExtendedCalendar::Ptr &cal,
                             const QString &databaseName,
                             bool useTracker = false,
                             bool validateNotebooks = false );

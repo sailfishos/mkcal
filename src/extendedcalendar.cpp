@@ -818,7 +818,7 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
 
   if ( incidence->type() == Incidence::TypeEvent ) {
     Event::Ptr event = incidence.staticCast<Event>();
-    d->mEvents.remove( event->uid(), event );
+//    d->mEvents.remove( event->uid(), event );     //If removed it cannot be found later
     if ( !event->dtStart().isNull() ) { // Not mandatory to have dtStart
       d->mEventsForDate.remove(
         event->dtStart().toTimeSpec( timeSpec() ).date().toString(), event );
@@ -828,7 +828,7 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeTodo ) {
     Todo::Ptr todo = incidence.staticCast<Todo>();
-    d->mTodos.remove( todo->uid(), todo );
+//    d->mTodos.remove( todo->uid(), todo );
     if ( todo->hasDueDate() ) {
       d->mTodosForDate.remove( todo->dtDue().toTimeSpec( timeSpec() ).date().toString(), todo );
     } else if ( todo->hasStartDate() ) {
@@ -840,7 +840,7 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeJournal ) {
     Journal::Ptr journal = incidence.staticCast<Journal>();
-    d->mJournals.remove( journal->uid(), journal );
+//    d->mJournals.remove( journal->uid(), journal );
     d->mJournalsForDate.remove(
       journal->dtStart().toTimeSpec( timeSpec() ).date().toString(), journal );
   } else {

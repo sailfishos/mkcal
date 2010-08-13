@@ -60,6 +60,7 @@ using namespace std;
 
 using namespace mKCal;
 
+const QString gChanged(QLatin1String( ".changed") );
 /**
   Private class that helps to provide binary compatibility between releases.
   @internal
@@ -68,13 +69,13 @@ using namespace mKCal;
 class mKCal::SqliteStorage::Private
 {
   public:
-    Private( const ExtendedCalendar::Ptr calendar, SqliteStorage *storage,
+    Private( const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
              const QString &databaseName, bool useTracker )
       : mCalendar( calendar ),
         mStorage( storage ),
         mDatabaseName( databaseName ),
         mSem( databaseName, 1, QSystemSemaphore::Create ),
-        mChanged( databaseName + ".changed" ),
+        mChanged( databaseName + gChanged ),
         mWatcher( 0 ),
         mDatabase( 0 ),
         mFormat( 0 ),
@@ -86,7 +87,7 @@ class mKCal::SqliteStorage::Private
     ~Private()
     {}
 
-    void modifyTracker( Incidence::Ptr incidence, DBOperation dbop, const QString notebookUid )
+    void modifyTracker(const Incidence::Ptr &incidence, DBOperation dbop, const QString notebookUid )
     {
       QStringList insertQuery;
       QStringList deleteQuery;
@@ -174,7 +175,7 @@ class mKCal::SqliteStorage::Private
 };
 //@endcond
 
-SqliteStorage::SqliteStorage( const ExtendedCalendar::Ptr cal, const QString &databaseName,
+SqliteStorage::SqliteStorage( const ExtendedCalendar::Ptr &cal, const QString &databaseName,
                               bool useTracker, bool validateNotebooks )
   : ExtendedStorage( cal, validateNotebooks ),
     d( new Private( cal, this, databaseName, useTracker ) )
@@ -330,9 +331,9 @@ bool SqliteStorage::open()
     kError() << "cannot open changed file for" << d->mDatabaseName;
     goto error;
   }
-  d->mPreWatcherDbTime = QFileInfo( d->mDatabaseName + ".changed" ).lastModified();
+  d->mPreWatcherDbTime = QFileInfo( d->mDatabaseName + gChanged ).lastModified();
   d->mWatcher = new QFileSystemWatcher();
-  d->mWatcher->addPath( d->mDatabaseName + ".changed" );
+  d->mWatcher->addPath( d->mDatabaseName + gChanged );
   connect( d->mWatcher, SIGNAL(fileChanged(const QString &)),
            this, SLOT(fileChanged(const QString &)) );
 
@@ -2915,7 +2916,7 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
 
 void SqliteStorage::fileChanged( const QString &path )
 {
-  if ( QFileInfo( d->mDatabaseName + ".changed" ).lastModified() == d->mPreWatcherDbTime ) {
+  if ( QFileInfo( d->mDatabaseName + gChanged ).lastModified() == d->mPreWatcherDbTime ) {
     // Invalidate this; mission done, prevented reload when loading database
     kDebug() << "prevented spurious database reload";
     d->mPreWatcherDbTime = QDateTime();

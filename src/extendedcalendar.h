@@ -623,14 +623,14 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     /**
       Notify the IncidenceBase::Observer that the incidence will be updated.
 
-      @param incidenceBase is a pointer to the IncidenceBase to be updated.
+      @param uid to the Incidence to be updated.
     */
     void incidenceUpdate( const QString &uid );
 
     /**
       Notify the IncidenceBase::Observer that the incidence has been updated.
 
-      @param incidenceBase is a pointer to the updated IncidenceBase.
+      @param uid to the Incidence just updated.
     */
     void incidenceUpdated( const QString &uid );
 

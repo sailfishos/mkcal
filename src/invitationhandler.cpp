@@ -167,6 +167,7 @@ bool InvitationHandler::shareNotebook( const Notebook::Ptr &notebook, const QStr
 
   //TODO Implement this with new interface defined in mKCal
 
+  return false;
 }
 
 InvitationHandler::~InvitationHandler()

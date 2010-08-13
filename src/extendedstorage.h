@@ -454,7 +454,7 @@ class MKCAL_EXPORT ExtendedStorage
           is being observed.
 	  @param info uids inserted/updated/deleted, modified file etc.
         */
-        virtual void storageModified( ExtendedStorage *storage, const QString &info );
+        virtual void storageModified( ExtendedStorage *storage, const QString &info ) = 0;
 
         /**
           Notify the Observer that a Storage is executing an action.
@@ -465,7 +465,7 @@ class MKCAL_EXPORT ExtendedStorage
           is being observed.
 	  @param info textual information
         */
-        virtual void storageProgress( ExtendedStorage *storage, const QString &info );
+        virtual void storageProgress( ExtendedStorage *storage, const QString &info ) = 0;
 
         /**
           Notify the Observer that a Storage has finished an action.
@@ -475,7 +475,7 @@ class MKCAL_EXPORT ExtendedStorage
           @param error true if action was unsuccessful; false otherwise
 	  @param info textual information
         */
-        virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info );
+        virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info ) = 0;
     };
 
     /**

@@ -277,6 +277,7 @@ ExtendedStorage::StorageObserver::~StorageObserver()
 {
 }
 
+#if 0
 void ExtendedStorage::StorageObserver::storageModified( ExtendedStorage *storage,
                                                         const QString &info )
 {
@@ -298,6 +299,7 @@ void ExtendedStorage::StorageObserver::storageFinished( ExtendedStorage *storage
   Q_UNUSED( error );
   Q_UNUSED( info );
 }
+#endif
 
 void ExtendedStorage::registerObserver( StorageObserver *observer )
 {
