@@ -778,10 +778,10 @@ void ExtendedCalendar::Private::insertEvent( const Event::Ptr &event,
 }
 //@endcond
 
-void ExtendedCalendar::incidenceUpdate( const QString &uid )
+void ExtendedCalendar::incidenceUpdate( const QString &uid, const KDateTime &recurrenceId )
 {
   // The static_cast is ok as the ExtendedCalendar only observes Incidence objects
-  Incidence::Ptr incidence = this->incidence( uid );
+  Incidence::Ptr incidence = this->incidence( uid, recurrenceId );
 
   if ( !incidence ) {
     return;
@@ -827,10 +827,9 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
   }
 }
 
-void ExtendedCalendar::incidenceUpdated( const QString &uid )
+void ExtendedCalendar::incidenceUpdated( const QString &uid, const KDateTime &recurrenceId )
 {
-
-  Incidence::Ptr incidence = this->incidence( uid );
+  Incidence::Ptr incidence = this->incidence( uid, recurrenceId );
 
   if ( !incidence ) {
     return;
