@@ -1558,7 +1558,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
       // If the original entry wasn't part of the time window, try to get more
       // appropriate first item to add. Else, start the next-iteration from the 'dt'
       // (=current item).
-      if ( appended ) {
+      if ( !appended ) {
         dtr = (*iit)->recurrence()->getPreviousDateTime( dtStart );
         if (dtr.isValid())
         {
