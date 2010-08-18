@@ -53,6 +53,7 @@ using namespace KCalCore;
 #ifdef TIMED_SUPPORT
 #include <timed/interface>
 #include <timed/event>
+#include <timed/exception>
 using namespace Maemo;
 #endif
 
@@ -556,7 +557,14 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
     } else {
       QDate date = alarmTime.date();
       QTime time = alarmTime.time();
-      e.setTime( date.year(), date.month(), date.day(), time.hour(), time.minute() );
+
+      try {
+        e.setTime(date.year(), date.month(), date.day(), time.hour(), time.minute());
+      } catch (Timed::Exception &e) {
+        qDebug() << "Got Maemo::Timed::Exception" << e.message();
+        return;
+      }
+
       if ( !alarmTime.isClockTime() ) {
         e.setTimezone( alarmTime.timeZone().name() );
       }
@@ -732,7 +740,7 @@ Incidence::Ptr ExtendedStorage::checkAlarm( const QString &uid, const QString &r
     load( uid, rid );
     incidence = calendar()->incidence( uid, rid );
   }
-  if ( incidence && incidence->isAlarmEnabled() ) {
+  if ( incidence && incidence->hasEnabledAlarms() ) {
     // Return incidence if it exists and has active alarms.
     return incidence;
   }
