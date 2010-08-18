@@ -1635,8 +1635,11 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::P
   if ( dbFile.isEmpty() ) {
     dbFile = QDir::homePath() + QLatin1String( "/.calendardb" );
   }
+  bool useTracker;
+  if ( !qgetenv( "SQLITESTORAGENOTRACKER" ).isEmpty() )
+    useTracker = false;
 
-  SqliteStorage::Ptr ss = SqliteStorage::Ptr( new SqliteStorage ( calendar , dbFile, true ) );
+  SqliteStorage::Ptr ss = SqliteStorage::Ptr( new SqliteStorage ( calendar , dbFile, useTracker ) );
 
   return ss.staticCast<ExtendedStorage>();
 }
