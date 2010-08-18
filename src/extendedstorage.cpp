@@ -111,6 +111,8 @@ ExtendedStorage::ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validat
 
 ExtendedStorage::~ExtendedStorage()
 {
+  // Unregister as observer; if we don't, when we terminate bad things happen
+  calendar()->unregisterObserver( this );
   delete d;
 }
 
