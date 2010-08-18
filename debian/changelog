@@ -1,3 +1,11 @@
+libmkcal (0.1.2) unstable; urgency=low
+
+  * Fix in PC file. Thanx Patrick
+  * Fix in the prf file
+  * Backported extendedkcal
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 18 Aug 2010 09:59:37 +0300
+
 libmkcal (0.1.1) unstable; urgency=low
 
   * Fixes after the porting. Observer fixes
