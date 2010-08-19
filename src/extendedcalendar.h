@@ -63,33 +63,33 @@
 
   @section introduction Introduction
 
-  KCal library maps the ICAL standard (RFC 2445) to a collection of classes.
-  The original KCal is part of the kdepimlibs package and was developed
-  in the KDE project for the backend of KOrganizer. That effort was
-  extended for the Nokia Maemo Organizer backend. Maemo backend library
-  is called libextendedkcal and its version number reflects the corresponding
-  kdepimlibs version number. The ultimate target is to push all Maemo
-  related changes to upstream eventually.
+  mKCal library extends KCalCore library to add a persistence storage
+  in Sqlite db. Also it can be used with tracker so all elements can
+  be indexed and searched later.
+
+  This two libraries come from the original KCal from KDE. They have been
+  split refactored, and some functionality has been added.
 
   @section architecture Architecture
 
   There are two important base classes.
   <ul>
-  <li>Abstract class <b>Calendar</b> contain incidences
+  <li>Abstract class <b>Calendar</b> from KCalCore contain incidences
   (events, todos, journals) and methods for adding/deleting/querying them.
-  It is implemented by <b>ExtendedCalendar</b> that also has some Maemo
-  specific features.
+  It is implemented by <b>ExtendedCalendar</b> in mKCal.
+
   <li>Abstract class <b>ExtendedStorage</b> defines the interface to load
   and save calendar incidences into permanent storage. It is implemented
   by a few diffent storages, like <b>SqliteStorage</b> which is the default
-  Maemo storage.
+  MeeGo storage. But more can be added implementing this interface.
   </ul>
 
   Calendars can exist without storages but storages must always be linked
   to a calendar. The normal way to create calendar and default storage is:
   @code
-  ExtendedCalendar calendar( QLatin1String( "UTC" ) );
-  ExtendedStorage *storage = calendar.defaultStorage();
+  ExtendedCalendar::Ptr cal =
+    ExtendedCalendar::Ptr ( new ExtendedCalendar( QLatin1String( "UTC" ) ) );
+  ExtendedStorage::Ptr storage = calendar.defaultStorage( cal );
   storage->open();
   @endcode
 
@@ -107,20 +107,19 @@
   a series of changes in a calendar and then 'commit' them all at once
   by calling storage->save().
 
-  Another Maemo extension to KCal are multiple notebooks. Every incidence
-  is assigned to a notebook. The correct way to create an incidence
-  (simple todo in this case) is this:
+  Another extension to original KCal are multiple notebooks (calendars
+  for the user). Every incidence is assigned to a notebook.
+  The correct way to create an incidence (simple todo in this case) is this:
   @code
   KDateTime now =
     KDateTime::currentDateTime( KDateTime::Spec( KSystemTimeZones::zone( "Europe/Helsinki" ) ) );
-  Notebook *personal;
+  Notebook::Ptr personal( "Personal" );
 
   Todo::Ptr todo = Todo::Ptr( new Todo() );
   todo->setSummary( "A todo for testing" );
   todo->setDtDue( now.addDays(1), true );
   todo->setHasDueDate( true );
-  calendar.addTodo( todo );
-  calendar.setNotebook( todo, personal->uid() );
+  calendar.addTodo( todo, personal );
   storage.save();
   @endcode
 
@@ -139,29 +138,29 @@
 
   Here is an ascii art diagram of the typical organiser environment.
 
-  There are usually two processes using libextendedkcal, one is the calendar
+  There are usually two processes using libmkcal, one is the calendar
   application visible to the user, and the other is synchronization daemon
-  that updates calendar data periodically on the background. ExtendedStorage
-  may be a separate process but it also can be a statically linked library
-  (like SQLite is).
+  that updates calendar data periodically on the background.
 
-  Change notifications are sent when incidences are saved in either process.
-  Also during save storage sets possible alarms to alarm daemon which displays
-  a dialog to the user when alarm triggers. Based on user action the alarm
-  may be canceled, snoozed, or opened to the user in calendar application.
+  Change notifications (through the observer classes) are sent when incidences
+  are saved in either process.
+  Also during save storage sets possible alarms to alarm daemon (if compiled
+  with TIMED_SUPPORT) which sets an alarm to be shown by other reminder service.
+  Based on user action the alarm may be canceled, snoozed, or opened to the user
+  in calendar application.
 
   @code
        +---------------+                                         +---------------+
        |               |                                         |               |
-  +--->| Organiser UI  |                                         |  Sync Service |
+  +--->| Calendar  UI  |                                         |  Sync Service |
   |    |               |                                         |               |
   |    =================            +---------------+            =================
   |    |               |---save---->|               |<--save-----|               |
-  |    |libextendedkcal|<--load-----|ExtendedStorage|---load---->|libextendedkcal|
+  |    |libmkcal       |<--load-----|ExtendedStorage|---load---->|   libmkcal    |
   |    |               |<--changed--|               |---changed->|               |
   |    =================            +---------------+            =================
   |    |    libtimed   |                                         |    libtimed   |
-  |    +---------------+                                        +---------------+
+  |    +---------------+                                         +---------------+
   |           |                                                       |
   |           |                                                       |
   |           |                    +--------------+                   |
@@ -175,45 +174,22 @@
                                    +--------------+
   @endcode
 
-  @section storages Storages
-
-  It is also possible to add more than one storage into a calendar.
-  This feature can be used to save some notebooks into a different
-  (possibly encrypted etc.) storage. For example, if you have this:
-
+  @section Correct usage
+  When one incidence is added into a calendar, every time one property is modified
+  all the observers are notfied of the change. So in case lots of modifications are
+  being done it can be a very expensive operation.
+  The correct way to avoid is
   @code
-  ExtendedCalendar::Ptr calendar = new ExtendedCalendar(QLatin1String("UTC"));
-  ExtendedStorage *storage1 =
-    new SqliteStorage( calendar, QLatin1String("/home/user/publidb" ), false, true );
-  ExtendedStorage *storage2 =
-    new SqliteStorage( calendar, QLatin1String( "/home/user/privatedb" ), false, true );
-  Notebook *notebook1 = new Notebook( "Public", ... );
-  Notebook *notebook2 = new Notebook( "Private", ... );
-  storage1->addNotebook( notebook1 );
-  storage2->addNotebook( notebook2 );
-  @endcode
-
-  then all incidences tagged with notebook "Private" will be saved only by
-  the second storage into a different database. The last parameter in
-  storage constructor tells the storage to always validate notebooks, meaning
-  that it will only act for incidences that have the notebook inside the
-  storage.
-
-  If you create a storage like this (the last parameter is now false):
-
+  incidence->startUpdates();
+  //do modifications here
+  incidence->endUpdates();
   @code
-  ExtendedStorage *storage =
-    new SqliteStorage( calendar, QLatin1String( "/home/user/publidb" ), false, false );
-  @endcode
+  Also the call calendar->load() is a very expensive operation. Use it with care and only
+  load a notebook, a date range, etc.
 
-  it means that this storage is not validating notebooks, meaning that it
-  will load incidences from any notebook and it will save incidences
-  for any notebook if no other storage is already handling that.
+  Calling the storage->save() is also an expensive operation. So if adding lots of incidences
+  do not call save every time.
 
-  @section examples Examples
-
-  Package libextendedkcal-tests contains many unit and module test files
-  that may provide some assistance.
  */
 #ifndef MKCAL_EXTENDEDCALENDAR_H
 #define MKCAL_EXTENDEDCALENDAR_H
