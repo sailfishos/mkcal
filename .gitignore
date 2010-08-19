@@ -1,0 +1,11 @@
+Makefile
+libmkcal.so*
+moc_*
+*.o
+*-stamp
+debian/files
+debian/libmkcal*
+debian/tmp
+doc/html
+doxygen.*
+*~

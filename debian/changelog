@@ -1,3 +1,23 @@
+libmkcal (0.1.3) unstable; urgency=low
+
+  * Fixed some reference counting issues (now keeping all event/journal/todos in mIncidences QSet, even during updates), and also fixed recurrence id checks in insertEvent/Journal/Todo.
+  * Added removal of calendar observer to the destructor -> this way there won't be issues after storage is gone but calendar still hangs around.
+  * Added .gitignore.
+  * Added environment variable to turn off tracker.
+  * Fixed recurrence expansion.
+  * Based on today's discussion - uid is now immutable so we don't really play around with mTodos/mEvents/mJournals and therefore mIncidences is no longer needed.
+  * Made incidenceUpdate(+d) have recurrenceId parameter, and converted the relevant code to use it. Also added recurrenceId() virtual to IncidenceBase.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 19 Aug 2010 10:15:55 +0300
+
+libmkcal (0.1.2) unstable; urgency=low
+
+  * Fix in PC file. Thanx Patrick
+  * Fix in the prf file
+  * Backported extendedkcal
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 18 Aug 2010 09:59:37 +0300
+
 libmkcal (0.1.1) unstable; urgency=low
 
   * Fixes after the porting. Observer fixes

@@ -117,9 +117,7 @@ void ExtendedCalendar::close()
 {
   setObserversEnabled( false );
 
-  deleteAllEvents();
-  deleteAllTodos();
-  deleteAllJournals();
+  deleteAllIncidences();
 
   d->mDeletedEvents.clear();
   d->mDeletedTodos.clear();
@@ -452,33 +450,25 @@ bool ExtendedCalendar::addTodo( const Todo::Ptr &aTodo, const QString &notebookU
 void ExtendedCalendar::Private::insertTodo( const Todo::Ptr &todo, const KDateTime::Spec &timeSpec )
 {
   QString uid = todo->uid();
-  if ( !mTodos.contains( uid ) ) {
-    mTodos.insert( uid, todo );
-    if ( todo->hasDueDate() ) {
-      mTodosForDate.insert( todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo );
-    } else if ( todo->hasStartDate() ) {
-      mTodosForDate.insert( todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo );
-    }
+  mTodos.insert( uid, todo );
+  if ( todo->hasDueDate() ) {
+    mTodosForDate.insert( todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo );
+  } else if ( todo->hasStartDate() ) {
+    mTodosForDate.insert( todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo );
+  }
 
-    // Insert into attendee todos.
-    Person::Ptr organizer = todo->organizer();
-    if ( organizer->isEmpty() ) {
-      mAttendeeIncidences.insert( organizer->email(), todo );
-    }
-    const Attendee::List &list = todo->attendees();
-    Attendee::List::ConstIterator it;
-    for ( it = list.begin(); it != list.end(); ++it ) {
-      mAttendeeIncidences.insert( (*it)->email(), todo );
-    }
-    if ( todo->hasGeo() ) {
-      mGeoIncidences.append( todo );
-    }
-  } else {
-#ifndef NDEBUG
-    // if we already have an to-do with this UID, it must be the same to-do,
-    // otherwise something's really broken
-    Q_ASSERT( mTodos.value( uid ) == todo );
-#endif
+  // Insert into attendee todos.
+  Person::Ptr organizer = todo->organizer();
+  if ( organizer->isEmpty() ) {
+    mAttendeeIncidences.insert( organizer->email(), todo );
+  }
+  const Attendee::List &list = todo->attendees();
+  Attendee::List::ConstIterator it;
+  for ( it = list.begin(); it != list.end(); ++it ) {
+    mAttendeeIncidences.insert( (*it)->email(), todo );
+  }
+  if ( todo->hasGeo() ) {
+    mGeoIncidences.append( todo );
   }
 }
 //@endcond
@@ -766,40 +756,32 @@ void ExtendedCalendar::Private::insertEvent( const Event::Ptr &event,
                                              const KDateTime::Spec &timeSpec )
 {
   QString uid = event->uid();
-  if ( !mEvents.contains( uid ) ) {
 
-    mEvents.insert( uid, event );
-    if ( !event->recurs() && !event->isMultiDay() ) {
-      mEventsForDate.insert( event->dtStart().toTimeSpec( timeSpec ).date().toString(), event );
-    }
+  mEvents.insert( uid, event );
+  if ( !event->recurs() && !event->isMultiDay() ) {
+    mEventsForDate.insert( event->dtStart().toTimeSpec( timeSpec ).date().toString(), event );
+  }
 
-    // Insert into attendee events.
-    Person ::Ptr organizer = event->organizer();
-    if ( !organizer->isEmpty() ) {
-      mAttendeeIncidences.insert( organizer->email(), event );
-    }
-    const Attendee::List &list = event->attendees();
-    Attendee::List::ConstIterator it;
-    for ( it = list.begin(); it != list.end(); ++it ) {
-      mAttendeeIncidences.insert( (*it)->email(), event );
-    }
-    if ( event->hasGeo() ) {
-      mGeoIncidences.append( event );
-    }
-  } else {
-#ifdef NDEBUG
-    // if we already have an event with this UID, it must be the same event,
-    // otherwise something's really broken
-    Q_ASSERT( mEvents.value( uid ) == event );
-#endif
+  // Insert into attendee events.
+  Person ::Ptr organizer = event->organizer();
+  if ( !organizer->isEmpty() ) {
+    mAttendeeIncidences.insert( organizer->email(), event );
+  }
+  const Attendee::List &list = event->attendees();
+  Attendee::List::ConstIterator it;
+  for ( it = list.begin(); it != list.end(); ++it ) {
+    mAttendeeIncidences.insert( (*it)->email(), event );
+  }
+  if ( event->hasGeo() ) {
+    mGeoIncidences.append( event );
   }
 }
 //@endcond
 
-void ExtendedCalendar::incidenceUpdate( const QString &uid )
+void ExtendedCalendar::incidenceUpdate( const QString &uid, const KDateTime &recurrenceId )
 {
   // The static_cast is ok as the ExtendedCalendar only observes Incidence objects
-  Incidence::Ptr incidence = this->incidence( uid );
+  Incidence::Ptr incidence = this->incidence( uid, recurrenceId );
 
   if ( !incidence ) {
     return;
@@ -818,7 +800,6 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
 
   if ( incidence->type() == Incidence::TypeEvent ) {
     Event::Ptr event = incidence.staticCast<Event>();
-//    d->mEvents.remove( event->uid(), event );     //If removed it cannot be found later
     if ( !event->dtStart().isNull() ) { // Not mandatory to have dtStart
       d->mEventsForDate.remove(
         event->dtStart().toTimeSpec( timeSpec() ).date().toString(), event );
@@ -828,7 +809,6 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeTodo ) {
     Todo::Ptr todo = incidence.staticCast<Todo>();
-//    d->mTodos.remove( todo->uid(), todo );
     if ( todo->hasDueDate() ) {
       d->mTodosForDate.remove( todo->dtDue().toTimeSpec( timeSpec() ).date().toString(), todo );
     } else if ( todo->hasStartDate() ) {
@@ -840,7 +820,6 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeJournal ) {
     Journal::Ptr journal = incidence.staticCast<Journal>();
-//    d->mJournals.remove( journal->uid(), journal );
     d->mJournalsForDate.remove(
       journal->dtStart().toTimeSpec( timeSpec() ).date().toString(), journal );
   } else {
@@ -848,10 +827,9 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid )
   }
 }
 
-void ExtendedCalendar::incidenceUpdated( const QString &uid )
+void ExtendedCalendar::incidenceUpdated( const QString &uid, const KDateTime &recurrenceId )
 {
-
-  Incidence::Ptr incidence = this->incidence( uid );
+  Incidence::Ptr incidence = this->incidence( uid, recurrenceId );
 
   if ( !incidence ) {
     return;
@@ -876,7 +854,6 @@ void ExtendedCalendar::incidenceUpdated( const QString &uid )
 
   if ( incidence->type() == Incidence::TypeEvent ) {
     Event::Ptr event = incidence.staticCast<Event>();
-    d->mEvents.insert( event->uid(), event );
     if ( !event->recurs() && !event->isMultiDay() ) {
       d->mEventsForDate.insert(
         event->dtStart().toTimeSpec( timeSpec() ).date().toString(), event );
@@ -886,7 +863,6 @@ void ExtendedCalendar::incidenceUpdated( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeTodo ) {
     Todo::Ptr todo = incidence.staticCast<Todo>();
-    d->mTodos.insert( todo->uid(), todo );
     if ( todo->hasDueDate() ) {
       d->mTodosForDate.insert(
         todo->dtDue().toTimeSpec( timeSpec() ).date().toString(), todo );
@@ -899,7 +875,6 @@ void ExtendedCalendar::incidenceUpdated( const QString &uid )
     }
   } else if ( incidence->type() == Incidence::TypeJournal ) {
     Journal::Ptr journal = incidence.staticCast<Journal>();
-    d->mJournals.insert( journal->uid(), journal );
     d->mJournalsForDate.insert(
       journal->dtStart().toTimeSpec( timeSpec() ).date().toString(), journal );
   } else {
@@ -1132,26 +1107,19 @@ void ExtendedCalendar::Private::insertJournal( const Journal::Ptr &journal,
                                                const KDateTime::Spec &timeSpec )
 {
   QString uid = journal->uid();
-  if ( !mJournals.contains( uid ) ) {
-    mJournals.insert( uid, journal );
-    mJournalsForDate.insert( journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal );
 
-    // Insert into attendee journals.
-    Person::Ptr organizer = journal->organizer();
-    if ( !organizer->isEmpty() ) {
-      mAttendeeIncidences.insert( organizer->email(), journal );
-    }
-    const Attendee::List &list = journal->attendees();
-    Attendee::List::ConstIterator it;
-    for ( it = list.begin(); it != list.end(); ++it ) {
-      mAttendeeIncidences.insert( (*it)->email(), journal );
-    }
-  } else {
-#ifndef NDEBUG
-    // if we already have an journal with this UID, it must be the same journal,
-    // otherwise something's really broken
-    Q_ASSERT( mJournals.value( uid ) == journal );
-#endif
+  mJournals.insert( uid, journal );
+  mJournalsForDate.insert( journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal );
+
+  // Insert into attendee journals.
+  Person::Ptr organizer = journal->organizer();
+  if ( !organizer->isEmpty() ) {
+    mAttendeeIncidences.insert( organizer->email(), journal );
+  }
+  const Attendee::List &list = journal->attendees();
+  Attendee::List::ConstIterator it;
+  for ( it = list.begin(); it != list.end(); ++it ) {
+    mAttendeeIncidences.insert( (*it)->email(), journal );
   }
 }
 //@endcond
@@ -1573,7 +1541,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
       // If the original entry wasn't part of the time window, try to get more
       // appropriate first item to add. Else, start the next-iteration from the 'dt'
       // (=current item).
-      if ( appended ) {
+      if ( !appended ) {
         dtr = (*iit)->recurrence()->getPreviousDateTime( dtStart );
         if (dtr.isValid())
         {
@@ -1650,8 +1618,11 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::P
   if ( dbFile.isEmpty() ) {
     dbFile = QDir::homePath() + QLatin1String( "/.calendardb" );
   }
+  bool useTracker;
+  if ( !qgetenv( "SQLITESTORAGENOTRACKER" ).isEmpty() )
+    useTracker = false;
 
-  SqliteStorage::Ptr ss = SqliteStorage::Ptr( new SqliteStorage ( calendar , dbFile, true ) );
+  SqliteStorage::Ptr ss = SqliteStorage::Ptr( new SqliteStorage ( calendar , dbFile, useTracker ) );
 
   return ss.staticCast<ExtendedStorage>();
 }

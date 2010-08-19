@@ -601,14 +601,14 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
 
       @param uid to the Incidence to be updated.
     */
-    void incidenceUpdate( const QString &uid );
+    void incidenceUpdate( const QString &uid, const KDateTime &recurrenceId );
 
     /**
       Notify the IncidenceBase::Observer that the incidence has been updated.
 
       @param uid to the Incidence just updated.
     */
-    void incidenceUpdated( const QString &uid );
+    void incidenceUpdated( const QString &uid, const KDateTime &recurrenceId );
 
     using QObject::event;   // prevent warning about hidden virtual method
 
