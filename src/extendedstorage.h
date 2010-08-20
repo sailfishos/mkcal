@@ -112,6 +112,10 @@ class MKCAL_EXPORT ExtendedStorage
       @warning Do not usea storage as a global object, on closing the application
       it can dead lock. If you do so, be ready to destroy it manually before the
       application closes.
+
+      @warning Once an Incidende has been added to the ExtendedStorage the UID
+      cannot change. It is possible to do so through the API, but the internal
+      hash tables will not be updated and hence the changes will not be tracked.
     */
     explicit ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validateNotebooks = false );
 
