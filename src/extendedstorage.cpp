@@ -595,17 +595,16 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
     }
 
     // TODO - consider this how it should behave for recurrence
-    if ( incidence->dtStart().isValid() ) {
-      e.setAttribute( "time", incidence->dtStart().toString() );
-    } else {
-      if ( ( incidence->type() == Incidence::TypeTodo ) ) {
-          Todo::Ptr todo = incidence.staticCast<Todo>();
+    if ( ( incidence->type() == Incidence::TypeTodo ) ) {
+        Todo::Ptr todo = incidence.staticCast<Todo>();
 
-           if ( todo->hasDueDate() ) {
-              e.setAttribute( "time", todo->dtDue( true ).toString() );
-          }
-      }
+        if ( todo->hasDueDate() ) {
+            e.setAttribute( "time", todo->dtDue( true ).toString() );
+        }
+    } else if ( incidence->dtStart().isValid() ) {
+      e.setAttribute( "time", incidence->dtStart().toString() );
     }
+
     if ( incidence->hasRecurrenceId() ) {
       e.setAttribute( "recurrenceId", incidence->recurrenceId().toString() );
     }
