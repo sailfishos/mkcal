@@ -95,7 +95,7 @@ public:
     }
   }
 
-  void fixImportAlarms( const KCalCore::Incidence::Ptr &incindece )
+  void fixImportAlarms( const KCalCore::Incidence::Ptr &incidence )
   {
     KCalCore::Alarm::List alarms = incidence->alarms();
     KCalCore::Alarm::List::Iterator it;
@@ -123,16 +123,7 @@ void CompatNokiaPhones::fixAll( const KCalCore::Incidence::Ptr &incidence, Direc
     return;
   }
 
-  KCalCore::Alarm::List alarms = incidence->alarms();
-  KCalCore::Alarm::List::Iterator it;
-  for ( it = alarms.begin(); it != alarms.end(); ++it ) {
-    KCalCore::Alarm::Ptr al = *it;
-    if (type == Import) {
-        al->setType(KCalCore::Alarm::Display);
-    } else {
-        al->setType(KCalCore::Alarm::Audio);
-    }
-  }
+  fixElement( Compatibility::FixAlarm, incidence, type ); //Here the new ones should be added
 }
 
 void CompatNokiaPhones::fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  )
