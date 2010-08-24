@@ -1,3 +1,11 @@
+libmkcal (0.1.5) unstable; urgency=low
+
+  * Fixes: NB#185474 -  Todo reminder dialog is not showing due date of todo
+  * Adding the compatibility classes
+  * Small typos on the last commit
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 24 Aug 2010 11:19:37 +0300
+
 libmkcal (0.1.4) unstable; urgency=low
 
   * Documentation update
