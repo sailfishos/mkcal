@@ -86,6 +86,7 @@ HEADERS += extendedcalendar.h \
     qtlockedfile/src/qtlockedfile.cpp \
     qtlockedfile/src/qtlockedfile_unix.cpp \
     invitationhandler.h \
+    compatibility.h \
     mkcal_export.h
 SOURCES += extendedcalendar.cpp \
     directorystorage.cpp \
@@ -98,4 +99,5 @@ SOURCES += extendedcalendar.cpp \
     trackerstorage.cpp \
     qtlockedfile/src/qtlockedfile.cpp \
     qtlockedfile/src/qtlockedfile_unix.cpp \
+    compatibility.cpp \
     invitationhandler.cpp
