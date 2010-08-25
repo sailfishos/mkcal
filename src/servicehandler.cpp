@@ -67,7 +67,7 @@ ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false)
 
 void ServiceHandlerPrivate::loadPlugins()
 {
-    QDir pluginsDir(QLatin1String("/usr/lib/calendar/kcalplugins")); //TODO HARDCODED!!
+    QDir pluginsDir(QLatin1String("/usr/lib/calendar/mkcalplugins")); //TODO HARDCODED!!
     kDebug() << "Plugin directory" << pluginsDir.path();
 
     foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
