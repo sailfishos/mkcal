@@ -2,6 +2,7 @@
 
 TEMPLATE = subdirs
 SUBDIRS =   src \
+            plugins
 
 VER_MAJ = ${VER_MAJ}
 VER_MIN = ${VER_MIN}
