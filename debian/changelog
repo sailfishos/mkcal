@@ -1,3 +1,10 @@
+libmkcal (0.1.6) unstable; urgency=low
+
+  * New plugin api changes
+  * NO_REVIEWBOARD: kcalplugins to mkcalplugins
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 25 Aug 2010 10:24:03 +0300
+
 libmkcal (0.1.5) unstable; urgency=low
 
   * Fixes: NB#185474 -  Todo reminder dialog is not showing due date of todo
