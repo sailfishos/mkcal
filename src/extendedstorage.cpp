@@ -583,7 +583,7 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
     e.setAttribute( "TITLE", s );
     e.setAttribute( "PLUGIN", "libCalendarReminder" );
     e.setAttribute( "APPLICATION", "libextendedkcal" );
-    e.setAttribute( "translation", "organiser" );
+    //e.setAttribute( "translation", "organiser" );
     // This really has to exist or code is badly broken
     Q_ASSERT( !incidence->uid().isEmpty() );
     e.setAttribute( "uid", incidence->uid() );
