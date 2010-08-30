@@ -57,7 +57,9 @@ using namespace mKCal;
 template <typename K>
 void removeAll( QVector< QSharedPointer<K> > c, const QSharedPointer<K> &x )
 {
-  Q_ASSERT( c.count( x ) == 1 );
+  if ( x.isNull() ) {
+    return;
+  }
   c.remove( c.indexOf( x ) );
 }
 
@@ -2069,8 +2071,8 @@ Incidence::List ExtendedCalendar::contactIncidences( const Person::Ptr &person,
 {
   Incidence::List list;
   Incidence::List::Iterator it;
-  Incidence::List values = values( d->mAttendeeIncidences, person->email() );
-  for ( it = values.begin(); it != values.end(); ++it ) {
+  Incidence::List vals = values( d->mAttendeeIncidences, person->email() );
+  for ( it = vals.begin(); it != vals.end(); ++it ) {
     Incidence::Ptr incidence = *it;
     if ( incidence->type() == Incidence::TypeEvent ) {
       Event::Ptr event = incidence.staticCast<Event>();
