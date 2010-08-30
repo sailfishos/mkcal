@@ -1,3 +1,10 @@
+libmkcal (0.1.7) unstable; urgency=low
+
+  * Fixes: NB#186070 -  Logical ids are displayed in Alarm notification for Snooze and Stop buttons when alarm notification comes on top of Calendar notification
+  * Fixes: NB#187870 -  Calendar event/Todo event are not saved in tracker data base
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 27 Aug 2010 10:07:32 +0300
+
 libmkcal (0.1.6) unstable; urgency=low
 
   * New plugin api changes

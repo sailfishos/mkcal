@@ -1653,7 +1653,7 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::P
   if ( dbFile.isEmpty() ) {
     dbFile = QDir::homePath() + QLatin1String( "/.calendardb" );
   }
-  bool useTracker;
+  bool useTracker = true;
   if ( !qgetenv( "SQLITESTORAGENOTRACKER" ).isEmpty() )
     useTracker = false;
 
