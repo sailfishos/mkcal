@@ -1,3 +1,10 @@
+libmkcal (0.1.8) unstable; urgency=low
+
+  * Added type field to timed reminder attributes.
+  * Fix in pc file NO_REVIEWBOARD
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 31 Aug 2010 10:18:55 +0300
+
 libmkcal (0.1.7) unstable; urgency=low
 
   * Fixes: NB#186070 -  Logical ids are displayed in Alarm notification for Snooze and Stop buttons when alarm notification comes on top of Calendar notification
