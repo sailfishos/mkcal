@@ -9,3 +9,4 @@ debian/tmp
 doc/html
 doxygen.*
 *~
+plugins/defaultinvitationplugin/libdefaultinvitationplugin.so
