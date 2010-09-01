@@ -1606,6 +1606,81 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
   return returnList;
 }
 
+ExtendedCalendar::ExpandedIncidenceList
+expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
+                const KDateTime &start,
+                const KDateTime &end,
+                int maxExpand,
+                bool merge,
+                bool *expandLimitHit )
+{
+  ExtendedCalendar::ExpandedIncidenceList returnList;
+  ExtendedCalendar::ExpandedIncidenceList::Iterator iit;
+  int i;
+
+  if (expandLimitHit)
+      *expandLimitHit = false;
+  foreach (const ExtendedCalendar::ExpandedIncidence &ei, list) {
+    // If not event, not interested
+    Incidence::Ptr inc = ei.second;
+    if (inc->type() != Incidence::TypeEvent) {
+      // Handle the merge
+      if (merge)
+        returnList.append( ExtendedCalendar::ExpandedIncidence( ei.first, inc ) );
+      continue;
+    }
+
+    Event::Ptr e = inc.staticCast<Event>();
+
+    // Then, if it's not multiday, we're not interested
+    if (!e->isMultiDay())
+    {
+      // Handle the merge
+      if (merge)
+        returnList.append( ExtendedCalendar::ExpandedIncidence( ei.first, inc ) );
+      continue;
+    }
+    KDateTime dts = inc->dtStart().toLocalZone();
+    KDateTime dte = inc->dateTime( IncidenceBase::RoleEndRecurrenceBase ).toLocalZone();
+
+    // Handle some odd isMultiDay bugging case (unlikely but infinite
+    // loops are scary)
+    if ( dts.date() <= dte.date() )
+        continue;
+    int days = 1;
+    while ( dts.date() != dte.date() )
+    {
+        days++;
+        dte = dte.addDays(-1);
+    }
+
+    // Initialize dts/dte to the current recurrence (if any)
+    dts = KDateTime( ei.first.date(), dts.time() );
+    dte = KDateTime( ei.first.date(), QTime(0, 0, 0) ).addDays( 1 );
+
+    int added = 0;
+    for (i = 0 ; i <= days ; i++) {
+      if (i || merge) {
+        // Possibly add the currently iterated one.
+        // Have to check it against time boundaries using the dts/dte, though
+          if (start < dte && (!end.isValid() || end >= dts)) {
+            returnList.append( ExtendedCalendar::ExpandedIncidence( QDateTime(dts.date(), QTime(0, 0, 0)), inc ) );
+            if (added++ == maxExpand) {
+              if (expandLimitHit)
+                *expandLimitHit = true;
+              break;
+            }
+          }
+      }
+      dts = dte;
+      dte = dts.addDays(1);
+    }
+  }
+  qSort( returnList.begin(), returnList.end(), expandedIncidenceSortLessThan );
+  return returnList;
+}
+
+
 Incidence::List ExtendedCalendar::incidences( const QDate &start, const QDate &end )
 {
   return mergeIncidenceList( events( start, end ), todos( start, end ), journals( start, end ) );

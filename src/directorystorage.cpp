@@ -831,6 +831,14 @@ int DirectoryStorage::loadIncidences( bool hasDate, int limit, KDateTime *last )
   return (int)load();
 }
 
+int DirectoryStorage::loadFutureIncidences( int limit, KDateTime *last )
+{
+  Q_UNUSED( limit );
+  Q_UNUSED( last );
+
+  return (int)load();
+}
+
 int DirectoryStorage::loadGeoIncidences( bool hasDate, int limit, KDateTime *last )
 {
   Q_UNUSED(hasDate);

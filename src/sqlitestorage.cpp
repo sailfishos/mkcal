@@ -153,7 +153,8 @@ class mKCal::SqliteStorage::Private
                         const char *query2, int qsize2, const char *query3, int qsize3,
                         const char *query4, int qsize4, const char *query5, int qsize5,
                         const char *query6, int qsize6,
-                        int limit = -1, KDateTime *last = NULL, bool useDate = false );
+                        int limit = -1, KDateTime *last = NULL, bool useDate = false,
+                        bool ignoreEnd = false );
     bool saveIncidences( QHash<QString,Incidence::Ptr> &list, DBOperation dbop,
                          const char *query1, int qsize1, const char *query2, int qsize2,
                          const char *query3, int qsize3, const char *query4, int qsize4,
@@ -1299,6 +1300,78 @@ int SqliteStorage::loadIncidences( bool hasDate, int limit, KDateTime *last )
   return count;
 }
 
+
+int SqliteStorage::loadFutureIncidences( int limit, KDateTime *last )
+{
+  if ( !d->mIsOpened || !last ) {
+    return -1;
+  }
+
+  if ( isFutureDateLoaded() ) {
+    return 0;
+  }
+  int rv = 0;
+  int count = 0;
+  d->mIsLoading = true;
+
+  const char *query1 = NULL;
+  const char *query2 = NULL;
+  const char *query3 = NULL;
+  const char *query4 = NULL;
+  const char *query5 = NULL;
+  const char *query6 = NULL;
+  int qsize1 = 0;
+  int qsize2 = 0;
+  int qsize3 = 0;
+  int qsize4 = 0;
+  int qsize5 = 0;
+  int qsize6 = 0;
+
+  sqlite3_stmt *stmt1 = NULL;
+  const char *tail1 = NULL;
+  int index = 1;
+  qint64 secsStart;
+
+  if ( last->isValid() ) {
+    secsStart = toOriginTime( *last );
+  } else {
+    secsStart = LLONG_MAX; // largest time
+  }
+  query1 = SELECT_COMPONENTS_BY_FUTURE_DATE_SMART;
+  qsize1 = sizeof( SELECT_COMPONENTS_BY_FUTURE_DATE_SMART );
+
+  sqlite3_prepare_v2( d->mDatabase, query1, qsize1, &stmt1, &tail1 );
+  sqlite3_bind_int64( stmt1, index, secsStart );
+
+  query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
+  qsize2 = sizeof( SELECT_CUSTOMPROPERTIES_BY_ID );
+
+  query3 = SELECT_ATTENDEE_BY_ID;
+  qsize3 = sizeof( SELECT_ATTENDEE_BY_ID );
+
+  query4 = SELECT_ALARM_BY_ID;
+  qsize4 = sizeof( SELECT_ALARM_BY_ID );
+
+  query5 = SELECT_RECURSIVE_BY_ID;
+  qsize5 = sizeof( SELECT_RECURSIVE_BY_ID );
+
+  query6 = SELECT_RDATES_BY_ID;
+  qsize6 = sizeof( SELECT_RDATES_BY_ID );
+
+  count = d->loadIncidences( stmt1, query2, qsize2, query3, qsize3,
+                             query4, qsize4, query5, qsize5, query6, qsize6,
+                             limit, last, true, true );
+
+  if ( count >= 0 && count < limit ) {
+    setIsFutureDateLoaded( true );
+  }
+
+ error:
+  d->mIsLoading = false;
+
+  return count;
+}
+
 int SqliteStorage::loadGeoIncidences( bool hasDate, int limit, KDateTime *last )
 {
   if ( !d->mIsOpened || !last ) {
@@ -1633,7 +1706,9 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
                                             const char *query4, int qsize4,
                                             const char *query5, int qsize5,
                                             const char *query6, int qsize6,
-                                            int limit, KDateTime *last, bool useDate ) {
+                                            int limit, KDateTime *last,
+                                            bool useDate,
+                                            bool ignoreEnd ) {
   int rv = 0;
   int count = 0;
   sqlite3_stmt *stmt2 = NULL;
@@ -1703,7 +1778,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         } else {
           added = false;
         }
-        if ( useDate && event->dtEnd().isValid() ) {
+        if ( useDate && !ignoreEnd && event->dtEnd().isValid() ) {
           date = event->dtEnd();
         } else if ( useDate && event->dtStart().isValid() ) {
           date = event->dtStart();
@@ -1741,7 +1816,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         } else {
           added = false;
         }
-        if ( useDate && todo->dtDue().isValid() ) {
+        if ( useDate && !ignoreEnd && todo->dtDue().isValid() ) {
           date = todo->dtDue();
         } else if ( useDate && todo->dtStart().isValid() ) {
           date = todo->dtStart();

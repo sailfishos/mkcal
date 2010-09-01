@@ -248,6 +248,19 @@ class MKCAL_EXPORT ExtendedStorage
     virtual int loadIncidences( bool hasDate, int limit, KDateTime *last ) = 0;
 
     /**
+      Load future incidences based on start/due date.
+
+      Load direction is ascending, i.e., starting from the oldest
+      event that is still valid at the day of the loadIncidences
+      call. (=end time > 00:00:00 on that day).
+
+      @param limit load only that many incidences
+      @param last last loaded incidence start date in return
+      @return number of loaded incidences, or -1 on error
+    */
+    virtual int loadFutureIncidences( int limit, KDateTime *last ) = 0;
+
+    /**
       Load incidences that have location information based on parameters.
       Load direction is descending, i.e., starting from most distant
       upcoming incidence.
@@ -672,6 +685,8 @@ class MKCAL_EXPORT ExtendedStorage
     void setIsDateLoaded( bool loaded );
     bool isCreatedLoaded();
     void setIsCreatedLoaded( bool loaded );
+    bool isFutureDateLoaded();
+    void setIsFutureDateLoaded( bool loaded );
 
     bool isGeoDateLoaded();
     void setIsGeoDateLoaded( bool loaded );

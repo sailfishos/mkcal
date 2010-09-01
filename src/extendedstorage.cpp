@@ -75,6 +75,7 @@ class mKCal::ExtendedStorage::Private
         mIsCompletedTodosCreatedLoaded( false ),
         mIsDateLoaded( false ),
         mIsCreatedLoaded( false ),
+        mIsFutureDateLoaded( false ),
         mIsGeoDateLoaded( false ),
         mIsGeoCreatedLoaded( false ),
         mIsUnreadIncidencesLoaded ( false ),
@@ -91,6 +92,7 @@ class mKCal::ExtendedStorage::Private
     bool mIsCompletedTodosCreatedLoaded;
     bool mIsDateLoaded;
     bool mIsCreatedLoaded;
+    bool mIsFutureDateLoaded;
     bool mIsGeoDateLoaded;
     bool mIsGeoCreatedLoaded;
     bool mIsUnreadIncidencesLoaded;
@@ -126,6 +128,7 @@ void ExtendedStorage::clearLoaded()
   d->mIsCompletedTodosCreatedLoaded = false;
   d->mIsDateLoaded = false;
   d->mIsCreatedLoaded = false;
+  d->mIsFutureDateLoaded = false;
   d->mIsGeoDateLoaded = false;
   d->mIsGeoCreatedLoaded = false;
   d->mIsUnreadIncidencesLoaded  = false;
@@ -214,6 +217,16 @@ bool ExtendedStorage::isDateLoaded()
 void ExtendedStorage::setIsDateLoaded( bool loaded )
 {
   d->mIsDateLoaded = loaded;
+}
+
+bool ExtendedStorage::isFutureDateLoaded()
+{
+  return d->mIsFutureDateLoaded;
+}
+
+void ExtendedStorage::setIsFutureDateLoaded( bool loaded )
+{
+  d->mIsFutureDateLoaded = loaded;
 }
 
 bool ExtendedStorage::isJournalsLoaded()

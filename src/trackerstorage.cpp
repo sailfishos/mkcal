@@ -369,6 +369,14 @@ int TrackerStorage::loadIncidences( bool hasDate, int limit, KDateTime *last )
   return -1;
 }
 
+int TrackerStorage::loadFutureIncidences( int limit, KDateTime *last )
+{
+  Q_UNUSED( limit );
+  Q_UNUSED( last );
+
+  return -1;
+}
+
 int TrackerStorage::loadGeoIncidences( bool hasDate, int limit, KDateTime *last )
 {
   Q_UNUSED( hasDate );

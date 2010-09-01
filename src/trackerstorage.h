@@ -164,6 +164,12 @@ class MKCAL_EXPORT TrackerStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::loadFutureIncidences( bool, int, KDateTime* );
+    */
+    int loadFutureIncidences( int limit, KDateTime *last );
+
+    /**
+      @copydoc
       ExtendedStorage::loadGeoIncidences( bool, bool, int, KDateTime* );
     */
     int loadGeoIncidences( bool hasDate, int limit, KDateTime *last );
