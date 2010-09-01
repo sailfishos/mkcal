@@ -286,6 +286,12 @@ class MKCAL_EXPORT TrackerStorage : public ExtendedStorage
     */
     bool notifyOpened( const KCalCore::Incidence::Ptr &incidence );
 
+    /**
+      @copydoc
+      ExtendedStorage::virtual_hook()
+    */
+    virtual void virtual_hook( int id, void *data );
+
     // Methods for TrackerFormat //
 
     /**

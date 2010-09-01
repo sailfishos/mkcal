@@ -873,3 +873,10 @@ bool TrackerStorage::modifyNotebook( const Notebook::Ptr &nb, DBOperation dbop, 
 
   return true;
 }
+
+void TrackerStorage::virtual_hook( int id, void *data )
+{
+  Q_UNUSED( id );
+  Q_UNUSED( data );
+  Q_ASSERT( false );
+}

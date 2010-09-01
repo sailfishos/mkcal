@@ -880,6 +880,12 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     */
     int journalCount( const QString &notebookUid = QString());
 
+    /**
+      @copydoc
+      ExtendedStorage::virtual_hook()
+    */
+    virtual void virtual_hook( int id, void *data );
+
   protected:
 
     /**

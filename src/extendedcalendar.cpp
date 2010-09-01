@@ -2222,3 +2222,10 @@ int ExtendedCalendar::journalCount( const QString &notebookUid )
   return count;
 }
 
+void ExtendedCalendar::virtual_hook( int id, void *data )
+{
+  Q_UNUSED( id );
+  Q_UNUSED( data );
+  Q_ASSERT( false );
+}
+

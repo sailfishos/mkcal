@@ -1054,3 +1054,11 @@ bool DirectoryStorage::Private::saveNotebooks( QHash<QString,Notebook::Ptr> hash
   }
   return true;
 }
+
+
+void DirectoryStorage::virtual_hook( int id, void *data )
+{
+  Q_UNUSED( id );
+  Q_UNUSED( data );
+  Q_ASSERT( false );
+}

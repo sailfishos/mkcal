@@ -344,6 +344,12 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
     */
     bool notifyOpened( const KCalCore::Incidence::Ptr &incidence );
 
+    /**
+      @copydoc
+      ExtendedStorage::virtual_hook()
+    */
+    virtual void virtual_hook( int id, void *data );
+
   protected:
     bool loadNotebooks();
     bool reloadNotebooks();

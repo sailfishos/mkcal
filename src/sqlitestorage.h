@@ -312,6 +312,13 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
                               const KCalCore::Incidence::Ptr &incidence,
                               const QString &notebookUid = QString() );
 
+    /**
+      @copydoc
+      ExtendedStorage::virtual_hook()
+    */
+    virtual void virtual_hook( int id, void *data );
+
+
     // Helper Functions //
 
     /**
