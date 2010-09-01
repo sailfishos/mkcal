@@ -1476,21 +1476,21 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 {
   ExtendedCalendar::ExpandedIncidenceList returnList;
   Incidence::List::Iterator iit;
+  KDateTime brokenDtStart = dtStart.addSecs(-1);
+  // used for comparing with entries that have broken dtEnd => we use
+  // dtStart and compare it against this instead. As this is allocated
+  // only once per iteration, it should result in significan net
+  // savings
 
   if (expandLimitHit)
     *expandLimitHit = false;
 
   for ( iit = incidenceList->begin(); iit != incidenceList->end(); ++iit ) {
     KDateTime dt = (*iit)->dtStart();
-// PENDING(kdab) Review
-#ifdef KDAB_TEMPORARILY_REMOVED
-    KDateTime dte = (*iit)->dtEnd();
-#else
     KDateTime dte = (*iit)->dateTime( IncidenceBase::RoleEndRecurrenceBase );
-#endif
     int appended = 0;
-
     int skipped = 0;
+    bool brokenEnd = false;
 
     if ( (*iit)->type() == Incidence::TypeTodo ) {
       Todo::Ptr todo = (*iit).staticCast<Todo>();
@@ -1508,7 +1508,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 
     // Fix the non-valid dte to be dt+1
     if ( dte.isValid() && dte <= dt ) {
-      dte = dt.addSecs( 1 );
+      brokenEnd = true;
     }
 
     // Then insert the current; only if it (partially) fits within
@@ -1528,15 +1528,18 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
     // partially within the desired [dtStart, dtEnd] range are
     // also included.
 
-    if ( ( !dtEnd.isValid() || dt < dtEnd ) && ( !dte.isValid() || dte > dtStart ) ) {
-      kDebug() << "---appending" << (*iit)->summary() << dt.toString() << dt.timeZone().name() << dt.toLocalZone().toString();
+    if ( ( !dtEnd.isValid() || dt < dtEnd )
+         && ( !dte.isValid()
+              || ( !brokenEnd && dte > dtStart )
+              || ( brokenEnd && dt > brokenDtStart) ) ) {
+      //kDebug() << "---appending" << (*iit)->summary() << dt.toString() << dt.timeZone().name() << dt.toLocalZone().toString();
       returnList.append( ExpandedIncidence( dt.toLocalZone().dateTime(), *iit ) );
       appended++;
     }
 
     if ( (*iit)->recurs() ) {
-      KDateTime dtr = dt, dtr2;
-      KDateTime dtre, dtro;
+      KDateTime dtr = dt;
+      KDateTime dtro;
 
       // If the original entry wasn't part of the time window, try to get more
       // appropriate first item to add. Else, start the next-iteration from the 'dt'
@@ -1545,7 +1548,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
         dtr = (*iit)->recurrence()->getPreviousDateTime( dtStart );
         if (dtr.isValid())
         {
-          dtr2 = (*iit)->recurrence()->getPreviousDateTime(dtr);
+          KDateTime dtr2 = (*iit)->recurrence()->getPreviousDateTime(dtr);
           if (dtr2.isValid()) {
             dtr = dtr2;
           }
@@ -1555,12 +1558,16 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
       }
 
       int duration = 0;
-      if ( dte.isValid() ) {
+      if (brokenEnd)
+        duration = 1;
+      else if ( dte.isValid() )
         duration = dte.toTime_t() - dt.toTime_t();
-        if ( duration < 1 ) {
-          duration = 1;
-        }
-      }
+
+      // Old logic had us keeping around [recur-start, recur-end[ > dtStart
+      // As recur-end = recur-start + duration, we can rewrite the conditions
+      // as recur-start[ > dtStart - duration
+      KDateTime dtStartMinusDuration = dtStart.addSecs(-duration);
+
       while ( appended < maxExpand ) {
         dtro = dtr;
         dtr = (*iit)->recurrence()->getNextDateTime( dtr );
@@ -1575,21 +1582,14 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
           break;
         }
 
-        // Calculate the end time for this repetition
-        dtre = dtr;
-
-        if ( duration ) {
-          dtre = dtr.addSecs( duration );
-        }
-
         // As incidences are in sorted order, the [1] condition was
         // already met as we're still iterating. Have to check [2].
-        if ( !dtre.isValid() || dtre > dtStart ) {
-          kDebug() << "---appending(recurrence)" << (*iit)->summary() << dtr.toString();
+        if ( dtr > dtStartMinusDuration ) {
+          //kDebug() << "---appending(recurrence)" << (*iit)->summary() << dtr.toString();
           returnList.append( ExpandedIncidence( dtr.toLocalZone().dateTime(), *iit ) );
           appended++;
         } else {
-          kDebug() << "---skipping(recurrence)" << skipped << (*iit)->summary() << duration << dtr.toString() << dtStart.toString() << dtEnd.toString();
+          //kDebug() << "---skipping(recurrence)" << skipped << (*iit)->summary() << duration << dtr.toString() << dtStart.toString() << dtEnd.toString();
           if (skipped++ >= 100) {
             kDebug() << "--- skip count exceeded, breaking loop";
             break;
