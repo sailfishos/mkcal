@@ -1,3 +1,10 @@
+libmkcal (0.1.9) unstable; urgency=low
+
+  * Adding api file
+  * Added defaultinvitationplugin to gitignore.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 01 Sep 2010 10:31:46 +0300
+
 libmkcal (0.1.8) unstable; urgency=low
 
   * Added type field to timed reminder attributes.
