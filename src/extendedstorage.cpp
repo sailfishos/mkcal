@@ -601,8 +601,10 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
         if ( todo->hasDueDate() ) {
             e.setAttribute( "time", todo->dtDue( true ).toString() );
         }
+        e.setAttribute( "type", "todo" );
     } else if ( incidence->dtStart().isValid() ) {
       e.setAttribute( "time", incidence->dtStart().toString() );
+      e.setAttribute( "type", "event" );
     }
 
     if ( incidence->hasRecurrenceId() ) {
