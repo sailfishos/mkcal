@@ -81,6 +81,12 @@ void Compatibility::fixElement( Compatibility::FixType element, const KCalCore::
   Q_UNUSED( element );
 }
 
+void Compatibility::virtual_hook( int id, void *data )
+{
+  Q_UNUSED( id );
+  Q_UNUSED( data );
+  Q_ASSERT( false );
+}
 
 class CompatNokiaPhones::Private {
 
