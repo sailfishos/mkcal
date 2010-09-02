@@ -363,7 +363,7 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
   }
   insertQuery << "; ncal:class ncal:" << d->secrecy2String( incidence );
   if ( !incidence->description().isEmpty() ) {
-    insertQuery << "; ncal:description \"" << incidence->description().replace(QChar('\n'), QChar(' ')) << "\"";
+    insertQuery << "; ncal:description \"" << incidence->description().replace(QChar('\n'), QChar(' ')) << "\"";  //remove end lines
   }
   insertQuery << "; ncal:" << type.toLower()
               << "Status ncal:" << d->status2String( incidence );
