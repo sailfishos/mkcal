@@ -102,7 +102,7 @@ class mKCal::SqliteStorage::Private
         if ( dbop != DBDelete ) {
           QString insert = insertQuery.join( QString() );
           if ( !query.isEmpty() ) {
-            query = query + QLatin1String(";") + insert;
+            query = query + QLatin1String(" ") + insert;
           } else {
             query = insert;
           }
