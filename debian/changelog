@@ -1,3 +1,9 @@
+libmkcal (0.1.11) unstable; urgency=low
+
+  * Dummystorage added 
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 02 Sep 2010 14:15:54 +0300
+
 libmkcal (0.1.10) unstable; urgency=low
 
   * Adding virtual hook. ABI Break
