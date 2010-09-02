@@ -92,27 +92,21 @@ class mKCal::SqliteStorage::Private
       QStringList insertQuery;
       QStringList deleteQuery;
       TrackerModify tracker;
+      QString query;
 
       if ( tracker.queries( incidence, dbop, insertQuery, deleteQuery, notebookUid ) ) {
         if ( dbop != DBInsert ) {
-          QString query = deleteQuery.join( QString() );
-#ifndef QT_NO_DEBUG
-          // Use cerr to print only queries.
-          cerr << endl << query.toAscii().constData() << endl;
-          //kDebug() << "tracker query:" << select;
-#endif
-#if defined(MKCAL_TRACKER_SYNC)
-          QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
-          update.waitForFinished();
-          if ( update.isError() ) {
-            kError() << "tracker query error:" << update.error().message();
-          }
-#else
-          (void)mDBusIf->asyncCall( "SparqlUpdate", query );
-#endif
+          query = deleteQuery.join( QString() );
         }
+
         if ( dbop != DBDelete ) {
-          QString query = insertQuery.join( QString() );
+          QString insert = insertQuery.join( QString() );
+          if ( !query.isEmpty() ) {
+            query = query + QLatin1String(";") + insert;
+          } else {
+            query = insert;
+          }
+        }
 #ifndef QT_NO_DEBUG
           // Use cerr to print only queries.
           cerr << endl << query.toAscii().constData() << endl;
@@ -127,7 +121,7 @@ class mKCal::SqliteStorage::Private
 #else
           (void)mDBusIf->asyncCall( "SparqlUpdate", query );
 #endif
-        }
+
       }
     }
     ExtendedCalendar::Ptr mCalendar;
