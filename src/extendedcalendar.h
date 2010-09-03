@@ -730,11 +730,12 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       This call expands the multiday events within the given list so
       that there's an event for each day. The start and end parameters
       are used for filtering for the expansion filtering range, and
-      days falling outside the range won't be expanded.
+      days falling outside the [startDate, endDate] range won't be
+      expanded.
 
       @param list is a pointer to a list of Incidences.
-      @param start start time for expansion+filtering
-      @param end end time for expansion+filtering
+      @param startDate start date for expansion+filtering
+      @param endDate end date for expansion+filtering
       @param maxExpand maximum number of days single multiday event
       instance can be expanded into
       @param merge whether the results should be merged to the list or not.
@@ -744,8 +745,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       is false.
      */
     ExpandedIncidenceList expandMultiDay( const ExpandedIncidenceList &list,
-                                          const KDateTime &start,
-                                          const KDateTime &end,
+                                          const QDate &startDate,
+                                          const QDate &endDate,
                                           int maxExpand,
                                           bool merge,
                                           bool *expandLimitHit = 0 );

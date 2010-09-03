@@ -592,9 +592,15 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_DATE_SMART \
 "select * from Components where DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc"
-#define SELECT_COMPONENTS_BY_FUTURE_DATE_SMART \
-"select * from Components where DateStart<>0 and DateStart>=? and DateDeleted=0 order by DateStart asc"
-#define SELECT_COMPONENTS_BY_CREATED_SMART \
+
+#define FUTURE_DATE_SMART_FIELD                                 \
+" (case type when 'Todo' then DateEndDue else DateStart end) "
+#define SELECT_COMPONENTS_BY_FUTURE_DATE_SMART                  \
+    "select * from Components where "                           \
+    FUTURE_DATE_SMART_FIELD ">=? and DateDeleted=0 order by "   \
+    FUTURE_DATE_SMART_FIELD " asc"
+
+#define SELECT_COMPONENTS_BY_CREATED_SMART                              \
 "select * from Components where DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_GEO_AND_DATE \
 "select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc"

@@ -47,6 +47,9 @@ using namespace KCalCore;
 
 #include <cmath>
 
+// #ifdef to control expensive/spammy debug stmts
+#undef DEBUG_EXPANSION
+
 using namespace mKCal;
 /**
   Private class that helps to provide binary compatibility between releases.
@@ -1477,16 +1480,21 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
   ExtendedCalendar::ExpandedIncidenceList returnList;
   Incidence::List::Iterator iit;
   KDateTime brokenDtStart = dtStart.addSecs(-1);
+
   // used for comparing with entries that have broken dtEnd => we use
   // dtStart and compare it against this instead. As this is allocated
   // only once per iteration, it should result in significan net
   // savings
+  kDebug() << "expandRecurrences"
+           << incidenceList->size()
+           << dtStart.toString() << dtStart.isValid()
+           << dtEnd.toString() << dtEnd.isValid();
 
   if (expandLimitHit)
     *expandLimitHit = false;
 
   for ( iit = incidenceList->begin(); iit != incidenceList->end(); ++iit ) {
-    KDateTime dt = (*iit)->dtStart();
+    KDateTime dt = (*iit)->dtStart().toLocalZone();
     KDateTime dte = (*iit)->dateTime( IncidenceBase::RoleEndRecurrenceBase );
     int appended = 0;
     int skipped = 0;
@@ -1495,14 +1503,14 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
     if ( (*iit)->type() == Incidence::TypeTodo ) {
       Todo::Ptr todo = (*iit).staticCast<Todo>();
       if ( todo->hasDueDate() ) {
-        dt = todo->dtDue();
+        dt = todo->dtDue().toLocalZone();
       }
     }
 
     if ( !dt.isValid() ) {
       // Just leave the dateless incidences there (they will be
       // sorted out)
-      returnList.append( ExpandedIncidence( dt.toLocalZone().dateTime(), *iit ) );
+      returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
       continue;
     }
 
@@ -1532,18 +1540,24 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
          && ( !dte.isValid()
               || ( !brokenEnd && dte > dtStart )
               || ( brokenEnd && dt > brokenDtStart) ) ) {
-      //kDebug() << "---appending" << (*iit)->summary() << dt.toString() << dt.timeZone().name() << dt.toLocalZone().toString();
-      returnList.append( ExpandedIncidence( dt.toLocalZone().dateTime(), *iit ) );
+#ifdef DEBUG_EXPANSION
+      kDebug() << "---appending" << (*iit)->summary() << dt.toString();
+#endif /* DEBUG_EXPANSION */
+      returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
       appended++;
+    } else {
+#ifdef DEBUG_EXPANSION
+      kDebug() << "-- no match" << dt.toString() << dte.toString() << dte.isValid() << brokenEnd;
+#endif /* DEBUG_EXPANSION */
     }
 
     if ( (*iit)->recurs() ) {
       KDateTime dtr = dt;
       KDateTime dtro;
 
-      // If the original entry wasn't part of the time window, try to get more
-      // appropriate first item to add. Else, start the next-iteration from the 'dt'
-      // (=current item).
+      // If the original entry wasn't part of the time window, try to
+      // get more appropriate first item to add. Else, start the
+      // next-iteration from the 'dt' (=current item).
       if ( !appended ) {
         dtr = (*iit)->recurrence()->getPreviousDateTime( dtStart );
         if (dtr.isValid())
@@ -1570,7 +1584,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 
       while ( appended < maxExpand ) {
         dtro = dtr;
-        dtr = (*iit)->recurrence()->getNextDateTime( dtr );
+        dtr = (*iit)->recurrence()->getNextDateTime( dtr ).toLocalZone();
         if ( !dtr.isValid() || ( dtEnd.isValid() && dtr >= dtEnd ) ) {
           break;
         }
@@ -1585,11 +1599,18 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
         // As incidences are in sorted order, the [1] condition was
         // already met as we're still iterating. Have to check [2].
         if ( dtr > dtStartMinusDuration ) {
-          //kDebug() << "---appending(recurrence)" << (*iit)->summary() << dtr.toString();
-          returnList.append( ExpandedIncidence( dtr.toLocalZone().dateTime(), *iit ) );
+#ifdef DEBUG_EXPANSION
+          kDebug() << "---appending(recurrence)"
+                   << (*iit)->summary() << dtr.toString();
+#endif /* DEBUG_EXPANSION */
+          returnList.append( ExpandedIncidence( dtr.dateTime(), *iit ) );
           appended++;
         } else {
-          //kDebug() << "---skipping(recurrence)" << skipped << (*iit)->summary() << duration << dtr.toString() << dtStart.toString() << dtEnd.toString();
+#ifdef DEBUG_EXPANSION
+          kDebug() << "---skipping(recurrence)"
+                   << skipped << (*iit)->summary()
+                   << duration << dtr.toString();
+#endif /* DEBUG_EXPANSION */
           if (skipped++ >= 100) {
             kDebug() << "--- skip count exceeded, breaking loop";
             break;
@@ -1608,8 +1629,8 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 
 ExtendedCalendar::ExpandedIncidenceList
 expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
-                const KDateTime &start,
-                const KDateTime &end,
+                const QDate &startDate,
+                const QDate &endDate,
                 int maxExpand,
                 bool merge,
                 bool *expandLimitHit )
@@ -1618,53 +1639,44 @@ expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
   ExtendedCalendar::ExpandedIncidenceList::Iterator iit;
   int i;
 
-  if (expandLimitHit)
-      *expandLimitHit = false;
+  if ( expandLimitHit )
+    *expandLimitHit = false;
   foreach (const ExtendedCalendar::ExpandedIncidence &ei, list) {
     // If not event, not interested
     Incidence::Ptr inc = ei.second;
-    if (inc->type() != Incidence::TypeEvent) {
-      // Handle the merge
-      if (merge)
-        returnList.append( ExtendedCalendar::ExpandedIncidence( ei.first, inc ) );
-      continue;
-    }
-
     Event::Ptr e = inc.staticCast<Event>();
 
-    // Then, if it's not multiday, we're not interested
-    if (!e->isMultiDay())
-    {
-      // Handle the merge
-      if (merge)
-        returnList.append( ExtendedCalendar::ExpandedIncidence( ei.first, inc ) );
+    if ( inc->type() != Incidence::TypeEvent || !e->isMultiDay() ) {
+      if ( merge ) {
+        QDate d = ei.first.date();
+        if ( startDate <= d && endDate >= d ) {
+          returnList.append( ei );
+        }
+      }
       continue;
     }
+
     KDateTime dts = inc->dtStart().toLocalZone();
     KDateTime dte = inc->dateTime( IncidenceBase::RoleEndRecurrenceBase ).toLocalZone();
 
-    // Handle some odd isMultiDay bugging case (unlikely but infinite
-    // loops are scary)
-    if ( dts.date() <= dte.date() )
-        continue;
     int days = 1;
-    while ( dts.date() != dte.date() )
-    {
-        days++;
-        dte = dte.addDays(-1);
+    while ( dts.date() < dte.date() ) {
+      days++;
+      dte = dte.addDays(-1);
     }
 
     // Initialize dts/dte to the current recurrence (if any)
     dts = KDateTime( ei.first.date(), dts.time() );
-    dte = KDateTime( ei.first.date(), QTime(0, 0, 0) ).addDays( 1 );
+    dte = KDateTime( ei.first.date() ).addDays( 1 );
 
     int added = 0;
-    for (i = 0 ; i <= days ; i++) {
-      if (i || merge) {
+    for (i = 0 ; i < days ; i++) {
+      if ( i || merge ) {
         // Possibly add the currently iterated one.
         // Have to check it against time boundaries using the dts/dte, though
-          if (start < dte && (!end.isValid() || end >= dts)) {
-            returnList.append( ExtendedCalendar::ExpandedIncidence( QDateTime(dts.date(), QTime(0, 0, 0)), inc ) );
+          if ( startDate < dte.date()
+              && ( !endDate.isValid() || endDate >= dts.date() ) ) {
+            returnList.append( ExtendedCalendar::ExpandedIncidence( dts.dateTime(), inc ) );
             if (added++ == maxExpand) {
               if (expandLimitHit)
                 *expandLimitHit = true;

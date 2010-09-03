@@ -1816,7 +1816,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         } else {
           added = false;
         }
-        if ( useDate && !ignoreEnd && todo->dtDue().isValid() ) {
+        if ( useDate && todo->dtDue().isValid() ) {
           date = todo->dtDue();
         } else if ( useDate && todo->dtStart().isValid() ) {
           date = todo->dtStart();
