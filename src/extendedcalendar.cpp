@@ -1661,7 +1661,7 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
     }
 
     KDateTime dts = inc->dtStart().toLocalZone();
-    KDateTime dte = inc->dateTime( IncidenceBase::RoleEndRecurrenceBase ).toLocalZone();
+    KDateTime dte = inc->dateTime( IncidenceBase::RoleEndRecurrenceBase ).toLocalZone().addSecs(-1); // inclusive, all-day events end on first sec of next day
 
     int days = 1;
     while ( dts.date() < dte.date() ) {
@@ -1671,7 +1671,7 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
 
     // Initialize dts/dte to the current recurrence (if any)
     dts = KDateTime( ei.first.date(), dts.time() );
-    dte = KDateTime( ei.first.date() ).addDays( 1 );
+    dte = KDateTime( ei.first.date().addDays( 1 ), QTime(0, 0, 0) );
 
     int added = 0;
     for (i = 0 ; i < days ; i++) {
