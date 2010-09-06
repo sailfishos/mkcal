@@ -1628,12 +1628,12 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 }
 
 ExtendedCalendar::ExpandedIncidenceList
-expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
-                const QDate &startDate,
-                const QDate &endDate,
-                int maxExpand,
-                bool merge,
-                bool *expandLimitHit )
+ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
+                                  const QDate &startDate,
+                                  const QDate &endDate,
+                                  int maxExpand,
+                                  bool merge,
+                                  bool *expandLimitHit )
 {
   ExtendedCalendar::ExpandedIncidenceList returnList;
   ExtendedCalendar::ExpandedIncidenceList::Iterator iit;
@@ -1641,6 +1641,9 @@ expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
 
   if ( expandLimitHit )
     *expandLimitHit = false;
+
+  qDebug() << "expandMultiDay" << startDate.toString()
+           << endDate.toString() << maxExpand << merge;
   foreach (const ExtendedCalendar::ExpandedIncidence &ei, list) {
     // If not event, not interested
     Incidence::Ptr inc = ei.second;
@@ -1649,7 +1652,8 @@ expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
     if ( inc->type() != Incidence::TypeEvent || !e->isMultiDay() ) {
       if ( merge ) {
         QDate d = ei.first.date();
-        if ( startDate <= d && endDate >= d ) {
+        if ( ( !startDate.isValid() || startDate <= d )
+             && ( !endDate.isValid() || endDate >= d ) ) {
           returnList.append( ei );
         }
       }
@@ -1674,8 +1678,8 @@ expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList &list,
       if ( i || merge ) {
         // Possibly add the currently iterated one.
         // Have to check it against time boundaries using the dts/dte, though
-          if ( startDate < dte.date()
-              && ( !endDate.isValid() || endDate >= dts.date() ) ) {
+          if ( ( !startDate.isValid() || startDate < dte.date() )
+               && ( !endDate.isValid() || endDate >= dts.date() ) ) {
             returnList.append( ExtendedCalendar::ExpandedIncidence( dts.dateTime(), inc ) );
             if (added++ == maxExpand) {
               if (expandLimitHit)

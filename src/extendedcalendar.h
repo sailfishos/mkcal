@@ -733,6 +733,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       days falling outside the [startDate, endDate] range won't be
       expanded.
 
+      Note that both startDate and endDate are optional, and if so,
+      'as much as contained within the individual incidences' will be
+      expanded.
+
       @param list is a pointer to a list of Incidences.
       @param startDate start date for expansion+filtering
       @param endDate end date for expansion+filtering
