@@ -107,11 +107,9 @@ class mKCal::SqliteStorage::Private
             query = insert;
           }
         }
-#ifndef QT_NO_DEBUG
-          // Use cerr to print only queries.
-          cerr << endl << query.toAscii().constData() << endl;
-          //kDebug() << "tracker query:" << select;
-#endif
+
+        kDebug() << query;
+
 #if defined(MKCAL_TRACKER_SYNC)
           QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
           update.waitForFinished();
@@ -2890,11 +2888,9 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
 
   if ( tracker.notifyOpen( incidence, queryList ) ) {
     QString query = queryList.join( QString() );
-#ifndef QT_NO_DEBUG
-    // Use cerr to print only queries.
-    cerr << endl << query.toAscii().constData() << endl;
-    kDebug() << "tracker notify query";
-#endif
+
+    kDebug() << query;
+
     QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
 #if defined(MKCAL_TRACKER_SYNC)
     update.waitForFinished();

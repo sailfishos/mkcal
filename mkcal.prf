@@ -3,5 +3,7 @@ DEPENDPATH += /usr/include/mkcal
 INCLUDEPATH += /usr/include/mkcal
 LIBS += -L/usr/lib/ -lkcalcoren
 DEPENDPATH += /usr/include/kcalcoren
-INCLUDEPATH += /usr/include/kcalcoren
+INCLUDEPATH += /usr/include/kcalcoren \
+    /usr/include/meegotouch 
+
 

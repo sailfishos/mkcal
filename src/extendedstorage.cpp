@@ -360,9 +360,8 @@ bool ExtendedStorage::addNotebook( const Notebook::Ptr &nb, bool signal )
     nb->setUid( QString( suuid ) );
   }
 #else
-//KDAB_TODO:
 #ifdef __GNUC__
-#warning no uuid support. what to do now?
+  #warning no uuid support. It is mandatory :)
 #endif
 #endif
 
@@ -507,7 +506,7 @@ bool ExtendedStorage::validateNotebooks()
 bool ExtendedStorage::isValidNotebook( const QString &notebookUid )
 {
   Notebook::Ptr nb = notebook( notebookUid );
-  if ( nb ) {
+  if ( !nb.isNull() ) {
     if ( nb->isRunTimeOnly() || nb->isReadOnly() ) {
       kDebug() << "notebook" << notebookUid << "isRunTimeOnly or isReadOnly";
       return false;
