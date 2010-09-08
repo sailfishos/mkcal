@@ -201,6 +201,8 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
     case Incidence::TypeFreeBusy:
       type = "FreeBusy";
       break;
+    case Incidence::TypeUnknown:
+      goto error;
     }
     sqlite3_bind_text( stmt1, index, type.constData(), type.length(), SQLITE_STATIC ); // NOTE
 
@@ -1737,7 +1739,7 @@ Person::List SqliteFormat::selectContacts( sqlite3_stmt *stmt )
     }
   } while (rv != SQLITE_DONE);
 
-  list = hash.values();
+  list = hash.values().toVector();
   qSort(list.begin(), list.end(), Persons::countMoreThan);
 
  error:

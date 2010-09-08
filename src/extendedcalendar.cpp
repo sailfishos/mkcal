@@ -56,6 +56,43 @@ using namespace mKCal;
   @internal
 */
 //@cond PRIVATE
+
+template <typename K>
+void removeAll( QVector< QSharedPointer<K> > c, const QSharedPointer<K> &x )
+{
+  if ( x.isNull() ) {
+    return;
+  }
+  c.remove( c.indexOf( x ) );
+}
+
+/**
+  Make a QHash::value that returns a QVector.
+*/
+template <typename K, typename V>
+QVector<V> values( const QMultiHash<K,V> &c )
+{
+  QVector<V> v;
+  v.reserve( c.size() );
+  for ( typename QMultiHash<K,V>::const_iterator it=c.begin(), end=c.end() ; it!=end ; ++it ) {
+    v.push_back( it.value() );
+  }
+  return v;
+}
+
+template <typename K, typename V>
+QVector<V> values( const QMultiHash<K,V> &c, const K &x )
+{
+  QVector<V> v;
+  typename QMultiHash<K,V>::const_iterator it = c.find( x );
+  while ( it != c.end() && it.key() == x ) {
+    v.push_back( it.value() );
+    ++it;
+  }
+  return v;
+}
+
+
 class mKCal::ExtendedCalendar::Private
 {
   public:
@@ -307,7 +344,7 @@ bool ExtendedCalendar::deleteEvent( const Event::Ptr &event )
     d->mDeletedEvents.insert( uid, event );
 
     if ( event->hasGeo() ) {
-      d->mGeoIncidences.removeAll( event );
+      removeAll( d->mGeoIncidences, event.staticCast<Incidence>() );
     }
 
     d->mEventsForDate.remove( event->dtStart().toTimeSpec( timeSpec() ).date().toString(), event );
@@ -488,7 +525,7 @@ bool ExtendedCalendar::deleteTodo( const Todo::Ptr &todo )
     d->mDeletedTodos.insert( todo->uid(), todo );
 
     if ( todo->hasGeo() ) {
-      d->mGeoIncidences.removeAll( todo );
+      removeAll( d->mGeoIncidences, todo.staticCast<Incidence>() );
     }
 
     if ( todo->hasDueDate() ) {
@@ -808,7 +845,7 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid, const KDateTime &rec
         event->dtStart().toTimeSpec( timeSpec() ).date().toString(), event );
     }
     if ( event->hasGeo() ) {
-      d->mGeoIncidences.removeAll( event );
+      removeAll( d->mGeoIncidences, event.staticCast<Incidence>() );
     }
   } else if ( incidence->type() == Incidence::TypeTodo ) {
     Todo::Ptr todo = incidence.staticCast<Todo>();
@@ -819,7 +856,7 @@ void ExtendedCalendar::incidenceUpdate( const QString &uid, const KDateTime &rec
         todo->dtStart().toTimeSpec( timeSpec() ).date().toString(), todo );
     }
     if ( todo->hasGeo() ) {
-      d->mGeoIncidences.removeAll( todo );
+      removeAll( d->mGeoIncidences, todo.staticCast<Incidence>() );
     }
   } else if ( incidence->type() == Incidence::TypeJournal ) {
     Journal::Ptr journal = incidence.staticCast<Journal>();
@@ -1363,7 +1400,7 @@ QStringList ExtendedCalendar::attendees()
 
 Incidence::List ExtendedCalendar::attendeeIncidences( const QString &email )
 {
-  return d->mAttendeeIncidences.values( email );
+  return values( d->mAttendeeIncidences, email );
 }
 
 Incidence::List ExtendedCalendar::geoIncidences()
@@ -1376,8 +1413,8 @@ Incidence::List ExtendedCalendar::geoIncidences( float geoLatitude, float geoLon
 {
   Incidence::List list;
 
-  QList<Incidence::Ptr> values = incidences( QString() );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = incidences( QString() );
+  Incidence::List::const_iterator it;
   for ( it = values.begin(); it != values.end(); ++it ) {
     float lat = (*it)->geoLatitude();
     float lon = (*it)->geoLongitude();
@@ -1430,8 +1467,8 @@ Incidence::List ExtendedCalendar::sortIncidences( Incidence::List *incidenceList
 {
   Incidence::List incidenceListSorted;
   Incidence::List tempList;
-  Incidence::List::Iterator sortIt;
-  Incidence::List::Iterator iit;
+//  Incidence::List::Iterator sortIt;
+//  Incidence::List::Iterator iit;
 
   switch ( sortField ) {
   case IncidenceSortUnsorted:
@@ -2125,8 +2162,8 @@ Incidence::List ExtendedCalendar::contactIncidences( const Person::Ptr &person,
 {
   Incidence::List list;
   Incidence::List::Iterator it;
-  Incidence::List values = d->mAttendeeIncidences.values( person->email() );
-  for ( it = values.begin(); it != values.end(); ++it ) {
+  Incidence::List vals = values( d->mAttendeeIncidences, person->email() );
+  for ( it = vals.begin(); it != vals.end(); ++it ) {
     Incidence::Ptr incidence = *it;
     if ( incidence->type() == Incidence::TypeEvent ) {
       Event::Ptr event = incidence.staticCast<Event>();

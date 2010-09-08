@@ -37,7 +37,7 @@ DefaultInvitationPlugin::DefaultInvitationPlugin()
 {
 }
 
-bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, Incidence::Ptr invitation, const QString &body)
+bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const Incidence::Ptr &invitation, const QString &body)
 {
     Q_UNUSED(accountId);
     Q_UNUSED(invitation);
@@ -46,7 +46,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, Incidence
     return false;
 }
 
-bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, Incidence::Ptr invitation, const QString &body)
+bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Incidence::Ptr &invitation, const QString &body)
 {
     Q_UNUSED(accountId);
     Q_UNUSED(invitation);
@@ -55,7 +55,7 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, Incidence::Pt
     return false;
 }
 
-bool DefaultInvitationPlugin::sendResponse(const QString &accountId, Incidence::Ptr invitation, const QString &body)
+bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incidence::Ptr &invitation, const QString &body)
 {
     Q_UNUSED(accountId);    // not needed by this plugin: we use the default account
 

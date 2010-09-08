@@ -60,13 +60,13 @@ public:
         @param notebook pointer to the notebook that we want to share
         @return email address of service
     */
-    virtual QString emailAddress(mKCal::Notebook::Ptr notebook) const = 0;
+    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) const = 0;
 
     /** \brief returns the display name of account of service.
         @param notebook pointer to the notebook that we want to share
         @return display name of account of service
     */
-    virtual QString displayName(mKCal::Notebook::Ptr notebook) const = 0;
+    virtual QString displayName(const mKCal::Notebook::Ptr &notebook) const = 0;
 
     /** \brief sttart the download of an attachment.
         @param uri uri of attachment to be downloaded
@@ -79,13 +79,13 @@ public:
         @param sharedWith email address or phone number of users
         @return True if OK, false otherwise.
     */
-    virtual bool shareNotebook(mKCal::Notebook::Ptr notebook, const QStringList &sharedWith) = 0;
+    virtual bool shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith) = 0;
 
     /** \brief Returns list of emails, phones# of the persons that a notebook is shared with.
         @param notebook pointer to the notebook
         @return list of email addresses or phone numbers
     */
-    virtual QStringList sharedWith(mKCal::Notebook::Ptr notebook) const = 0;
+    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) const = 0;
 
     /** \brief The name of this service.
         It should be a uniq name specifying which service to use

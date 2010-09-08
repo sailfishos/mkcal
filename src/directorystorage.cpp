@@ -492,8 +492,8 @@ bool DirectoryStorage::save( const QString &notebook )
 
     // Reset all alarms.
     clearAlarms( notebook );
-    QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-    QList<Incidence::Ptr>::const_iterator it;
+    Incidence::List values = calendar()->incidences( notebook );
+    Incidence::List::const_iterator it;
     for ( it = values.begin(); it != values.end(); ++it ) {
       resetAlarms( *it );
     }
@@ -631,8 +631,8 @@ void DirectoryStorage::directoryChanged ( const QString &path )
 bool DirectoryStorage::insertedIncidences( Incidence::List *list, const KDateTime &after,
                                            const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( !after.isValid() || (*it)->created() > after ) {
@@ -646,8 +646,8 @@ bool DirectoryStorage::insertedIncidences( Incidence::List *list, const KDateTim
 bool DirectoryStorage::modifiedIncidences( Incidence::List *list, const KDateTime &after,
                                            const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( !after.isValid() || (*it)->lastModified() > after ) {
@@ -698,8 +698,8 @@ bool DirectoryStorage::deletedIncidences( Incidence::List *list,
 
 bool DirectoryStorage::allIncidences( Incidence::List *list, const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences(notebook);
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences(notebook);
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     Incidence::Ptr incidence = Incidence::Ptr( (*it)->clone() );
@@ -712,8 +712,8 @@ bool DirectoryStorage::allIncidences( Incidence::List *list, const QString &note
 bool DirectoryStorage::duplicateIncidences( Incidence::List *list, const Incidence::Ptr &incidence,
                                             const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( ( ( incidence->dtStart() == (*it)->dtStart() ) ||

@@ -506,18 +506,18 @@ bool TrackerStorage::save()
 
   if ( d->mSynchronuousMode ) {
     // Incidences to insert
-    tempList = d->mIncidencesToInsert.values();
+    tempList = d->mIncidencesToInsert.values().toVector();
     d->mOperationList = d->filterIncidences( &tempList );
-    Incidence::List keyList = d->mOperationList.keys();
+    Incidence::List keyList = d->mOperationList.keys().toVector();
     foreach ( const Incidence::Ptr incidence, keyList ) {
       resetAlarms( incidence );
     }
     d->mFormat->modifyComponents( &d->mOperationList, DBInsert );
     if ( !d->mOperationError ) {
       // Incidences to update
-      tempList = d->mIncidencesToUpdate.values();
+      tempList = d->mIncidencesToUpdate.values().toVector();
       d->mOperationList = d->filterIncidences( &tempList );
-      Incidence::List keyList = d->mOperationList.keys();
+      Incidence::List keyList = d->mOperationList.keys().toVector();
       foreach ( const Incidence::Ptr incidence, keyList ) {
         resetAlarms( incidence );
       }
@@ -525,9 +525,9 @@ bool TrackerStorage::save()
     }
     if ( !d->mOperationError ) {
       // Incidences to delete
-      tempList = d->mIncidencesToDelete.values();
+      tempList = d->mIncidencesToDelete.values().toVector();
       d->mOperationList = d->filterIncidences( &tempList );
-      Incidence::List keyList = d->mOperationList.keys();
+      Incidence::List keyList = d->mOperationList.keys().toVector();
       foreach ( const Incidence::Ptr incidence, keyList ) {
         clearAlarms(incidence);
       }
@@ -542,9 +542,9 @@ bool TrackerStorage::save()
     setFinished( d->mOperationError, d->mOperationErrorMessage );
   } else {
     d->mOperationState = 1;
-    tempList = d->mIncidencesToInsert.values();
+    tempList = d->mIncidencesToInsert.values().toVector();
     d->mOperationList = d->filterIncidences( &tempList );
-    Incidence::List keyList = d->mOperationList.keys();
+    Incidence::List keyList = d->mOperationList.keys().toVector();
     foreach ( const Incidence::Ptr incidence, keyList ) {
       resetAlarms( incidence );
     }
@@ -571,9 +571,9 @@ void TrackerStorage::saved( bool error, QString message )
       if ( !error ) {
         // Incidences to update
         d->mOperationState = 2;
-        tempList = d->mIncidencesToUpdate.values();
+        tempList = d->mIncidencesToUpdate.values().toVector();
         d->mOperationList = d->filterIncidences( &tempList );
-        Incidence::List keyList = d->mOperationList.keys();
+        Incidence::List keyList = d->mOperationList.keys().toVector();
         foreach ( const Incidence::Ptr incidence, keyList ) {
           resetAlarms( incidence );
         }
@@ -584,9 +584,9 @@ void TrackerStorage::saved( bool error, QString message )
       if ( !error ) {
         // Incidences to delete
         d->mOperationState = 3;
-        tempList = d->mIncidencesToDelete.values();
+        tempList = d->mIncidencesToDelete.values().toVector();
         d->mOperationList = d->filterIncidences( &tempList );
-        Incidence::List keyList = d->mOperationList.keys();
+        Incidence::List keyList = d->mOperationList.keys().toVector();
         foreach ( const Incidence::Ptr incidence, keyList ) {
           clearAlarms( incidence );
         }
