@@ -751,8 +751,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     ExpandedIncidenceList expandMultiDay( const ExpandedIncidenceList &list,
                                           const QDate &startDate,
                                           const QDate &endDate,
-                                          int maxExpand,
-                                          bool merge,
+                                          int maxExpand = 1000,
+                                          bool merge = true,
                                           bool *expandLimitHit = 0 );
 
     using KCalCore::Calendar::incidences;
