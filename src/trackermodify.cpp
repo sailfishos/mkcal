@@ -276,6 +276,8 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
     case Incidence::TypeFreeBusy:
       type = "FreeBusy";
       break;
+    case Incidence::TypeUnknown:
+      return false;
     }
 
   insertQuery << "<" << d->uriAndRecurrenceId( incidence ) << "> a ncal:" << type;
@@ -470,6 +472,8 @@ bool TrackerModify::notifyOpen( const Incidence::Ptr &incidence, QStringList &qu
     case Incidence::TypeFreeBusy:
       type = "FreeBusy";
       break;
+  case Incidence::TypeUnknown:
+    return false;
     }
 
   query << "<" << d->uriAndRecurrenceId( incidence ) << "> a ncal:" << type;
