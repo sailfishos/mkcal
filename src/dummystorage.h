@@ -144,6 +144,10 @@ public:
     {
         return 0;
     }
+    int loadFutureIncidences(int, KDateTime*)
+    {
+        return 0;
+    }
     int loadGeoIncidences(bool, int, KDateTime*)
     {
         return 0;
