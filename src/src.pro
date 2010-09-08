@@ -88,6 +88,7 @@ HEADERS += extendedcalendar.h \
     servicehandlerif.h \
     servicehandler.h \
     compatibility.h \
+    dummystorage.h \
     mkcal_export.h
 SOURCES += extendedcalendar.cpp \
     directorystorage.cpp \

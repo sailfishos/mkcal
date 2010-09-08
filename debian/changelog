@@ -1,3 +1,23 @@
+libmkcal (0.1.11) unstable; urgency=low
+
+  * Dummystorage added 
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 02 Sep 2010 14:15:54 +0300
+
+libmkcal (0.1.10) unstable; urgency=low
+
+  * Adding virtual hook. ABI Break
+  * More virtual_hooks
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 02 Sep 2010 10:43:09 +0300
+
+libmkcal (0.1.9) unstable; urgency=low
+
+  * Adding api file
+  * Added defaultinvitationplugin to gitignore.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 01 Sep 2010 10:31:46 +0300
+
 libmkcal (0.1.8) unstable; urgency=low
 
   * Added type field to timed reminder attributes.

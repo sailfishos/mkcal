@@ -104,6 +104,15 @@ class MKCAL_EXPORT Compatibility
     */
     virtual void fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  );
 
+    /**
+      Standard trick to add virtuals later.
+
+      @param id is any integer unique to this class which we will use to identify the method
+             to be called.
+      @param data is a pointer to some glob of data, typically a struct.
+    */
+    virtual void virtual_hook( int id, void *data );
+
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( Compatibility )
