@@ -1,3 +1,18 @@
+libmkcal (0.1.12) unstable; urgency=low
+
+  * converting to qvector
+  * Changes to QVector
+  * Experimental loadFutureIncidences + expandMultiDay.
+  * Rewrote the iteration logic of expandRecurrences to be bit more effective (no longer keeping track of end date, got rid of some excess variables with high initialization cost, and disabled the CPU-expensive debug stmts).
+  * Optimized Some work on expandMultiDay + made the kDebug()s #if'd.
+  * Fixed multiday expansion to have optional start + end.
+  * Fixed off-by-one in the timestamp handling of expandMultiDay.
+  * Adapt to interface change
+  * Added missing loadFutureIncidences to DummyStorage.
+  * Added some reasonable defaults for expandMultiDay.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 09 Sep 2010 10:01:01 +0300
+
 libmkcal (0.1.11) unstable; urgency=low
 
   * Dummystorage added 
