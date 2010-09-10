@@ -766,6 +766,7 @@ Incidence::Ptr ExtendedStorage::checkAlarm( const QString &uid, const QString &r
 
 Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString color )
 {
+  QString uid;
 #ifdef MKCAL_FOR_MEEGO
   if (name.isEmpty()) {
     MLocale locale;
@@ -775,13 +776,14 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
   }
   if (color.isEmpty())
       color = "#63B33B";
+  uid = "11111111-2222-3333-4444-555555555555";
 #else
   if (name.isEmpty())
     name = "Default";
   if (color.isEmpty())
     color = "#0000FF";
 #endif
-  Notebook::Ptr nbDefault = Notebook::Ptr( new Notebook(QString(), name, QString(), color, false, true, false, false, true) );
+  Notebook::Ptr nbDefault = Notebook::Ptr( new Notebook(uid, name, QString(), color, false, true, false, false, true) );
   addNotebook(nbDefault, false);
   setDefaultNotebook(nbDefault);
   return nbDefault;
