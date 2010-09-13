@@ -1,6 +1,6 @@
 TEMPLATE = lib
-TARGET = defaultinvitationplugin
-CONFIG += plugin kcalcoren
+TARGET = $$qtLibraryTarget(defaultinvitationplugin)
+CONFIG += plugin kcalcoren plugin
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
 INCLUDEPATH +=  . \

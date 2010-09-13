@@ -600,6 +600,9 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
     // This really has to exist or code is badly broken
     Q_ASSERT( !incidence->uid().isEmpty() );
     e.setAttribute( "uid", incidence->uid() );
+#ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
+    e.setAttribute( "alarmtime", alarmTime.toString() );
+#endif
     if ( !incidence->location().isEmpty() ) {
       e.setAttribute( "location", incidence->location() );
     }
