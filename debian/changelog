@@ -1,3 +1,9 @@
+libmkcal (0.1.13) unstable; urgency=low
+
+  * Use fixed uuid for the Personal notebook
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 13 Sep 2010 10:13:48 +0300
+
 libmkcal (0.1.12) unstable; urgency=low
 
   * converting to qvector
