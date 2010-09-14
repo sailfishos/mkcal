@@ -1,3 +1,9 @@
+libmkcal (0.1.14) unstable; urgency=low
+
+  * Small changes building plugin
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 14 Sep 2010 11:26:20 +0300
+
 libmkcal (0.1.13) unstable; urgency=low
 
   * Use fixed uuid for the Personal notebook
