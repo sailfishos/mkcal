@@ -259,7 +259,7 @@ bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Ext
     i = d->mServices.find(notebook->pluginName());
 
     if (i != d->mServices.end())
-        return i.value()->downloadAttachment(uri);
+        return i.value()->downloadAttachment(notebook, uri);
     else
         return false;
 }

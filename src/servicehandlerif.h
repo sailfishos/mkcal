@@ -72,7 +72,7 @@ public:
         @param uri uri of attachment to be downloaded
 	@return True if OK, false otherwise.
     */
-    virtual bool downloadAttachment(const QString &uri) const = 0;
+    virtual bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri) = 0;
 
     /** \brief Share notebook.
         @param notebook pointer to the notebook that we want to share
