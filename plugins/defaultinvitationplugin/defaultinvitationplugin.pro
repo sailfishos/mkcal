@@ -6,7 +6,7 @@ MOC_DIR = .moc
 INCLUDEPATH +=  . \
                 ../.. \
                 ../../src \
-                /usr/include/qtopiamail \
+                /usr/include/qmfclient \
 
 QMAKE_LIBDIR += ../../src
 LIBS += -lkcalcoren
@@ -28,8 +28,8 @@ HEADERS +=  defaultinvitationplugin.h \
 SOURCES +=  defaultinvitationplugin.cpp \
 
 contains (DEFINES, MKCAL_FOR_MEEGO) {
-    LIBS += -lqtopiamail
+    LIBS += -lqmfclient
     HEADERS += transmitemail.h
     SOURCES += transmitemail.cpp
-    INCLUDEPATH += /usr/include/qtopiamail
+    INCLUDEPATH += /usr/include/qmfclient
 }
