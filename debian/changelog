@@ -1,3 +1,9 @@
+libmkcal (0.1.15) unstable; urgency=low
+
+  * NO_REVIEWBOARD: minor change for servicehandler api for downloading attachment
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 17 Sep 2010 10:11:28 +0300
+
 libmkcal (0.1.14) unstable; urgency=low
 
   * Small changes building plugin
