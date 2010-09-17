@@ -2103,6 +2103,7 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
   QHash<QString,Incidence::Ptr>::const_iterator it;
   char *errmsg = NULL;
   const char *query = NULL;
+  QVector<Incidence::Ptr> validIncidences;
 
   query = BEGIN_TRANSACTION;
   sqlite3_exec( mDatabase );
@@ -2132,8 +2133,10 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
   for ( it = list.constBegin(); it != list.constEnd(); ++it ) {
     QString notebookUid = mCalendar->notebook( *it );
     if ( !mStorage->isValidNotebook( notebookUid ) ) {
-      kDebug() << "invalid notebook - not saving incidence" << (*it)->uid();
+      kDebug() << "invalid notebook - not saving incidence" << (*it)->uid();      
       continue;
+    } else {
+      validIncidences << *it;
     }
 
     (*it)->setLastModified( KDateTime::currentUtcDateTime() );
@@ -2147,13 +2150,7 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
       // Also save into tracker.
       modifyTracker( *it, dbop, notebookUid );
     }
-    if ( dbop == DBDelete ) {
-      // Remove all alarms.
-      mStorage->clearAlarms( *it );
-    } else {
-      // Reset all alarms.
-      mStorage->resetAlarms( *it );
-    }
+
     sqlite3_reset( stmt1 );
     sqlite3_reset( stmt2 );
     if ( stmt3 ) {
@@ -2176,6 +2173,15 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
       sqlite3_reset( stmt11 );
     }
   }
+
+  if ( dbop == DBDelete ) {
+    // Remove all alarms.
+    mStorage->clearAlarms(validIncidences);
+  } else {
+    // Reset all alarms.
+    mStorage->resetAlarms(validIncidences);
+  }
+
   list.clear();
   // TODO What if there were errors? Options: 1) rollback 2) best effort.
 

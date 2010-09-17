@@ -643,6 +643,11 @@ class MKCAL_EXPORT ExtendedStorage
     void resetAlarms( const KCalCore::Incidence::Ptr &incidence );
 
     /**
+      Reset alarms for list of incidences.
+    */
+    void resetAlarms( const KCalCore::Incidence::List &incidences );
+
+    /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 
@@ -677,6 +682,7 @@ class MKCAL_EXPORT ExtendedStorage
     void setProgress( const QString &info );
     void setFinished( bool error, const QString &info );
     void clearAlarms( const KCalCore::Incidence::Ptr &incidence );
+    void clearAlarms( const KCalCore::Incidence::List &incidences );
     void clearAlarms( const QString &nname );
 
     bool isUncompletedTodosLoaded();
