@@ -1,3 +1,11 @@
+libmkcal (0.1.16) unstable; urgency=low
+
+  * Use timed batch api for alarm adding (add_events_sync)
+  * NO_REVIEWBOARD: path added as parameter for downloadAttachment
+  * Fixed compilation of a plugin - NO_REVIEWBOARD
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 20 Sep 2010 11:44:51 +0300
+
 libmkcal (0.1.15) unstable; urgency=low
 
   * NO_REVIEWBOARD: minor change for servicehandler api for downloading attachment
