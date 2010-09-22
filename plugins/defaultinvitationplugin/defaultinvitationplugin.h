@@ -37,6 +37,9 @@ public:
     //! \brief DefaultInvitationPlugin constructor class.
     DefaultInvitationPlugin();
 
+    //! \brief DefaultInvitationPlugin destructor class.
+    ~DefaultInvitationPlugin();
+
     //! \reimp
     bool sendInvitation(const QString &accountId, const Incidence::Ptr &invitation, const QString &body);
     bool sendUpdate(const QString &accountId, const Incidence::Ptr &invitation, const QString &body);
@@ -44,6 +47,12 @@ public:
     QString pluginName() const;
     //! \reimp_end
 
+private:
+  //@cond PRIVATE
+  Q_DISABLE_COPY( DefaultInvitationPlugin )
+  class Private;
+  Private *const d;
+  //@endcond
 };
 
 #endif

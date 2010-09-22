@@ -19,6 +19,9 @@
   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
   Boston, MA 02110-1301, USA.
 */
+
+#ifdef MKCAL_DIRECTORY_SUPPORT
+
 /**
   @file
   This file is part of the API for handling calendar data and
@@ -1070,3 +1073,5 @@ void DirectoryStorage::virtual_hook( int id, void *data )
   Q_UNUSED( data );
   Q_ASSERT( false );
 }
+
+#endif

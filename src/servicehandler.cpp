@@ -37,7 +37,8 @@ using namespace KCalCore;
 enum ExecutedPlugin {
   None = 0,
   SendInvitation,
-  SendResponse
+  SendResponse,
+  SendUpdate
 };
 
 ServiceHandler *mInstance = 0;
@@ -110,7 +111,9 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 	    return i.value()->sendInvitation(accountId, invitation, body);
         else if (mExecutedPlugin == SendResponse)
 	    return i.value()->sendResponse(accountId, invitation, body);
-        else
+        else if (mExecutedPlugin == SendUpdate)
+          return i.value()->sendUpdate(accountId, invitation, body);
+      else
 	    return false;
     else
         return false;
@@ -134,12 +137,11 @@ bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QStr
 
 bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
 {
-    Q_UNUSED(invitation);
-    Q_UNUSED(calendar);
-    Q_UNUSED(storage);
-    Q_UNUSED(body);
+  if (!d->mLoaded)
+      d->loadPlugins();
 
-    return false;
+  d->mExecutedPlugin = SendUpdate;
+  return d->executePlugin( invitation, body, calendar, storage );
 }
 
 

@@ -24,8 +24,12 @@
   This file is part of the API for handling calendar data and
   defines the DirectoryStorage class.
 
+  Deprecated. Kept here for history of the code and as another
+  example of a different storage.
+
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
 */
+#ifdef MKCAL_DIRECTORY_SUPPORT
 
 #ifndef MKCAL_DIRECTORYSTORAGE_H
 #define MKCAL_DIRECTORYSTORAGE_H
@@ -377,3 +381,5 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
 }
 
 #endif
+
+#endif //MKCAL_DIRECTORY_SUPPORT
