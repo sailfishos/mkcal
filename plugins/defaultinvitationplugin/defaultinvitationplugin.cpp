@@ -37,11 +37,10 @@ DefaultInvitationPlugin::DefaultInvitationPlugin()
 {
 }
 
-bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid, const QString &notebookName, const Incidence::Ptr &invitation, const QString &body)
+bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid, const Incidence::Ptr &invitation, const QString &body)
 {
     Q_UNUSED(accountId);
     Q_UNUSED(notebookUid);
-    Q_UNUSED(notebookName);
     Q_UNUSED(invitation);
     Q_UNUSED(body);
     qDebug() << "*** DefaultInvitationPlugin::sendInvitation";

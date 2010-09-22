@@ -90,13 +90,11 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 {
     QString pluginName;
     QString accountId;
-    QString name;
 
     QString notebookUid = calendar->notebook(invitation);
     if (storage->isValidNotebook(notebookUid)) {
         pluginName = storage->notebook(notebookUid)->pluginName();
         accountId  = storage->notebook(notebookUid)->account();
-        name  = storage->notebook(notebookUid)->name();
     }
     if (pluginName.isEmpty())
         pluginName = defaultName;
@@ -109,7 +107,7 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 
     if (i != mPlugins.end())
         if (mExecutedPlugin == SendInvitation)
-	    return i.value()->sendInvitation(accountId, notebookUid, name, invitation, body);
+	    return i.value()->sendInvitation(accountId, notebookUid, invitation, body);
         else if (mExecutedPlugin == SendResponse)
 	    return i.value()->sendResponse(accountId, invitation, body);
         else
