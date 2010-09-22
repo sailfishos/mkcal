@@ -198,6 +198,7 @@
 
 #include <calendar.h>
 #include <icaltimezones.h>
+#include <extendedstorageobserver.h>
 
 namespace mKCal {
 
@@ -208,7 +209,8 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
+class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
+                                      public ExtendedStorageObserver
 {
   public:
     /**
@@ -924,7 +926,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
        contents on the storage change.
      */
     virtual void storageModified( ExtendedStorage *storage, const QString &info );
-
+    virtual void storageProgress( ExtendedStorage *storage, const QString &info );
+    virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info );
+    
+    
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )

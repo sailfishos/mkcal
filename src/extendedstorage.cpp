@@ -98,7 +98,7 @@ class mKCal::ExtendedStorage::Private
     bool mIsUnreadIncidencesLoaded;
     bool mIsInvitationIncidencesLoaded;
     bool mIsJournalsLoaded;
-    QList<StorageObserver*> mObservers;
+    QList<ExtendedStorageObserver*> mObservers;
     QHash<QString,Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
 };
@@ -109,13 +109,11 @@ ExtendedStorage::ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validat
     d( new ExtendedStorage::Private ( cal, validateNotebooks ) )
 {
   // Add the calendar as observer
-  cal->registerObserver( this );
+  registerObserver( cal.data() );
 }
 
 ExtendedStorage::~ExtendedStorage()
 {
-  // Unregister as observer; if we don't, when we terminate bad things happen
-  calendar()->unregisterObserver( this );
   delete d;
 }
 
@@ -289,26 +287,22 @@ void ExtendedStorage::setIsInvitationIncidencesLoaded( bool loaded )
   d->mIsInvitationIncidencesLoaded = loaded;
 }
 
-ExtendedStorage::StorageObserver::~StorageObserver()
-{
-}
-
 #if 0
-void ExtendedStorage::StorageObserver::storageModified( ExtendedStorage *storage,
+void ExtendedStorage::ExtendedStorageObserver::storageModified( ExtendedStorage *storage,
                                                         const QString &info )
 {
   Q_UNUSED( storage );
   Q_UNUSED( info );
 }
 
-void ExtendedStorage::StorageObserver::storageProgress( ExtendedStorage *storage,
+void ExtendedStorage::ExtendedStorageObserver::storageProgress( ExtendedStorage *storage,
                                                         const QString &info )
 {
   Q_UNUSED( storage );
   Q_UNUSED( info );
 }
 
-void ExtendedStorage::StorageObserver::storageFinished( ExtendedStorage *storage,
+void ExtendedStorage::ExtendedStorageObserver::storageFinished( ExtendedStorage *storage,
                                                         bool error, const QString &info )
 {
   Q_UNUSED( storage );
@@ -317,14 +311,14 @@ void ExtendedStorage::StorageObserver::storageFinished( ExtendedStorage *storage
 }
 #endif
 
-void ExtendedStorage::registerObserver( StorageObserver *observer )
+void ExtendedStorage::registerObserver( ExtendedStorageObserver *observer )
 {
   if ( !d->mObservers.contains( observer ) ) {
     d->mObservers.append( observer );
   }
 }
 
-void ExtendedStorage::unregisterObserver( StorageObserver *observer )
+void ExtendedStorage::unregisterObserver( ExtendedStorageObserver *observer )
 {
   d->mObservers.removeAll( observer );
 }
@@ -342,21 +336,21 @@ void ExtendedStorage::setModified( const QString &info )
   d->mIsUnreadIncidencesLoaded = false;
   d->mIsInvitationIncidencesLoaded = false;
 
-  foreach ( StorageObserver *observer, d->mObservers ) {
+  foreach ( ExtendedStorageObserver *observer, d->mObservers ) {
     observer->storageModified( this, info );
   }
 }
 
 void ExtendedStorage::setProgress( const QString &info )
 {
-  foreach ( StorageObserver *observer, d->mObservers ) {
+  foreach ( ExtendedStorageObserver *observer, d->mObservers ) {
     observer->storageProgress( this, info );
   }
 }
 
 void ExtendedStorage::setFinished( bool error, const QString &info )
 {
-  foreach ( StorageObserver *observer, d->mObservers ) {
+  foreach ( ExtendedStorageObserver *observer, d->mObservers ) {
     observer->storageFinished( this, error, info );
   }
 }

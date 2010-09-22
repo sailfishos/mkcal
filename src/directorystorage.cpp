@@ -87,7 +87,6 @@ class mKCal::DirectoryStorage::Private
     QHash<QString, QString> mUidMappings;
     bool mIsOpened;
     bool mIsLoading;
-    QList<StorageObserver*> mObservers;
     QFileSystemWatcher *mWatcher;
     QHash<QString,Notebook::Ptr> mNotebooks; // name to notebook
 };
