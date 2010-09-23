@@ -98,7 +98,7 @@ public:
     // Put message to standard outbox folder fo that account
     message.setParentFolderId( QMailFolderId( QMailFolder::OutboxFolder ) );
     // Setup message status
-    message.setStatus( QMailMessage::Outbox );
+    message.setStatus((QMailMessage::Outbox | QMailMessage::Draft | QMailMessage::Outgoing), true);
     // Define recipeint's address
     QList<QMailAddress> addresses;
     foreach( const QString &mail, recipients) {
