@@ -1,3 +1,11 @@
+libmkcal (0.1.17) unstable; urgency=low
+
+  * NO_REVIEWBOARD: invitationhandlerif has been changed
+  * NO_REVIEWBOARD: notebook name removed from sendInvitation calls
+  * Fixes: NB#187938 - MfE: Calendar sync events not shown until calendar application is relaunched.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 23 Sep 2010 10:22:53 +0300
+
 libmkcal (0.1.16) unstable; urgency=low
 
   * Use timed batch api for alarm adding (add_events_sync)
