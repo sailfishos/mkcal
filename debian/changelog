@@ -1,3 +1,9 @@
+libmkcal (0.1.18) unstable; urgency=low
+
+  * Removed unused variable names from dummystorage.h -> no warnings for gcalendar.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 27 Sep 2010 11:35:30 +0300
+
 libmkcal (0.1.17) unstable; urgency=low
 
   * NO_REVIEWBOARD: invitationhandlerif has been changed
