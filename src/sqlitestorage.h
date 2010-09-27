@@ -572,7 +572,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define SELECT_COMPONENTS_BY_JOURNAL \
 "select * from Components where Type='Journal' and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_JOURNAL_DATE \
-"select * from Components where Type='Journal' and DateDeleted=0 and datestart<=? order by DateStart desc"
+"select * from Components where Type='Journal' and DateDeleted=0 and datestart<=? order by DateStart,DateCreated desc"
 #define SELECT_COMPONENTS_BY_PLAIN \
 "select * from Components where DateStart=0 and DateEndDue=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_RECURSIVE \
@@ -594,23 +594,23 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
 "select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_DATE \
-"select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc"
+"select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue,DateCreated desc"
 #define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_CREATED \
 "select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_DATE_SMART \
-"select * from Components where DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc"
+"select * from Components where DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue,DateCreated desc"
 
 #define FUTURE_DATE_SMART_FIELD                                 \
 " (case type when 'Todo' then DateEndDue else DateStart end) "
 #define SELECT_COMPONENTS_BY_FUTURE_DATE_SMART                  \
     "select * from Components where "                           \
     FUTURE_DATE_SMART_FIELD ">=? and DateDeleted=0 order by "   \
-    FUTURE_DATE_SMART_FIELD " asc"
+    FUTURE_DATE_SMART_FIELD ",DateCreated asc"
 
 #define SELECT_COMPONENTS_BY_CREATED_SMART                              \
 "select * from Components where DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_GEO_AND_DATE \
-"select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc"
+"select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue,DateCreated desc"
 #define SELECT_COMPONENTS_BY_GEO_AND_CREATED \
 "select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_INVITATION_UNREAD \
