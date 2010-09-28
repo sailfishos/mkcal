@@ -1,3 +1,9 @@
+libmkcal (0.1.19) unstable; urgency=low
+
+  * Fixes:NB#185274 - Events are not displayed in the created order in Event list.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 28 Sep 2010 10:17:28 +0300
+
 libmkcal (0.1.18) unstable; urgency=low
 
   * Removed unused variable names from dummystorage.h -> no warnings for gcalendar.
