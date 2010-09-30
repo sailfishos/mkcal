@@ -172,7 +172,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const Inc
   invitation->setOrganizer( d->defaultAddress() );
 
   ICalFormat icf;
-  QString ical = vcalHead + icf.toString(invitation) + vcalFoot;
+  QString ical =  icf.createScheduleMessage( invitation, iTIPPublish ) ;
 
 
   QStringList emails;
@@ -214,7 +214,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
   }
 
   ICalFormat icf;
-  QString ical = vcalHead + icf.toString(invitation) + vcalFoot;
+  QString ical =  icf.createScheduleMessage( invitation, iTIPReply) ;
   //    QString base64Data = ical;
 
   bool res = d->sendMail(QStringList( organizer->email() ), invitation->summary(), body, ical);
