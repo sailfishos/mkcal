@@ -1,0 +1,11 @@
+#!/bin/sh
+
+if [ -d /home/user/ ]
+then
+	echo "Yes"
+	if [ ! -f /home/user/.calendardb ]
+	then 
+	    touch /home/user/.calendardb
+	    chown calendar:calendar /home/user/.calendardb
+	fi
+fi
