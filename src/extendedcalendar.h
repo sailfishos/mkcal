@@ -198,6 +198,7 @@
 
 #include <calendar.h>
 #include <icaltimezones.h>
+#include <extendedstorageobserver.h>
 
 namespace mKCal {
 
@@ -208,7 +209,8 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
+class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
+                                      public ExtendedStorageObserver
 {
   public:
     /**
@@ -741,7 +743,38 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
                                              const KDateTime &start,
                                              const KDateTime &end,
                                              int maxExpand = 1000,
-                                             bool *expandLimitHit = 0);
+                                             bool *expandLimitHit = 0 );
+
+    /**
+      Expand multiday incidences in a list.
+
+      This call expands the multiday events within the given list so
+      that there's an event for each day. The start and end parameters
+      are used for filtering for the expansion filtering range, and
+      days falling outside the [startDate, endDate] range won't be
+      expanded.
+
+      Note that both startDate and endDate are optional, and if so,
+      'as much as contained within the individual incidences' will be
+      expanded.
+
+      @param list is a pointer to a list of Incidences.
+      @param startDate start date for expansion+filtering
+      @param endDate end date for expansion+filtering
+      @param maxExpand maximum number of days single multiday event
+      instance can be expanded into
+      @param merge whether the results should be merged to the list or not.
+      @return a list of ExpandedIncidences sorted by start time in
+      ascending order. The list may contain the initial parameter list
+      if merge is true, or only the bonus multiday incidences if merge
+      is false.
+     */
+    ExpandedIncidenceList expandMultiDay( const ExpandedIncidenceList &list,
+                                          const QDate &startDate,
+                                          const QDate &endDate,
+                                          int maxExpand = 1000,
+                                          bool merge = true,
+                                          bool *expandLimitHit = 0 );
 
     using KCalCore::Calendar::incidences;
 
@@ -912,7 +945,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
        contents on the storage change.
      */
     virtual void storageModified( ExtendedStorage *storage, const QString &info );
-
+    virtual void storageProgress( ExtendedStorage *storage, const QString &info );
+    virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info );
+    
+    
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )

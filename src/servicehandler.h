@@ -131,9 +131,10 @@ public:
       @param notebook notebook
       @param storage Pointer to the storage in use
       @param uri uri of attachment to be downloaded
+      @param path path whre attachment to be downloaded to
       @return True if OK, false in case of error
       */
-    bool downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri);
+    bool downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path);
 
     /** Share notebook
       It would load the appropiate plugin to do it

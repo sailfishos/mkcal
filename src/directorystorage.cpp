@@ -87,7 +87,6 @@ class mKCal::DirectoryStorage::Private
     QHash<QString, QString> mUidMappings;
     bool mIsOpened;
     bool mIsLoading;
-    QList<StorageObserver*> mObservers;
     QFileSystemWatcher *mWatcher;
     QHash<QString,Notebook::Ptr> mNotebooks; // name to notebook
 };
@@ -492,8 +491,8 @@ bool DirectoryStorage::save( const QString &notebook )
 
     // Reset all alarms.
     clearAlarms( notebook );
-    QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-    QList<Incidence::Ptr>::const_iterator it;
+    Incidence::List values = calendar()->incidences( notebook );
+    Incidence::List::const_iterator it;
     for ( it = values.begin(); it != values.end(); ++it ) {
       resetAlarms( *it );
     }
@@ -631,8 +630,8 @@ void DirectoryStorage::directoryChanged ( const QString &path )
 bool DirectoryStorage::insertedIncidences( Incidence::List *list, const KDateTime &after,
                                            const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( !after.isValid() || (*it)->created() > after ) {
@@ -646,8 +645,8 @@ bool DirectoryStorage::insertedIncidences( Incidence::List *list, const KDateTim
 bool DirectoryStorage::modifiedIncidences( Incidence::List *list, const KDateTime &after,
                                            const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( !after.isValid() || (*it)->lastModified() > after ) {
@@ -698,8 +697,8 @@ bool DirectoryStorage::deletedIncidences( Incidence::List *list,
 
 bool DirectoryStorage::allIncidences( Incidence::List *list, const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences(notebook);
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences(notebook);
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     Incidence::Ptr incidence = Incidence::Ptr( (*it)->clone() );
@@ -712,8 +711,8 @@ bool DirectoryStorage::allIncidences( Incidence::List *list, const QString &note
 bool DirectoryStorage::duplicateIncidences( Incidence::List *list, const Incidence::Ptr &incidence,
                                             const QString &notebook )
 {
-  QList<Incidence::Ptr> values = calendar()->incidences( notebook );
-  QList<Incidence::Ptr>::const_iterator it;
+  Incidence::List values = calendar()->incidences( notebook );
+  Incidence::List::const_iterator it;
 
   for ( it = values.begin(); it != values.end(); ++it ) {
     if ( ( ( incidence->dtStart() == (*it)->dtStart() ) ||
@@ -825,6 +824,14 @@ int DirectoryStorage::loadCompletedTodos( bool hasDate, int limit, KDateTime *la
 int DirectoryStorage::loadIncidences( bool hasDate, int limit, KDateTime *last )
 {
   Q_UNUSED( hasDate );
+  Q_UNUSED( limit );
+  Q_UNUSED( last );
+
+  return (int)load();
+}
+
+int DirectoryStorage::loadFutureIncidences( int limit, KDateTime *last )
+{
   Q_UNUSED( limit );
   Q_UNUSED( last );
 

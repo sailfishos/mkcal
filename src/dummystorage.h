@@ -46,7 +46,7 @@ public:
         Q_ASSERT(r);
     }
 
-    void calendarModified(bool, KCalCore::Calendar *calendar)
+    void calendarModified(bool, KCalCore::Calendar *)
     {
     }
     void calendarIncidenceAdded(const KCalCore::Incidence::Ptr&)
@@ -144,6 +144,10 @@ public:
     {
         return 0;
     }
+    int loadFutureIncidences(int, KDateTime*)
+    {
+        return 0;
+    }
     int loadGeoIncidences(bool, int, KDateTime*)
     {
         return 0;
@@ -192,7 +196,7 @@ public:
     void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr&) const
     {
     }
-    bool insertedIncidences(KCalCore::Incidence::List *list, const KDateTime&, const QString&)
+    bool insertedIncidences(KCalCore::Incidence::List *, const KDateTime&, const QString&)
     {
         return true;
     }
@@ -225,7 +229,7 @@ public:
         return true;
     }
 
-    void virtual_hook( int id, void *data ) {
+    void virtual_hook( int, void * ) {
       return;
     }
 };
