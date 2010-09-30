@@ -87,7 +87,7 @@ public:
         @param notebook pointer to the notebook
         @return list of email addresses or phone numbers
     */
-    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) const = 0;
+    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) = 0;
 
     /** \brief The name of this service.
         It should be a uniq name specifying which service to use
