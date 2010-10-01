@@ -1,3 +1,9 @@
+libmkcal (0.1.20) unstable; urgency=low
+
+  * NO_REVIEWBOARD: minor change for servicehandlerif
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 01 Oct 2010 10:47:38 +0300
+
 libmkcal (0.1.19) unstable; urgency=low
 
   * Fixes:NB#185274 - Events are not displayed in the created order in Event list.
