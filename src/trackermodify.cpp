@@ -226,6 +226,31 @@ class mKCal::TrackerModify::Private
       }
     }
 
+    QString escapeString ( const QString &in ) {
+
+      QString literal;
+
+      foreach (const QChar ch, in ) {
+          if (ch == QLatin1Char('\t'))
+              literal.append(QLatin1String("\\\t"));
+          else if (ch == QLatin1Char('\n'))
+              literal.append(QLatin1String("\\\n"));
+          else if (ch == QLatin1Char('\r'))
+              literal.append(QLatin1String("\\\b"));
+          else if (ch == QLatin1Char('\f'))
+              literal.append(QLatin1String("\\\f"));
+          else if (ch == QLatin1Char('\"'))
+              literal.append(QLatin1String("\\\""));
+          else if (ch == QLatin1Char('\''))
+              literal.append(QLatin1String("\\\'"));
+          else if (ch == QLatin1Char('\\'))
+              literal.append(QLatin1String("\\\\"));
+          else
+              literal.append(ch);
+      }
+      return literal;
+    }
+
     void insertRDates( Incidence::Ptr incidence, QStringList &query );
     void modifyRDate( Incidence::Ptr incidence, const KDateTime &rdate, QStringList &query );
     void insertExDates( Incidence::Ptr incidence, QStringList &query );
@@ -354,7 +379,7 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
   }
 
   if ( !incidence->summary().isEmpty() ) {
-    insertQuery << "; ncal:summary \"" << incidence->summary() << "\"";
+    insertQuery << "; ncal:summary \"" << d->escapeString( incidence->summary() ) << "\"";
   }
   if ( !incidence->categoriesStr().isEmpty() ) {
     insertQuery << "; ncal:categories \"" << incidence->categoriesStr() << "\"";
@@ -365,7 +390,7 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
   }
   insertQuery << "; ncal:class ncal:" << d->secrecy2String( incidence );
   if ( !incidence->description().isEmpty() ) {
-    insertQuery << "; ncal:description \"" << incidence->description().replace(QChar('\n'), QChar(' ')) << "\"";  //remove end lines
+    insertQuery << "; ncal:description \"" << d->escapeString( incidence->description() ) << "\"";
   }
   insertQuery << "; ncal:" << type.toLower()
               << "Status ncal:" << d->status2String( incidence );
@@ -377,7 +402,7 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
     }
 
     if ( !incidence->location().isEmpty() ) {
-      insertQuery << "; ncal:location \"" << incidence->location() << "\"";
+      insertQuery << "; ncal:location \"" << d->escapeString(incidence->location() ) << "\"";
     }
     if ( incidence->hasGeo() ) {
       insertQuery << "; ncal:geo \"" << QString( "%1," ).arg( incidence->geoLatitude(), 0, 'f', 6 )
