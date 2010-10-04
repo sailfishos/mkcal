@@ -2,10 +2,10 @@ libmkcal (0.1.21) unstable; urgency=low
 
   * Trying to get delete/insert into one sparql
   * End line problem in sparql
-  * Fixes NB#180227 -  After deleting description from an event not able to find it in Search any more
+  * Fixes: NB#180227 -  After deleting description from an event not able to find it in Search any more
   * Doc updates
   * Proper escaping of chars
-  * Fixes NB#193322 -  Notes created with multiple lines is not saved in tracker data base
+  * Fixes: NB#193322 -  Notes created with multiple lines is not saved in tracker data base
 
  -- Meng Sun <meng.5.sun@nokia.com>  Mon, 04 Oct 2010 10:12:19 +0300
 
