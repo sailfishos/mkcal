@@ -1,3 +1,9 @@
+libmkcal (0.1.22) unstable; urgency=low
+
+  * Fixes:NB#185274 - Events are not displayed in the created order in Event list.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 06 Oct 2010 10:01:09 +0300
+
 libmkcal (0.1.21) unstable; urgency=low
 
   * Trying to get delete/insert into one sparql
