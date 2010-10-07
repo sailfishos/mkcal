@@ -87,7 +87,7 @@ const char *const DBusName = "alarm";
   @brief
   This class provides a calendar storage interface.
   Every action on the storage can be asynchronous, which means that actions
-  are only scheduled for execution. Caller must use StorageObserver to get
+  are only scheduled for execution. Caller must use ExtendedStorageObserver to get
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
@@ -452,50 +452,6 @@ class MKCAL_EXPORT ExtendedStorage
     // Observer Specific Methods //
 
     /**
-      @class StorageObserver
-
-      The StorageObserver class.
-    */
-    class MKCAL_EXPORT StorageObserver //krazy:exclude=dpointer
-    {
-      public:
-        /**
-          Destructor.
-        */
-        virtual ~StorageObserver();
-
-        /**
-          Notify the Observer that a Storage has been modified.
-
-          @param storage is a pointer to the ExtendedStorage object that
-          is being observed.
-	  @param info uids inserted/updated/deleted, modified file etc.
-        */
-        virtual void storageModified( ExtendedStorage *storage, const QString &info ) = 0;
-
-        /**
-          Notify the Observer that a Storage is executing an action.
-	  This callback is called typically for example every time
-	  an incidence has been loaded.
-
-          @param storage is a pointer to the ExtendedStorage object that
-          is being observed.
-	  @param info textual information
-        */
-        virtual void storageProgress( ExtendedStorage *storage, const QString &info ) = 0;
-
-        /**
-          Notify the Observer that a Storage has finished an action.
-
-          @param storage is a pointer to the ExtendedStorage object that
-          is being observed.
-          @param error true if action was unsuccessful; false otherwise
-	  @param info textual information
-        */
-        virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info ) = 0;
-    };
-
-    /**
       Registers an Observer for this Storage.
 
       @param observer is a pointer to an Observer object that will be
@@ -503,7 +459,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @see unregisterObserver()
      */
-    void registerObserver( StorageObserver *observer );
+    void registerObserver( ExtendedStorageObserver *observer );
 
     /**
       Unregisters an Observer for this Storage.
@@ -513,7 +469,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @see registerObserver()
      */
-    void unregisterObserver( StorageObserver *observer );
+    void unregisterObserver( ExtendedStorageObserver *observer );
 
     // Notebook Methods //
 
@@ -525,6 +481,9 @@ class MKCAL_EXPORT ExtendedStorage
       @param nb notebook
       @param signal for modifynotebook. Default true, false only when database is initialized
       @return true if operation was successful; false otherwise.
+
+      @note if the Notebook doesn't have a uid that is a valid UUID a new one will
+      be generated on insertion.
     */
     bool addNotebook( const Notebook::Ptr &nb, bool signal = true );
 
@@ -643,6 +602,11 @@ class MKCAL_EXPORT ExtendedStorage
     void resetAlarms( const KCalCore::Incidence::Ptr &incidence );
 
     /**
+      Reset alarms for list of incidences.
+    */
+    void resetAlarms( const KCalCore::Incidence::List &incidences );
+
+    /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 
@@ -677,6 +641,7 @@ class MKCAL_EXPORT ExtendedStorage
     void setProgress( const QString &info );
     void setFinished( bool error, const QString &info );
     void clearAlarms( const KCalCore::Incidence::Ptr &incidence );
+    void clearAlarms( const KCalCore::Incidence::List &incidences );
     void clearAlarms( const QString &nname );
 
     bool isUncompletedTodosLoaded();

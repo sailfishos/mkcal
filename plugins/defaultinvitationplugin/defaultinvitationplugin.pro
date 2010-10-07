@@ -29,8 +29,8 @@ HEADERS +=  defaultinvitationplugin.h \
 SOURCES +=  defaultinvitationplugin.cpp \
 
 contains (DEFINES, MKCAL_FOR_MEEGO) {
-    LIBS += -lqtopiamail
+    LIBS += -lqmfclient
     HEADERS += transmitemail.h
     SOURCES += transmitemail.cpp
-    INCLUDEPATH += /usr/include/qtopiamail
+    INCLUDEPATH += /usr/include/qmfclient
 }

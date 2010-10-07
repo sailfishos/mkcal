@@ -108,7 +108,7 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 
     if (i != mPlugins.end())
         if (mExecutedPlugin == SendInvitation)
-	    return i.value()->sendInvitation(accountId, invitation, body);
+	    return i.value()->sendInvitation(accountId, notebookUid, invitation, body);
         else if (mExecutedPlugin == SendResponse)
 	    return i.value()->sendResponse(accountId, invitation, body);
         else if (mExecutedPlugin == SendUpdate)
@@ -244,7 +244,7 @@ QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const Extende
         return QString();
 }
 
-bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri)
+bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path)
 {
     if (!storage->isValidNotebook(notebook->uid()))
         return false;
@@ -261,7 +261,7 @@ bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Ext
     i = d->mServices.find(notebook->pluginName());
 
     if (i != d->mServices.end())
-        return i.value()->downloadAttachment(uri);
+      return i.value()->downloadAttachment(notebook, uri, path);
     else
         return false;
 }

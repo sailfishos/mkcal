@@ -198,6 +198,7 @@
 
 #include <calendar.h>
 #include <icaltimezones.h>
+#include <extendedstorageobserver.h>
 
 namespace mKCal {
 
@@ -208,7 +209,8 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
+class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
+                                      public ExtendedStorageObserver
 {
   public:
     /**
@@ -307,6 +309,9 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       Calendar::addEvent()
 
       @param notebookUid The notebook uid where you want to add the event to.
+
+      @warning There is now check if the notebookUid is valid or not. If it is not
+      valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
     bool addEvent( const KCalCore::Event::Ptr &event, const QString &notebookUid  );
 
@@ -319,6 +324,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
     /**
       @copydoc
       Calendar::deleteEvent()
+
+      @warning This call deletes based on the pointer given, and it is using QSharedPointer
+      so if you have to Calendars with the same event, the pointer isn't the same for
+      both. The deleting in the second one will fail.
     */
     bool deleteEvent( const KCalCore::Event::Ptr &event );
 
@@ -406,12 +415,18 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       Calendar::addTodo()
 
       @param notebookUid The notebook uid where you want to add the Todo to.
+
+      @warning There is now check if the notebookUid is valid or not. If it is not
+      valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
     bool addTodo( const KCalCore::Todo::Ptr &todo, const QString &notebookUid  );
 
     /**
       @copydoc
       Calendar::deleteTodo()
+      @warning This call deletes based on the pointer given, and it is using QSharedPointer
+      so if you have to Calendars with the same event, the pointer isn't the same for
+      both. The deleting in the second one will fail.
     */
     bool deleteTodo( const KCalCore::Todo::Ptr &todo );
 
@@ -495,12 +510,18 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
       Calendar::addJournal()
 
       @param notebookUid The notebook uid where you want to add the Journal to.
+
+      @warning There is now check if the notebookUid is valid or not. If it is not
+      valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
     bool addJournal( const KCalCore::Journal::Ptr &journal, const QString &notebookUid  );
 
     /**
       @copydoc
       Calendar::deleteJournal()
+      @warning This call deletes based on the pointer given, and it is using QSharedPointer
+      so if you have to Calendars with the same event, the pointer isn't the same for
+      both. The deleting in the second one will fail.
     */
     bool deleteJournal( const KCalCore::Journal::Ptr &journal );
 
@@ -924,7 +945,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar
        contents on the storage change.
      */
     virtual void storageModified( ExtendedStorage *storage, const QString &info );
-
+    virtual void storageProgress( ExtendedStorage *storage, const QString &info );
+    virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info );
+    
+    
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )

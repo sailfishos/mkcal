@@ -48,7 +48,7 @@ public:
     if ( !mInit ) {
       mStore = QMailStore::instance();
       Q_ASSERT(mStore);
-//      QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );  //Not yet done in email
+      //      QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );  //Not yet done in email
       QMailAccountKey byDefault = QMailAccountKey::name( "aaaa" );
       QMailAccountIdList accounts = mStore->queryAccounts(byDefault);
       if (!accounts.count()) {
@@ -62,7 +62,6 @@ public:
       }
       mDefaultAccount =  new QMailAccount( accounts.first() );
       mInit = true;
-
     }
   }
 
@@ -158,7 +157,7 @@ DefaultInvitationPlugin::~DefaultInvitationPlugin()
 }
 
 
-bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const Incidence::Ptr &invitation, const QString &body)
+bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid, const Incidence::Ptr &invitation, const QString &body)
 {
 
   Attendee::List attendees = invitation->attendees();

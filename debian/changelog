@@ -1,3 +1,54 @@
+libmkcal (0.1.21) unstable; urgency=low
+
+  * Trying to get delete/insert into one sparql
+  * End line problem in sparql
+  * Fixes: NB#180227 -  After deleting description from an event not able to find it in Search any more
+  * Doc updates
+  * Proper escaping of chars
+  * Fixes: NB#193322 -  Notes created with multiple lines is not saved in tracker data base
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 04 Oct 2010 10:12:19 +0300
+
+libmkcal (0.1.20) unstable; urgency=low
+
+  * NO_REVIEWBOARD: minor change for servicehandlerif
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 01 Oct 2010 10:47:38 +0300
+
+libmkcal (0.1.19) unstable; urgency=low
+
+  * Fixes:NB#185274 - Events are not displayed in the created order in Event list.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 28 Sep 2010 10:17:28 +0300
+
+libmkcal (0.1.18) unstable; urgency=low
+
+  * Removed unused variable names from dummystorage.h -> no warnings for gcalendar.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 27 Sep 2010 11:35:30 +0300
+
+libmkcal (0.1.17) unstable; urgency=low
+
+  * NO_REVIEWBOARD: invitationhandlerif has been changed
+  * NO_REVIEWBOARD: notebook name removed from sendInvitation calls
+  * Fixes: NB#187938 - MfE: Calendar sync events not shown until calendar application is relaunched.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 23 Sep 2010 10:22:53 +0300
+
+libmkcal (0.1.16) unstable; urgency=low
+
+  * Use timed batch api for alarm adding (add_events_sync)
+  * NO_REVIEWBOARD: path added as parameter for downloadAttachment
+  * Fixed compilation of a plugin - NO_REVIEWBOARD
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 20 Sep 2010 11:44:51 +0300
+
+libmkcal (0.1.15) unstable; urgency=low
+
+  * NO_REVIEWBOARD: minor change for servicehandler api for downloading attachment
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 17 Sep 2010 10:11:28 +0300
+
 libmkcal (0.1.14) unstable; urgency=low
 
   * Small changes building plugin

@@ -92,32 +92,24 @@ class mKCal::SqliteStorage::Private
       QStringList insertQuery;
       QStringList deleteQuery;
       TrackerModify tracker;
+      QString query;
 
       if ( tracker.queries( incidence, dbop, insertQuery, deleteQuery, notebookUid ) ) {
         if ( dbop != DBInsert ) {
-          QString query = deleteQuery.join( QString() );
-#ifndef QT_NO_DEBUG
-          // Use cerr to print only queries.
-          cerr << endl << query.toAscii().constData() << endl;
-          //kDebug() << "tracker query:" << select;
-#endif
-#if defined(MKCAL_TRACKER_SYNC)
-          QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
-          update.waitForFinished();
-          if ( update.isError() ) {
-            kError() << "tracker query error:" << update.error().message();
-          }
-#else
-          (void)mDBusIf->asyncCall( "SparqlUpdate", query );
-#endif
+          query = deleteQuery.join( QString() );
         }
+
         if ( dbop != DBDelete ) {
-          QString query = insertQuery.join( QString() );
-#ifndef QT_NO_DEBUG
-          // Use cerr to print only queries.
-          cerr << endl << query.toAscii().constData() << endl;
-          //kDebug() << "tracker query:" << select;
-#endif
+          QString insert = insertQuery.join( QString() );
+          if ( !query.isEmpty() ) {
+            query = query + QLatin1String(" ") + insert;
+          } else {
+            query = insert;
+          }
+        }
+
+        kDebug() << query;
+
 #if defined(MKCAL_TRACKER_SYNC)
           QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
           update.waitForFinished();
@@ -127,7 +119,7 @@ class mKCal::SqliteStorage::Private
 #else
           (void)mDBusIf->asyncCall( "SparqlUpdate", query );
 #endif
-        }
+
       }
     }
     ExtendedCalendar::Ptr mCalendar;
@@ -2103,6 +2095,7 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
   QHash<QString,Incidence::Ptr>::const_iterator it;
   char *errmsg = NULL;
   const char *query = NULL;
+  QVector<Incidence::Ptr> validIncidences;
 
   query = BEGIN_TRANSACTION;
   sqlite3_exec( mDatabase );
@@ -2132,8 +2125,10 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
   for ( it = list.constBegin(); it != list.constEnd(); ++it ) {
     QString notebookUid = mCalendar->notebook( *it );
     if ( !mStorage->isValidNotebook( notebookUid ) ) {
-      kDebug() << "invalid notebook - not saving incidence" << (*it)->uid();
+      kDebug() << "invalid notebook - not saving incidence" << (*it)->uid();      
       continue;
+    } else {
+      validIncidences << *it;
     }
 
     (*it)->setLastModified( KDateTime::currentUtcDateTime() );
@@ -2147,13 +2142,7 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
       // Also save into tracker.
       modifyTracker( *it, dbop, notebookUid );
     }
-    if ( dbop == DBDelete ) {
-      // Remove all alarms.
-      mStorage->clearAlarms( *it );
-    } else {
-      // Reset all alarms.
-      mStorage->resetAlarms( *it );
-    }
+
     sqlite3_reset( stmt1 );
     sqlite3_reset( stmt2 );
     if ( stmt3 ) {
@@ -2176,6 +2165,15 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
       sqlite3_reset( stmt11 );
     }
   }
+
+  if ( dbop == DBDelete ) {
+    // Remove all alarms.
+    mStorage->clearAlarms(validIncidences);
+  } else {
+    // Reset all alarms.
+    mStorage->resetAlarms(validIncidences);
+  }
+
   list.clear();
   // TODO What if there were errors? Options: 1) rollback 2) best effort.
 
@@ -2971,11 +2969,9 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
 
   if ( tracker.notifyOpen( incidence, queryList ) ) {
     QString query = queryList.join( QString() );
-#ifndef QT_NO_DEBUG
-    // Use cerr to print only queries.
-    cerr << endl << query.toAscii().constData() << endl;
-    kDebug() << "tracker notify query";
-#endif
+
+    kDebug() << query;
+
     QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
 #if defined(MKCAL_TRACKER_SYNC)
     update.waitForFinished();
