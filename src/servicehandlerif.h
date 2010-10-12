@@ -45,6 +45,14 @@ class ServiceInterface {
 
 public:
 
+    /** Error Codes that can be returned by the plugins */
+    enum ErrorCode {
+      ErrorOk = 0,
+      ErrorNoAccount,
+      ErrorNotSupported,
+      ErrorNoConnectivity
+    };
+
     /** \brief returns icon of service.
         @return icon.
     */
@@ -95,6 +103,13 @@ public:
         @return The name of the service.
      */
     virtual QString serviceName() const = 0;
+
+    /** \brief In case of error, more detailed information can be provided
+        Sometimes the true/false is not enough, so in case of false
+        more details can be obtained.
+        @return the ErrorCode of what happened
+      */
+    virtual ErrorCode error() const = 0;
 
     virtual ~ServiceInterface() { }
 };

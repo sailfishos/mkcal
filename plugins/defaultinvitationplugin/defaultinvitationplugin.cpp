@@ -31,14 +31,14 @@
 using namespace KCalCore;
 
 const QString name("DefaultInvitationPlugin");
-const QString vcalHead("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Nokia//Maemo Calendar//EN\r\n"); //TODO official product name?
-const QString vcalFoot("END:VCALENDAR\r\n");
 
 //@cond PRIVATE
 class DefaultInvitationPlugin::Private
 {
 public:
-  Private() : mStore( 0 ), mDefaultAccount( 0 ), mInit ( false ){}
+  Private() : mStore( 0 ), mDefaultAccount( 0 ), mInit ( false ),
+  mErrorCode( ServiceInterface::ErrorOk )
+  {}
   ~Private() {
     uninit();
   }
@@ -48,13 +48,14 @@ public:
     if ( !mInit ) {
       mStore = QMailStore::instance();
       Q_ASSERT(mStore);
-      //      QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );  //Not yet done in email
-      QMailAccountKey byDefault = QMailAccountKey::name( "aaaa" );
+            QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );  //Not yet done in email
+//      QMailAccountKey byDefault = QMailAccountKey::name( "aaaa" );
       QMailAccountIdList accounts = mStore->queryAccounts(byDefault);
       if (!accounts.count()) {
         qWarning() << "Default account was not found!";
         //        delete mStore;
         mStore = 0;
+        mErrorCode = ServiceInterface::ErrorNoAccount;
         return;
       }
       if (accounts.count() > 1) {
@@ -97,7 +98,12 @@ public:
     // Put message to standard outbox folder fo that account
     message.setParentFolderId( QMailFolderId( QMailFolder::OutboxFolder ) );
     // Setup message status
-    message.setStatus((QMailMessage::Outbox | QMailMessage::Draft | QMailMessage::Outgoing), true);
+    message.setStatus((QMailMessage::Outbox | QMailMessage::Draft ), true);
+    message.setStatus(QMailMessage::Outgoing, true);
+    message.setStatus(QMailMessage::ContentAvailable, true);
+    message.setStatus(QMailMessage::PartialContentAvailable, true);
+    message.setStatus(QMailMessage::Read, true);
+
     // Define recipeint's address
     QList<QMailAddress> addresses;
     foreach( const QString &mail, recipients) {
@@ -110,21 +116,21 @@ public:
     message.setSubject( subject );
     // Define message body
     QMailMessagePart msg = QMailMessagePart::fromData( body,
-                                                       QMailMessageContentDisposition::Attachment,
-                                                       QMailMessageContentType( "plain/text" ),
-                                                       QMailMessageBodyFwd::QuotedPrintable );
+                               QMailMessageContentDisposition::Attachment,
+                               QMailMessageContentType( "plain/text" ),
+                               QMailMessageBodyFwd::QuotedPrintable );
     message.appendPart(msg);
     // add attachment
 
     QMailBase64Codec encoder( QMailBase64Codec::Text );
     QByteArray base64Data = encoder.encode( attachment );
     QMailMessagePart att = QMailMessagePart::fromData( base64Data,
-                                                       QMailMessageContentDisposition::Attachment,
-                                                       QMailMessageContentType( "application/ics" ),
-                                                       QMailMessageBodyFwd::Base64 );
+                               QMailMessageContentDisposition::Attachment,
+                               QMailMessageContentType( "application/ics" ),
+                               QMailMessageBodyFwd::Base64 );
     message.appendPart(att);
     message.setMultipartType(QMailMessagePartContainer::MultipartMixed);
-
+    message.setStatus(QMailMessage::LocalOnly, true);
     // send (to outbox)
     if (!mStore->addMessage(&message))
       return false;
@@ -144,6 +150,7 @@ public:
   QMailStore *mStore;
   QMailAccount *mDefaultAccount;
   bool mInit;
+  ServiceInterface::ErrorCode mErrorCode;
 };
 
 
@@ -160,6 +167,11 @@ DefaultInvitationPlugin::~DefaultInvitationPlugin()
 bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid, const Incidence::Ptr &invitation, const QString &body)
 {
 
+  Q_UNUSED( accountId );
+  Q_UNUSED( notebookUid );
+
+  d->mErrorCode = ServiceInterface::ErrorOk;
+
   Attendee::List attendees = invitation->attendees();
   if ( attendees.size() == 0 ) {
     qDebug("No attendees");
@@ -172,7 +184,6 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
 
   ICalFormat icf;
   QString ical =  icf.createScheduleMessage( invitation, iTIPPublish ) ;
-
 
   QStringList emails;
   foreach (const Attendee::Ptr &att, attendees) {
@@ -195,6 +206,8 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Inciden
 bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incidence::Ptr &invitation, const QString &body)
 {
   Q_UNUSED(accountId);    // not needed by this plugin: we use the default account
+
+  d->mErrorCode = ServiceInterface::ErrorOk;
 
   d->init();
   // Is there an organizer?
@@ -225,7 +238,65 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
 QString DefaultInvitationPlugin::pluginName() const
 {
+  d->mErrorCode = ServiceInterface::ErrorOk;
   return name;
+}
+
+bool DefaultInvitationPlugin::multiCalendar() const
+{
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return false;
+}
+
+QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook) const
+{
+  Q_UNUSED( notebook );
+  d->init();
+  QString email ( d->defaultAddress() );
+  d->uninit();
+  return email;
+}
+
+QString DefaultInvitationPlugin::displayName(const mKCal::Notebook::Ptr &notebook) const
+{
+  Q_UNUSED( notebook );
+  return QString();
+}
+
+bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path)
+{
+  Q_UNUSED( notebook );
+  Q_UNUSED( uri );
+  Q_UNUSED( path );
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return false;
+
+}
+
+bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith)
+{
+  Q_UNUSED( notebook );
+  Q_UNUSED( sharedWith );
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return false;
+}
+
+QStringList DefaultInvitationPlugin::sharedWith(const mKCal::Notebook::Ptr &notebook)
+{
+  Q_UNUSED( notebook );
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return QStringList();
+}
+
+QString DefaultInvitationPlugin::DefaultInvitationPlugin::serviceName() const
+{
+  d->mErrorCode = ServiceInterface::ErrorOk;
+  return name;
+}
+
+ServiceInterface::ErrorCode DefaultInvitationPlugin::error() const
+{
+  return d->mErrorCode;
 }
 
 Q_EXPORT_PLUGIN2(defaultinvitationplugin, DefaultInvitationPlugin);

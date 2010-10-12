@@ -27,6 +27,7 @@
 #include "notebook.h"
 #include "extendedcalendar.h"
 #include "extendedstorage.h"
+#include "servicehandlerif.h"
 
 const QString defaultName = "DefaultInvitationPlugin";
 
@@ -35,11 +36,11 @@ class ServiceHandlerPrivate;
 namespace mKCal {
 
 
-/** Singleton class to get the exact handler (plugin) of the service
+  /** Singleton class to get the exact handler (plugin) of the service
   */
-class MKCAL_EXPORT ServiceHandler
-{
-private:
+  class MKCAL_EXPORT ServiceHandler
+  {
+  private:
     /** Constructor, is a singleton so you cannot do anything
       */
     ServiceHandler();
@@ -50,15 +51,15 @@ private:
 
     ServiceHandlerPrivate* const d;
 
-public:
+  public:
 
     /** Obtain an instance of the ServiceHandler.
       @return The instance that handles all the services
       */
     static ServiceHandler& instance()
     {
-        static ServiceHandler singleton;
-        return singleton;
+      static ServiceHandler singleton;
+      return singleton;
     }
 
     /** Send the invitation to the list of people stated as attendees.
@@ -153,7 +154,17 @@ public:
       */
     QStringList sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
-};
+    /** \brief In case of error, more detailed information can be provided
+        Sometimes the true/false is not enough, so in case of false
+        more details can be obtained.
+
+        @param notebook notebook
+        @param storage Pointer to the storage in use
+        @return the ErrorCode of what happened
+      */
+    ServiceInterface::ErrorCode error(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage) const;
+
+  };
 
 }
 #endif // MKCAL_SERVICEHANDLER_H
