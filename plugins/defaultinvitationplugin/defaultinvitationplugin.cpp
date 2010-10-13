@@ -251,7 +251,7 @@ bool DefaultInvitationPlugin::multiCalendar() const
   return false;
 }
 
-QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook) const
+QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook)
 {
   Q_UNUSED( notebook );
 //  d->init();
@@ -301,5 +301,6 @@ ServiceInterface::ErrorCode DefaultInvitationPlugin::error() const
 {
   return d->mErrorCode;
 }
+
 
 Q_EXPORT_PLUGIN2(defaultinvitationplugin, DefaultInvitationPlugin);

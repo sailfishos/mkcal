@@ -54,7 +54,7 @@ public:
 
     bool multiCalendar() const;
 
-    QString emailAddress(const mKCal::Notebook::Ptr &notebook) const;
+    QString emailAddress(const mKCal::Notebook::Ptr &notebook);
 
     QString displayName(const mKCal::Notebook::Ptr &notebook) const;
 
