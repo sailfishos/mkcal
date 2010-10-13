@@ -182,10 +182,6 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
 
 //  d->init();
 
-  qDebug() << "Plugin initialized";
-
-  invitation->setOrganizer( d->defaultAddress() );
-
   ICalFormat icf;
   QString ical =  icf.createScheduleMessage( invitation, iTIPPublish ) ;
 
