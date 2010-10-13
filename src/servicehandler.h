@@ -53,6 +53,17 @@ namespace mKCal {
 
   public:
 
+    /** Error Codes that can be returned by the plugins */
+    //Right now they are the same as defined in ServiceHandlerIf
+    //But semantically it doesn't make sense that they are defined
+    //there and at some point they might be different.
+    enum ErrorCode {
+      ErrorOk = 0,
+      ErrorNoAccount,
+      ErrorNotSupported,
+      ErrorNoConnectivity
+    };
+
     /** Obtain an instance of the ServiceHandler.
       @return The instance that handles all the services
       */
@@ -162,7 +173,7 @@ namespace mKCal {
         @param storage Pointer to the storage in use
         @return the ErrorCode of what happened
       */
-    ServiceInterface::ErrorCode error(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage) const;
+    ServiceHandler::ErrorCode error() const;
 
   };
 

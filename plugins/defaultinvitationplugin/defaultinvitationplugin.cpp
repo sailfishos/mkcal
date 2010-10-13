@@ -38,7 +38,10 @@ class DefaultInvitationPlugin::Private
 public:
   Private() : mStore( 0 ), mDefaultAccount( 0 ), mInit ( false ),
   mErrorCode( ServiceInterface::ErrorOk )
-  {}
+  {
+    init();  //Doing the init on the constructor means that
+             //if default account is changed, we won't know until reconstucted
+  }
   ~Private() {
     uninit();
   }
@@ -48,8 +51,7 @@ public:
     if ( !mInit ) {
       mStore = QMailStore::instance();
       Q_ASSERT(mStore);
-            QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );  //Not yet done in email
-//      QMailAccountKey byDefault = QMailAccountKey::name( "aaaa" );
+      QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );
       QMailAccountIdList accounts = mStore->queryAccounts(byDefault);
       if (!accounts.count()) {
         qWarning() << "Default account was not found!";
@@ -59,7 +61,7 @@ public:
         return;
       }
       if (accounts.count() > 1) {
-        qWarning( "There are more than one default account, using firsts" );
+        qWarning( "There are more than one default account, using first" );
       }
       mDefaultAccount =  new QMailAccount( accounts.first() );
       mInit = true;
@@ -178,7 +180,9 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     return false;
   }
 
-  d->init();
+//  d->init();
+
+  qDebug() << "Plugin initialized";
 
   invitation->setOrganizer( d->defaultAddress() );
 
@@ -190,10 +194,9 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     emails.append( att->email() );
   }
 
-
   bool res = d->sendMail(emails, invitation->summary(), body, ical);
 
-  d->uninit();
+//  d->uninit();
   return res;
 }
 
@@ -209,7 +212,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
   d->mErrorCode = ServiceInterface::ErrorOk;
 
-  d->init();
+//  d->init();
   // Is there an organizer?
   Person::Ptr organizer = invitation->organizer();
   if (organizer->isEmpty() || organizer->email().isEmpty()) { // we do not have an organizer
@@ -217,7 +220,6 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     return false;
   }
 
-  qDebug() << d->defaultAddress();
   // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
   Attendee::Ptr me = invitation->attendeeByMail( d->defaultAddress() );
   if (me == 0 || !me->RSVP()) {
@@ -231,7 +233,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
   bool res = d->sendMail(QStringList( organizer->email() ), invitation->summary(), body, ical);
 
-  d->uninit();
+//  d->uninit();
   return res;
 
 }
@@ -240,6 +242,11 @@ QString DefaultInvitationPlugin::pluginName() const
 {
   d->mErrorCode = ServiceInterface::ErrorOk;
   return name;
+}
+
+QIcon DefaultInvitationPlugin::icon() const
+{
+  return QIcon();
 }
 
 bool DefaultInvitationPlugin::multiCalendar() const
@@ -251,9 +258,9 @@ bool DefaultInvitationPlugin::multiCalendar() const
 QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook) const
 {
   Q_UNUSED( notebook );
-  d->init();
+//  d->init();
   QString email ( d->defaultAddress() );
-  d->uninit();
+//  d->uninit();
   return email;
 }
 

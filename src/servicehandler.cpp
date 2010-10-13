@@ -36,6 +36,7 @@ public:
   QHash<QString, ServiceInterface*> mServices;
 
   bool mLoaded;
+  ServiceHandler::ErrorCode mError;
   ExecutedPlugin mExecutedPlugin;
 
   void loadPlugins();
@@ -47,7 +48,8 @@ public:
 
 };
 
-ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false)
+ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false),
+          mError(ServiceHandler::ErrorOk)
 {
 
 }
@@ -55,18 +57,24 @@ ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false)
 void ServiceHandlerPrivate::loadPlugins()
 {
   QDir pluginsDir(QLatin1String("/usr/lib/calendar/mkcalplugins")); //TODO HARDCODED!!
-  kDebug() << "Plugin directory" << pluginsDir.path();
+  kDebug() << "LOADING !!!! Plugin directory" << pluginsDir.path();
 
   foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
+    qDebug() << fileName;
     QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
-
-    if (ServiceInterface* interface = qobject_cast<ServiceInterface*> (loader.instance())) {
-      mServices.insert(interface->serviceName(), interface);
-      kDebug() << "Loaded service:" << interface->serviceName();
-    }
-    if (InvitationHandlerInterface* interface = qobject_cast<InvitationHandlerInterface*> (loader.instance())) {
-      mPlugins.insert(interface->pluginName(), interface);
-      kDebug() << "Loaded plugin:" << interface->pluginName();
+    QObject* plugin = loader.instance();
+    qDebug() << loader.errorString();
+    if (plugin) {
+      if (ServiceInterface* interface = qobject_cast<ServiceInterface*>( plugin ) ) {
+        mServices.insert(interface->serviceName(), interface);
+        kDebug() << "Loaded service:" << interface->serviceName();
+      }
+      if (InvitationHandlerInterface* interface = qobject_cast<InvitationHandlerInterface*>( plugin ) ) {
+        mPlugins.insert( interface->pluginName(), interface );
+        kDebug() << "Loaded plugin:" << interface->pluginName();
+      }
+    }  else {
+      qDebug() << fileName << " Not a plugin";
     }
   }
 
@@ -89,8 +97,8 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 
   QHash<QString, InvitationHandlerInterface*>::const_iterator i;
   i = mPlugins.find(pluginName);
-  if (i == mPlugins.end() && pluginName != defaultName)
-    i = mPlugins.find(defaultName);
+  //  if (i == mPlugins.end() && pluginName != defaultName)
+  //    i = mPlugins.find(defaultName);
 
   if (i != mPlugins.end())
     if (mExecutedPlugin == SendInvitation)
@@ -173,7 +181,11 @@ QIcon ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage:
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->icon();
+    QIcon res = service->icon();
+    if ( res.isNull() ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return QIcon();
   }
@@ -185,7 +197,11 @@ bool ServiceHandler::multiCalendar(const Notebook::Ptr &notebook, const Extended
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->multiCalendar();
+    bool res = service->multiCalendar();
+    if ( !res ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return false;
   }
@@ -196,7 +212,11 @@ QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const Extend
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->emailAddress(notebook);
+    QString res =  service->emailAddress(notebook);
+    if ( res.isNull() ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return QString();
   }
@@ -207,7 +227,11 @@ QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const Extende
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->displayName(notebook);
+    QString res = service->displayName(notebook);
+    if ( res.isNull() ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return QString();
   }
@@ -218,7 +242,11 @@ bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Ext
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->downloadAttachment(notebook, uri, path);
+    bool res = service->downloadAttachment(notebook, uri, path);
+    if ( !res ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return false;
   }
@@ -231,7 +259,11 @@ bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringL
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->shareNotebook(notebook, sharedWith);
+    bool res = service->shareNotebook(notebook, sharedWith);
+    if ( !res ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return false;
   }
@@ -242,21 +274,19 @@ QStringList ServiceHandler::sharedWith(const Notebook::Ptr &notebook, const Exte
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    return service->sharedWith( notebook );
+    QStringList res = service->sharedWith( notebook );
+    if ( res.isEmpty() ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
   } else {
     return QStringList();
   }
 }
 
-ServiceInterface::ErrorCode ServiceHandler::error(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage) const
+ServiceHandler::ErrorCode ServiceHandler::error() const
 {
-  ServiceInterface* service = d->getServicePlugin(notebook, storage);
-
-  if ( service ) {
-    return service->error();
-  } else {
-    return ServiceInterface::ErrorOk; //What to return here?
-  }
+  return d->mError;
 }
 
 ServiceHandler::~ServiceHandler()

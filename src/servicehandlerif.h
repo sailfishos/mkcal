@@ -46,6 +46,8 @@ class ServiceInterface {
 public:
 
     /** Error Codes that can be returned by the plugins */
+    //Be aware that they are different to the ones in ServiceHandler
+    //but they might need to be in sync
     enum ErrorCode {
       ErrorOk = 0,
       ErrorNoAccount,
