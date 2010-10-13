@@ -70,7 +70,7 @@ public:
         @param notebook pointer to the notebook that we want to share
         @return email address of service
     */
-    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) const = 0;
+    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) = 0;
 
     /** \brief returns the display name of account of service.
         @param notebook pointer to the notebook that we want to share

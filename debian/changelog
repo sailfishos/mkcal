@@ -1,3 +1,9 @@
+libmkcal (0.1.23) unstable; urgency=low
+
+  * NO_REVIEWBOARD: ABI_BREAK: removed const from emailAddress function declaration
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 13 Oct 2010 10:02:05 +0300
+
 libmkcal (0.1.22) unstable; urgency=low
 
   * Fixes: Events are not displayed in the created order in Event list.
