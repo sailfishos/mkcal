@@ -19,11 +19,6 @@
   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
   Boston, MA 02110-1301, USA.
 */
-#ifdef MKCAL_TRACKER_SUPPORT
-
-///DEPRACATED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 /**
   @file
   This file is part of the API for handling calendar data and
@@ -893,5 +888,3 @@ void TrackerStorage::virtual_hook( int id, void *data )
   Q_UNUSED( data );
   Q_ASSERT( false );
 }
-
-#endif

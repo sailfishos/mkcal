@@ -29,7 +29,6 @@
 
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
 */
-#ifdef MKCAL_DIRECTORY_SUPPORT
 
 #ifndef MKCAL_DIRECTORYSTORAGE_H
 #define MKCAL_DIRECTORYSTORAGE_H
@@ -382,4 +381,3 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
 
 #endif
 
-#endif //MKCAL_DIRECTORY_SUPPORT
