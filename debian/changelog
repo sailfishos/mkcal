@@ -1,3 +1,16 @@
+libmkcal (0.1.24) unstable; urgency=low
+
+  * First attempt of email invitations.
+  * Updates from qmf
+  * Change to iMTP
+  * Refactoring of default plugin
+  * Cleanup, error handling
+  * Organiser is set by calendar, not plugin
+  * Interface changes
+  * Adding deprecated methods back
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 14 Oct 2010 10:12:03 +0300
+
 libmkcal (0.1.23) unstable; urgency=low
 
   * NO_REVIEWBOARD: ABI_BREAK: removed const from emailAddress function declaration
