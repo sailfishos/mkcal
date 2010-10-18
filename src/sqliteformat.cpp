@@ -1270,7 +1270,7 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       if ( completed.isValid() )
         todo->setCompleted(completed);
     }
-    kDebug() << "loaded component for incidence" << incidence->uid() << "notebook" << notebook;
+//    kDebug() << "loaded component for incidence" << incidence->uid() << "notebook" << notebook;
 
     if (stmt2 && !d->selectCustomproperties(incidence, rowid, stmt2)) {
       kWarning() << "failed to get customproperties for incidence" << incidence->uid() << "notebook" << notebook;

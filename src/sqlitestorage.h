@@ -470,9 +470,17 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
-  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT)"
+  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT, createdDate INTEGER, extra1 STRING, extra2 STRING)"
+
+//Extra fields added for future use in case they are needed. They will be documented here
+//So we can add somthing without breaking the schema and not adding tables
+
 #define CREATE_COMPONENTS \
-  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER, extra1 STRING, extra2 STRING, extra3 INTEGER)"
+
+//Extra fields added for future use in case they are needed. They will be documented here
+//So we can add somthing without breaking the schema and not adding tables
+
 #define CREATE_RDATES \
   "CREATE TABLE IF NOT EXISTS Rdates(ComponentId INTEGER, Type INTEGER, Date INTEGER, DateLocal INTEGER, TimeZone TEXT)"
 #define CREATE_CUSTOMPROPERTIES \

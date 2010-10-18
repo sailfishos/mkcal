@@ -1521,10 +1521,11 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
   // dtStart and compare it against this instead. As this is allocated
   // only once per iteration, it should result in significan net
   // savings
-  kDebug() << "expandRecurrences"
-           << incidenceList->size()
-           << dtStart.toString() << dtStart.isValid()
-           << dtEnd.toString() << dtEnd.isValid();
+
+//  kDebug() << "expandRecurrences"
+//           << incidenceList->size()
+//           << dtStart.toString() << dtStart.isValid()
+//           << dtEnd.toString() << dtEnd.isValid();
 
   if (expandLimitHit)
     *expandLimitHit = false;
@@ -1743,7 +1744,7 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::P
   // This is the place where we configure our default backend
   QString dbFile = QLatin1String( qgetenv( "SQLITESTORAGEDB" ) );
   if ( dbFile.isEmpty() ) {
-    dbFile = QDir::homePath() + QLatin1String( "/.calendardb" );
+    dbFile = QDir::homePath() + QLatin1String( "/.calendar/db" );
   }
   bool useTracker = true;
   if ( !qgetenv( "SQLITESTORAGENOTRACKER" ).isEmpty() )
