@@ -2,10 +2,13 @@
 
 if [ -d /home/user/ ]
 then
-	echo "Yes"
-	if [ ! -f /home/user/.calendardb ]
+	if [ ! -d /home/user/.calendar ]
 	then 
-	    touch /home/user/.calendardb
-	    chown calendar:calendar /home/user/.calendardb
+       	    echo "Creating Calendar config directory"
+	    mkdir /home/user/.calendar
 	fi
+	chown calendar:calendar /home/user/.calendar
+	chmod 770 /home/user/.calendar
+else
+	echo "Not setting up calendar directory rights. Probably in Scratchbox"
 fi

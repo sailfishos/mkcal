@@ -40,7 +40,7 @@
 
 namespace mKCal {
 
-const int VersionMajor = 10; // Major version, if different than stored in database, open fails
+const int VersionMajor = 11; // Major version, if different than stored in database, open fails
 const int VersionMinor = 0; // Minor version, if different than stored in database, open warning
 
 /**
