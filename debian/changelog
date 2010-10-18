@@ -1,3 +1,45 @@
+libmkcal (0.1.24) unstable; urgency=low
+
+  * First attempt of email invitations.
+  * Updates from qmf
+  * Change to iMTP
+  * Refactoring of default plugin
+  * Cleanup, error handling
+  * Organiser is set by calendar, not plugin
+  * Interface changes
+  * Adding deprecated methods back
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 14 Oct 2010 10:12:03 +0300
+
+libmkcal (0.1.23) unstable; urgency=low
+
+  * NO_REVIEWBOARD: ABI_BREAK: removed const from emailAddress function declaration
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 13 Oct 2010 10:02:05 +0300
+
+libmkcal (0.1.22) unstable; urgency=low
+
+  * Fixes: Events are not displayed in the created order in Event list.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 06 Oct 2010 10:01:09 +0300
+
+libmkcal (0.1.21) unstable; urgency=low
+
+  * Trying to get delete/insert into one sparql
+  * End line problem in sparql
+  * Fixes: NB#180227 -  After deleting description from an event not able to find it in Search any more
+  * Doc updates
+  * Proper escaping of chars
+  * Fixes: NB#193322 -  Notes created with multiple lines is not saved in tracker data base
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 04 Oct 2010 10:12:19 +0300
+
+libmkcal (0.1.20) unstable; urgency=low
+
+  * NO_REVIEWBOARD: minor change for servicehandlerif
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 01 Oct 2010 10:47:38 +0300
+
 libmkcal (0.1.19) unstable; urgency=low
 
   * Fixes:NB#185274 - Events are not displayed in the created order in Event list.

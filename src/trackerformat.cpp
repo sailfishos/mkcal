@@ -24,6 +24,8 @@
   This file is part of the API for handling calendar data and
   defines the TrackerFormat class.
 
+  Deprecated!!
+
   @brief
   Tracker format implementation.
 
@@ -1834,3 +1836,4 @@ void TrackerFormat::Private::continueSelectComponentDetails()
   }
 }
 //@endcond
+

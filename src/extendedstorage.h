@@ -481,6 +481,9 @@ class MKCAL_EXPORT ExtendedStorage
       @param nb notebook
       @param signal for modifynotebook. Default true, false only when database is initialized
       @return true if operation was successful; false otherwise.
+
+      @note if the Notebook doesn't have a uid that is a valid UUID a new one will
+      be generated on insertion.
     */
     bool addNotebook( const Notebook::Ptr &nb, bool signal = true );
 

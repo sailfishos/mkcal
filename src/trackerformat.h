@@ -24,6 +24,8 @@
   This file is part of the API for handling calendar data and
   defines the TrackerFormat class.
 
+  Deprecated!!
+
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
 */
 
@@ -125,3 +127,4 @@ class MKCAL_EXPORT TrackerFormat : public QObject
 }
 
 #endif
+

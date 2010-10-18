@@ -1506,9 +1506,8 @@ static bool expandedIncidenceSortLessThan( const ExtendedCalendar::ExpandedIncid
   if ( e1.first > e2.first ) {
     return false;
   }
-  // e1 == e2 => perform secondary check based on uuid (hopefully this
-  // brings us consistent sorting that doesn't change order randomly
-  return e1.second->uid() < e2.second->uid();
+  // e1 == e2 => perform secondary check based on created date
+  return e1.second->created() < e2.second->created();
 }
 
 ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(

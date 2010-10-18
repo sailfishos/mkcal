@@ -1,12 +1,11 @@
 TEMPLATE = lib
 TARGET = $$qtLibraryTarget(defaultinvitationplugin)
-CONFIG += plugin kcalcoren plugin
+CONFIG += plugin kcalcoren
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
 INCLUDEPATH +=  . \
                 ../.. \
                 ../../src \
-                /usr/include/qmfclient \
 
 QMAKE_LIBDIR += ../../src
 LIBS += -lkcalcoren
@@ -16,6 +15,8 @@ VER_MIN = ${VER_MIN}
 VER_PAT = ${VER_PAT}
 
 DEFINES += MKCAL_FOR_MEEGO
+CONFIG += link_pkgconfig
+PKGCONFIG += qmfclient
 
 QT -= gui
 

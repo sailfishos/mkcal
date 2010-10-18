@@ -24,6 +24,9 @@
   This file is part of the API for handling calendar data and
   defines the TrackerStorage class.
 
+  This class is deprecated and not supported any more. Kept for
+  history of the project, and as example of different storages.
+
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
   @author Pertti Luukko \<ext-pertti.luukko@nokia.com\>
 */
@@ -351,3 +354,4 @@ class MKCAL_EXPORT TrackerStorage : public ExtendedStorage
 }
 
 #endif
+

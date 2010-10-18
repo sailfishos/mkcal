@@ -45,6 +45,16 @@ class ServiceInterface {
 
 public:
 
+    /** Error Codes that can be returned by the plugins */
+    //Be aware that they are different to the ones in ServiceHandler
+    //but they might need to be in sync
+    enum ErrorCode {
+      ErrorOk = 0,
+      ErrorNoAccount,
+      ErrorNotSupported,
+      ErrorNoConnectivity
+    };
+
     /** \brief returns icon of service.
         @return icon.
     */
@@ -60,7 +70,7 @@ public:
         @param notebook pointer to the notebook that we want to share
         @return email address of service
     */
-    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) const = 0;
+    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) = 0;
 
     /** \brief returns the display name of account of service.
         @param notebook pointer to the notebook that we want to share
@@ -87,7 +97,7 @@ public:
         @param notebook pointer to the notebook
         @return list of email addresses or phone numbers
     */
-    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) const = 0;
+    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) = 0;
 
     /** \brief The name of this service.
         It should be a uniq name specifying which service to use
@@ -95,6 +105,13 @@ public:
         @return The name of the service.
      */
     virtual QString serviceName() const = 0;
+
+    /** \brief In case of error, more detailed information can be provided
+        Sometimes the true/false is not enough, so in case of false
+        more details can be obtained.
+        @return the ErrorCode of what happened
+      */
+    virtual ErrorCode error() const = 0;
 
     virtual ~ServiceInterface() { }
 };
