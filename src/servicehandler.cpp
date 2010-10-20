@@ -97,19 +97,38 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
 
   QHash<QString, InvitationHandlerInterface*>::const_iterator i;
   i = mPlugins.find(pluginName);
-  //  if (i == mPlugins.end() && pluginName != defaultName)
-  //    i = mPlugins.find(defaultName);
 
-  if (i != mPlugins.end())
-    if (mExecutedPlugin == SendInvitation)
-      return i.value()->sendInvitation(accountId, notebookUid, invitation, body);
-  else if (mExecutedPlugin == SendResponse)
-    return i.value()->sendResponse(accountId, invitation, body);
-  else if (mExecutedPlugin == SendUpdate)
-    return i.value()->sendUpdate(accountId, invitation, body);
-  else
-    return false;
-  else
+  if (i != mPlugins.end()) {
+    // service needed to get possible error, because
+    // invitationhandlerinterface does'n have error-function 
+    QHash<QString, ServiceInterface*>::const_iterator is;
+    is = mServices.find( pluginName );
+
+    if (mExecutedPlugin == SendInvitation) {
+      if (i.value()->sendInvitation(accountId, notebookUid, invitation, body))
+	return true;
+      else {
+	mError = (ServiceHandler::ErrorCode) is.value()->error();
+	return false;
+      }
+    }
+    else if (mExecutedPlugin == SendResponse)
+      if (i.value()->sendResponse(accountId, invitation, body))
+	return true;
+      else {
+	mError = (ServiceHandler::ErrorCode) is.value()->error();
+	return false;
+      }
+    else if (mExecutedPlugin == SendUpdate)
+      if (i.value()->sendUpdate(accountId, invitation, body))
+	return true;
+      else {
+	mError = (ServiceHandler::ErrorCode) is.value()->error();
+	return false;
+      }
+    else
+      return false;
+  } else
     return false;
 }
 

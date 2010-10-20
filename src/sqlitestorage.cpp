@@ -320,7 +320,7 @@ bool SqliteStorage::open()
   query = INDEX_ATTENDEE;
   sqlite3_exec( d->mDatabase );
 
-  if ( !d->mChanged.open( QIODevice::WriteOnly ) ) {
+  if ( !d->mChanged.open( QIODevice::Append ) ) {
     kError() << "cannot open changed file for" << d->mDatabaseName;
     goto error;
   }
