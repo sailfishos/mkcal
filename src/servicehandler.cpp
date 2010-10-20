@@ -49,7 +49,8 @@ public:
 };
 
 ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false),
-          mError(ServiceHandler::ErrorOk)
+          mError(ServiceHandler::ErrorOk), mExecutedPlugin(None)
+
 {
 
 }
