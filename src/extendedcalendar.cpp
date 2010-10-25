@@ -244,7 +244,8 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence( const Incidence::Pt
   incidence->setLastModified( nowUTC );
 
   Recurrence *recur = newInc->recurrence();
-  recur->clear();
+  if (recur)
+    newInc->clearRecurrence();
 
   // Adjust the date of the incidence
   if ( incidence->type() == Incidence::TypeEvent ) {
