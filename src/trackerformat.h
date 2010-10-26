@@ -19,6 +19,9 @@
   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
   Boston, MA 02110-1301, USA.
 */
+
+#ifdef MKCAL_TRACKER_SUPPORT
+
 /**
   @file
   This file is part of the API for handling calendar data and
@@ -128,3 +131,4 @@ class MKCAL_EXPORT TrackerFormat : public QObject
 
 #endif
 
+#endif

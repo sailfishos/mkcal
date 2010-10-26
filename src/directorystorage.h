@@ -33,6 +33,8 @@
 #ifndef MKCAL_DIRECTORYSTORAGE_H
 #define MKCAL_DIRECTORYSTORAGE_H
 
+#ifdef MKCAL_DIRECTORY_SUPPORT
+
 #include "mkcal_export.h"
 #include "extendedstorage.h"
 
@@ -381,3 +383,4 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
 
 #endif
 
+#endif
