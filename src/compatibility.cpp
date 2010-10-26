@@ -60,7 +60,7 @@ Compatibility::Ptr CompatibilityFactory::createCompatibility( const QString &pro
   return compat;
 }
 
-Compatibility::Compatibility()
+Compatibility::Compatibility(): d(0)
 {
 }
 

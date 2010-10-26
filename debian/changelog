@@ -1,3 +1,17 @@
+libmkcal (0.1.26) unstable; urgency=low
+
+  * Fixes: NB#199978 - <MemLeak>memory leak in extendedcalendar.cpp:240
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 26 Oct 2010 10:13:20 +0300
+
+libmkcal (0.1.25) unstable; urgency=low
+
+  * Fixes BMC#6039 - "calendar changed" reported even if only read
+  * Getting errorcodes after functions of invitationhandlerinterface is called
+  * Fixes: NB#195492 -  <Coverity> defects for libmkcal
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 21 Oct 2010 10:01:24 +0300
+
 libmkcal (0.1.24) unstable; urgency=low
 
   * First attempt of email invitations.
