@@ -76,7 +76,7 @@ class MKCAL_EXPORT Notebook
 
     explicit Notebook( const QString &uid, const QString &name,
                        const QString &description, const QString &color,
-                       bool isShared, bool isMaster, bool oviSync,
+                       bool isShared, bool isMaster, bool isSynchronized,
                        bool isReadOnly, bool isVisible, const QString &pluginName,
                        const QString &account, int attachmentSize );
 
@@ -173,14 +173,14 @@ class MKCAL_EXPORT Notebook
       Returns true if notebook is synchronized to OVI.
       @see setIsOviSync().
     */
-    bool isOviSync() const;
+    bool isSynchronized() const;
 
     /**
       Set notebook OVI sync.
       The actual meaning is storage specific.
       @param oviSync true to set OVI sync.
     */
-    void setIsOviSync( bool oviSync );
+    void setIsSynchronized( bool oviSync );
 
     /**
       Returns true if notebook is read-only.

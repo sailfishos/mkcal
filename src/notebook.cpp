@@ -44,7 +44,7 @@ static const int FLAG_ALLOW_JOURNAL = ( 1 << 1 );
 static const int FLAG_ALLOW_TODO = ( 1 << 2 );
 static const int FLAG_IS_SHARED = ( 1 << 3 );
 static const int FLAG_IS_MASTER = ( 1 << 4 );
-static const int FLAG_IS_OVISYNC = ( 1 << 5 );
+static const int FLAG_IS_SYNCED = ( 1 << 5 );
 static const int FLAG_IS_READONLY = ( 1 << 6 );
 static const int FLAG_IS_VISIBLE = ( 1 << 7 );
 static const int FLAG_IS_RUNTIMEONLY = ( 1 << 8 );
@@ -138,7 +138,7 @@ Notebook::Notebook( const QString &name, const QString &description )
 
 Notebook::Notebook( const QString &uid, const QString &name,
                     const QString &description, const QString &color,
-                    bool isShared, bool isMaster, bool isOviSync,
+                    bool isShared, bool isMaster, bool isSynced,
                     bool isReadOnly, bool isVisible )
   : d( new Notebook::Private() )
 {
@@ -148,14 +148,14 @@ Notebook::Notebook( const QString &uid, const QString &name,
   setColor( color );
   setIsShared( isShared );
   setIsMaster( isMaster );
-  setIsOviSync( isOviSync );
+  setIsSynchronized( isSynced );
   setIsReadOnly( isReadOnly );
   setIsVisible( isVisible );
 }
 
 Notebook::Notebook( const QString &uid, const QString &name,
                     const QString &description, const QString &color,
-                    bool isShared, bool isMaster, bool isOviSync,
+                    bool isShared, bool isMaster, bool isSynced,
                     bool isReadOnly, bool isVisible, const QString &pluginName,
                     const QString &account, int attachmentSize )
   : d( new Notebook::Private() )
@@ -166,7 +166,7 @@ Notebook::Notebook( const QString &uid, const QString &name,
   setColor( color );
   setIsShared( isShared );
   setIsMaster( isMaster );
-  setIsOviSync( isOviSync );
+  setIsSynchronized( isSynced );
   setIsReadOnly( isReadOnly );
   setIsVisible( isVisible );
   setPluginName( pluginName );
@@ -271,14 +271,14 @@ void Notebook::setIsMaster( bool isMaster )
   d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
-bool Notebook::isOviSync() const
+bool Notebook::isSynchronized() const
 {
-  return d->mFlags & FLAG_IS_OVISYNC;
+  return d->mFlags & FLAG_IS_SYNCED;
 }
 
-void Notebook::setIsOviSync( bool isOviSync )
+void Notebook::setIsSynchronized( bool isSynced )
 {
-  SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_OVISYNC, isOviSync );
+  SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_SYNCED, isSynced );
   d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 

@@ -1010,7 +1010,7 @@ QHash<QString,Notebook::Ptr> DirectoryStorage::Private::loadNotebooks()
         } else if ( parameter == "isMaster" ) {
           notebook->setIsMaster( value == "true" ? true : false );
         } else if ( parameter == "isOviSync" ) {
-          notebook->setIsOviSync( value == "true" ? true : false );
+          notebook->setIsSynchronized( value == "true" ? true : false );
         } else if ( parameter == "isReadOnly" ) {
           notebook->setIsReadOnly( value == "true" ? true : false );
         } else if ( parameter == "isVisible" ) {
