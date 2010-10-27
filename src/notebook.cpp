@@ -90,7 +90,8 @@ class mKCal::Notebook::Private
         mAttachmentSize(-1),
         mModifiedDate( KDateTime() ),
         mSharedWith( QStringList() ),
-        mSyncProfile( QString() )
+        mSyncProfile( QString() ),
+        mCreationDate( KDateTime() )
     {}
 
     Private( const Private &other )
@@ -105,7 +106,8 @@ class mKCal::Notebook::Private
         mAttachmentSize( other.mAttachmentSize ),
         mModifiedDate( other.mModifiedDate ),
         mSharedWith( other.mSharedWith ),
-        mSyncProfile( other.mSyncProfile )
+        mSyncProfile( other.mSyncProfile ),
+        mCreationDate( other.mCreationDate )
     {}
 
   QString mUid;
@@ -120,6 +122,7 @@ class mKCal::Notebook::Private
   KDateTime mModifiedDate;
   QStringList mSharedWith;
   QString mSyncProfile;
+  KDateTime mCreationDate;
 
 };
 //@endcond
@@ -205,7 +208,8 @@ bool Notebook::operator==( const Notebook &i2 ) const
     d->mSyncDate == i2.syncDate() &&
     d->mPluginName == i2.pluginName() &&
     d->mModifiedDate == i2.modifiedDate() &&
-    d->mSharedWith == i2.sharedWith();
+    d->mSharedWith == i2.sharedWith() &&
+    d->mCreationDate == i2.creationDate();
 }
 
 QString Notebook::uid() const
@@ -367,6 +371,16 @@ KDateTime Notebook::modifiedDate() const
 void Notebook::setModifiedDate( const KDateTime &modifiedDate )
 {
   d->mModifiedDate = modifiedDate;
+}
+
+KDateTime Notebook::creationDate() const
+{
+    return d->mCreationDate;
+}
+
+void Notebook::setCreationDate( const KDateTime &date )
+{
+    d->mCreationDate = date;
 }
 
 bool Notebook::isDefault() const

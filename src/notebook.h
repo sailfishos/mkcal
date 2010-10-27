@@ -295,6 +295,19 @@ class MKCAL_EXPORT Notebook
     void setModifiedDate( const KDateTime &modifiedDate );
 
     /**
+      Returns creation date, in UTC.
+    */
+    KDateTime creationDate() const;
+
+    /**
+      Sets creation date of notebook.
+      Used internally.
+      @param date creation date.
+      @see creationDate().
+    */
+    void setCreationDate( const KDateTime &date );
+
+    /**
       Returns true if notebook is default notebook.
       @see setIsDefault().
     */

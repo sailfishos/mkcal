@@ -2787,6 +2787,7 @@ bool SqliteStorage::modifyNotebook( const Notebook::Ptr &nb, DBOperation dbop, b
     if ( dbop == DBInsert ) {
       query = INSERT_CALENDARS;
       qsize = sizeof( INSERT_CALENDARS );
+      nb->setCreationDate(KDateTime::currentUtcDateTime());
     } else if ( dbop == DBUpdate ) {
       query = UPDATE_CALENDARS;
       qsize = sizeof( UPDATE_CALENDARS );

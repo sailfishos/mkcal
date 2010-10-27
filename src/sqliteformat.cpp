@@ -126,6 +126,8 @@ bool SqliteFormat::modifyCalendars( const Notebook::Ptr &notebook,
     sqlite3_bind_int64(stmt, index, secs);
     sqlite3_bind_text(stmt, index, sharedWith, sharedWith.length(), SQLITE_STATIC);
     sqlite3_bind_text(stmt, index, syncProfile, syncProfile.length(), SQLITE_STATIC);
+    secs = d->mStorage->toOriginTime(notebook->creationDate().toUtc());
+    sqlite3_bind_int64(stmt, index, secs);
 
     if (dbop == DBUpdate)
       sqlite3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
@@ -1009,6 +1011,7 @@ Notebook::Ptr SqliteFormat::selectCalendars( sqlite3_stmt *stmt )
   sqlite3_int64 date;
   KDateTime syncDate = KDateTime();
   KDateTime modifiedDate = KDateTime();
+  KDateTime creationDate = KDateTime();
 
   sqlite3_step(stmt);
 
@@ -1027,6 +1030,8 @@ Notebook::Ptr SqliteFormat::selectCalendars( sqlite3_stmt *stmt )
     modifiedDate = d->mStorage->fromOriginTime(date);
     QString sharedWith = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 10));
     QString syncProfile = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 11));
+    date = sqlite3_column_int64(stmt, 12);
+    creationDate = d->mStorage->fromOriginTime(date);
 
     notebook = Notebook::Ptr( new Notebook( name, description ) );
     notebook->setUid(id);
@@ -1038,6 +1043,7 @@ Notebook::Ptr SqliteFormat::selectCalendars( sqlite3_stmt *stmt )
     notebook->setSyncDate(syncDate);
     notebook->setSharedWithStr(sharedWith);
     notebook->setSyncProfile(syncProfile);
+    notebook->setCreationDate(creationDate);
 
     // This has to be called last! Otherwise the last modified date
     // will be roughly now, and not whenever notebook was really last

@@ -518,11 +518,11 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define INSERT_TIMEZONES \
 "insert into Timezones values (1, '')"
 #define INSERT_CALENDARS \
-"insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+"insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
 #define INSERT_INVITATIONS \
 "insert into Invitations values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '', '', 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_RDATES \
@@ -537,7 +537,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define UPDATE_TIMEZONES \
 "update Timezones set ICalData=? where TzId=1"
 #define UPDATE_CALENDARS \
-"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=? where CalendarId=?"
+"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
 "update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
 
