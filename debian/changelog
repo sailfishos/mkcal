@@ -5,7 +5,6 @@ libmkcal (0.2.0) unstable; urgency=low
   * Postint hook, version of DB increase
   * Changing the isOviSync property
   * Deprecting unneded classes
-  * Fixes: NB#198667 - Calendars are not sorted when moved from inactive to active and vice-versa based on creation time
 
  -- Meng Sun <meng.5.sun@nokia.com>  Thu, 28 Oct 2010 16:32:26 +0300
 
