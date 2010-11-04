@@ -276,6 +276,16 @@ bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &not
 
 }
 
+bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence, const QString &uri)
+{
+  Q_UNUSED( notebook );
+  Q_UNUSED( incidence );
+  Q_UNUSED( uri );
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return false;
+
+}
+
 bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith)
 {
   Q_UNUSED( notebook );

@@ -60,6 +60,8 @@ public:
 
     bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path);
 
+    bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence, const QString &uri);
+
     bool shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith);
 
     QStringList sharedWith(const mKCal::Notebook::Ptr &notebook);

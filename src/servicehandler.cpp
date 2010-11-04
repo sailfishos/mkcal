@@ -272,6 +272,21 @@ bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Ext
   }
 }
 
+bool ServiceHandler::deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri)
+{
+  ServiceInterface* service = d->getServicePlugin(notebook, storage);
+
+  if ( service ) {
+    bool res = service->deleteAttachment(notebook, incidence, uri);
+    if ( !res ) {
+      d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    }
+    return res;
+  } else {
+    return false;
+  }
+}
+
 bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith, const ExtendedStorage::Ptr &storage)
 {
   kDebug() <<  "shareNotebook";

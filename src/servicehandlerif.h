@@ -86,6 +86,14 @@ public:
     */
     virtual bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path) = 0;
 
+    /** \brief start the deletion of an attachment.
+        @param notebook pointer to the notebook
+        @param incidence incidence of attachment to be deleted
+        @param uri uri of attachment to be deleted
+	@return True if OK, false otherwise.
+    */
+    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalCore::Incidence::Ptr &incidence, const QString &uri) = 0;
+
     /** \brief Share notebook.
         @param notebook pointer to the notebook that we want to share
         @param sharedWith email address or phone number of users

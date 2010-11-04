@@ -148,6 +148,16 @@ namespace mKCal {
       */
     bool downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path);
 
+    /** deleteAttachment
+      It would load the appropiate plugin to do it
+      @param incience incidence of attachment to be deleted
+      @param notebook notebook
+      @param storage Pointer to the storage in use
+      @param uri uri of attachment to be deleted
+      @return True if OK, false in case of error
+      */
+    bool deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri);
+
     /** Share notebook
       It would load the appropiate plugin to do it
       @param notebook Shared notebook
