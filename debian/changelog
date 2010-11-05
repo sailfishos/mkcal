@@ -1,3 +1,9 @@
+libmkcal (0.2.1) unstable; urgency=low
+
+  * REmove protection of DB
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 05 Nov 2010 12:28:10 +0200
+
 libmkcal (0.2.0) unstable; urgency=low
 
   * Making DB to be owned by calendar user
