@@ -61,7 +61,9 @@ namespace mKCal {
       ErrorOk = 0,
       ErrorNoAccount,
       ErrorNotSupported,
-      ErrorNoConnectivity
+      ErrorNoConnectivity,
+      ErrorInvalidParameters,
+      ErrorInternal
     };
 
     /** Obtain an instance of the ServiceHandler.
