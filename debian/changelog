@@ -1,3 +1,10 @@
+libmkcal (0.2.2) unstable; urgency=low
+
+  * Fixes: NB#203086 -  Calendar Notes applications not launched. Database laoding failed
+  * New error states
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 09 Nov 2010 10:23:33 +0200
+
 libmkcal (0.2.1) unstable; urgency=low
 
   * REmove protection of DB
