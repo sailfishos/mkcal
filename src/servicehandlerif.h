@@ -52,7 +52,9 @@ public:
       ErrorOk = 0,
       ErrorNoAccount,
       ErrorNotSupported,
-      ErrorNoConnectivity
+      ErrorNoConnectivity,
+      ErrorInvalidParameters,
+      ErrorInternal
     };
 
     /** \brief returns icon of service.
