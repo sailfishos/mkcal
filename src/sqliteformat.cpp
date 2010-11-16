@@ -1088,13 +1088,13 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       event->setDtEnd(end);
 
       if ( (start.isValid() &&
-            start.time().hour()== 0 &&
-            start.time().minute()== 0 &&
-            start.time().second()== 0) &&
+            start.toLocalZone().time().hour()== 0 &&
+            start.toLocalZone().time().minute()== 0 &&
+            start.toLocalZone().time().second()== 0) &&
            (!end.isValid() ||
-            (end.time().hour()== 0 &&
-             end.time().minute()== 0 &&
-             end.time().second()== 0 &&
+            (end.toLocalZone().time().hour()== 0 &&
+             end.toLocalZone().time().minute()== 0 &&
+             end.toLocalZone().time().second()== 0 &&
              end > start)) )
         event->setAllDay(true);
       incidence = event;
@@ -1125,13 +1125,13 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           }
         }
         if ( (start.isValid() &&
-              start.time().hour()== 0 &&
-              start.time().minute()== 0 &&
-              start.time().second()== 0) &&
+              start.toLocalZone().time().hour()== 0 &&
+              start.toLocalZone().time().minute()== 0 &&
+              start.toLocalZone().time().second()== 0) &&
              (!due.isValid() ||
-              (due.time().hour()== 0 &&
-               due.time().minute()== 0 &&
-               due.time().second()== 0 &&
+              (due.toLocalZone().time().hour()== 0 &&
+               due.toLocalZone().time().minute()== 0 &&
+               due.toLocalZone().time().second()== 0 &&
                due > start)) )
           todo->setAllDay(true);
         incidence = todo;
@@ -1145,9 +1145,9 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           KDateTime start = d->mStorage->fromOriginTime(date, timezone);
           journal->setDtStart(start);
           if ( (start.isValid() &&
-                start.time().hour()== 0 &&
-                start.time().minute()== 0 &&
-                start.time().second()== 0))
+                start.toLocalZone().time().hour()== 0 &&
+                start.toLocalZone().time().minute()== 0 &&
+                start.toLocalZone().time().second()== 0))
             journal->setAllDay(true);
           incidence = journal;
         }
@@ -2763,13 +2763,13 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       event->setDtEnd( end );
 
       if ( ( start.isValid() &&
-             start.time().hour() == 0 &&
-             start.time().minute() == 0 &&
-             start.time().second() == 0 ) &&
+             start.toLocalZone().time().hour() == 0 &&
+             start.toLocalZone().time().minute() == 0 &&
+             start.toLocalZone().time().second() == 0 ) &&
            ( !end.isValid() ||
-            ( end.time().hour() == 0 &&
-              end.time().minute() == 0 &&
-              end.time().second() == 0 &&
+            ( end.toLocalZone().time().hour() == 0 &&
+              end.toLocalZone().time().minute() == 0 &&
+              end.toLocalZone().time().second() == 0 &&
               end > start ) ) ) {
         event->setAllDay( true );
       }
@@ -2802,13 +2802,13 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           }
         }
         if ( ( start.isValid() &&
-               start.time().hour() == 0 &&
-               start.time().minute() == 0 &&
-               start.time().second() == 0 ) &&
+               start.toLocalZone().time().hour() == 0 &&
+               start.toLocalZone().time().minute() == 0 &&
+               start.toLocalZone().time().second() == 0 ) &&
              ( !due.isValid() ||
-              ( due.time().hour() == 0 &&
-                due.time().minute() == 0 &&
-                due.time().second() == 0 &&
+              ( due.toLocalZone().time().hour() == 0 &&
+                due.toLocalZone().time().minute() == 0 &&
+                due.toLocalZone().time().second() == 0 &&
                 due > start ) ) ) {
           todo->setAllDay( true );
         }
@@ -2823,9 +2823,9 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           KDateTime start = d->mStorage->fromOriginTime( date, timezone );
           journal->setDtStart( start );
           if ( ( start.isValid() &&
-                 start.time().hour() == 0 &&
-                 start.time().minute() == 0 &&
-                 start.time().second() == 0 ) ) {
+                 start.toLocalZone().time().hour() == 0 &&
+                 start.toLocalZone().time().minute() == 0 &&
+                 start.toLocalZone().time().second() == 0 ) ) {
             journal->setAllDay( true );
           }
           incidence = journal;
