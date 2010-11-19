@@ -5,7 +5,7 @@ then
 	if [ ! -d /home/user/.calendar ]
 	then 
        	    echo "Creating Calendar config directory"
-	    mkdir /home/user/.calendar
+	    #mkdir /home/user/.calendar
 	fi
 #	chown calendar:calendar /home/user/.calendar
 #	chmod 770 /home/user/.calendar
