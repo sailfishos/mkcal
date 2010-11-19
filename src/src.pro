@@ -41,7 +41,9 @@ INCLUDEPATH += . \
     /usr/include/glib-2.0 \
     /usr/lib/glib-2.0/include \
     /usr/include/dbus-1.0 \
-    /usr/include/qt4/QtDBus
+    /usr/include/qt4/QtDBus \
+    /usr/include/accounts-qt
+
 
 DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
 LIBS += -lQtDBus \
@@ -53,11 +55,12 @@ contains (DEFINES, TIMED_SUPPORT) {
 }
 
 contains (DEFINES, MKCAL_FOR_MEEGO) {
-    LIBS += -lmeegotouchcore
+    LIBS += -lmeegotouchcore -laccounts-qt
     INCLUDEPATH += /usr/include/meegotouch
 }
 
 QT -= gui
+QT += xml
 
 QMAKE_CLEAN += lib*.so*
 libraries.path += /${DESTDIR}/usr/lib
