@@ -82,18 +82,7 @@ class mKCal::ExtendedStorage::Private
         mIsInvitationIncidencesLoaded ( false ),
         mIsJournalsLoaded( false ),
         mDefaultNotebook( 0 )
-    {
-#if defined(MKCAL_FOR_MEEGO)
-      mManager = new Accounts::Manager();
-#endif
-    }
-
-    ~Private()
-    {
-#if defined(MKCAL_FOR_MEEGO)
-      delete mManager;
-#endif
-    }
+    {}
 
     ExtendedCalendar::Ptr mCalendar;
     bool mValidateNotebooks;
@@ -113,9 +102,6 @@ class mKCal::ExtendedStorage::Private
     QList<ExtendedStorageObserver*> mObservers;
     QHash<QString,Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
-#if defined(MKCAL_FOR_MEEGO)
-    Accounts::Manager* mManager;
-#endif
 };
 //@endcond
 
@@ -125,11 +111,6 @@ ExtendedStorage::ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validat
 {
   // Add the calendar as observer
   registerObserver( cal.data() );
-#if defined(MKCAL_FOR_MEEGO)
-  // remove notebooks of account when account is removed
-  connect(d->mManager,SIGNAL(accountRemoved(Accounts::AccountId)),
-	  this,SLOT(removeNotebooks(Accounts::AccountId)));
-#endif
 }
 
 ExtendedStorage::~ExtendedStorage()
@@ -819,21 +800,3 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
   setDefaultNotebook(nbDefault);
   return nbDefault;
 }
-
-#if defined(MKCAL_FOR_MEEGO)
-void ExtendedStorage::removeNotebooks(const Accounts::AccountId id)
-{
-  kDebug() << "removeNotebooks";
-  Notebook::List list;
-  list = notebooks();
-  if ( !list.isEmpty() ) {
-    Notebook::List::Iterator it = list.begin();
-    for ( ; it != list.end(); ++it ) {
-      Notebook::Ptr nb = Notebook::Ptr( (*it) );
-      if ( nb->account().toUInt() == id ) {
-	deleteNotebook(nb);
-      }
-    }
-  }
-}
-#endif

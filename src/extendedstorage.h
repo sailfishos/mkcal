@@ -42,7 +42,6 @@
 
 #if defined(MKCAL_FOR_MEEGO)
 #include <MLocale>
-#include <Accounts/manager.h>
 #endif
 
 namespace KCalCore {
@@ -675,11 +674,6 @@ class MKCAL_EXPORT ExtendedStorage
     void setIsInvitationIncidencesLoaded( bool loaded );
 
     void clearLoaded();
-
-#if defined(MKCAL_FOR_MEEGO)
-  public slots:
-    void removeNotebooks(const Accounts::AccountId id);
-#endif
 
   private:
     //@cond PRIVATE

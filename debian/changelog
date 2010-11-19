@@ -1,3 +1,11 @@
+libmkcal (0.2.5) unstable; urgency=low
+
+  * Fixes: NB#190004 - Calendar entries and notebooks are not deleted when an OVI account is removed
+  * Fixes: NB#205695 - SSU: SSU failed with error 'dpkg: error processing libmkcal
+  * NO_REVIEWBOARD:removed fix for 190004
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 19 Nov 2010 15:49:40 +0200
+
 libmkcal (0.2.4) unstable; urgency=low
 
   * Fixes: NB#185326 - All day event synced from outlook is not shown correctly in week view
