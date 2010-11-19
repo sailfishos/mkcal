@@ -58,7 +58,7 @@ using namespace mKCal;
 //@cond PRIVATE
 
 template <typename K>
-void removeAll( QVector< QSharedPointer<K> > c, const QSharedPointer<K> &x )
+void removeAll( QVector< QSharedPointer<K> > &c, const QSharedPointer<K> &x )
 {
   if ( x.isNull() ) {
     return;
