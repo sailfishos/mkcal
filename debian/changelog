@@ -1,3 +1,10 @@
+libmkcal (0.2.6) unstable; urgency=low
+
+  * Pass by value does not delete the contents
+  * Changes in includes
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 22 Nov 2010 12:51:23 +0200
+
 libmkcal (0.2.5) unstable; urgency=low
 
   * Fixes: NB#190004 - Calendar entries and notebooks are not deleted when an OVI account is removed
