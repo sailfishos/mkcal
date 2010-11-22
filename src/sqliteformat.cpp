@@ -39,8 +39,8 @@
 #include <sorting.h>
 using namespace KCalCore;
 
-#include <kdebug.h>
-#include <kurl.h>
+#include <KDebug>
+#include <KUrl>
 
 using namespace mKCal;
 class mKCal::SqliteFormat::Private

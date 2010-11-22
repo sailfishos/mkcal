@@ -35,7 +35,7 @@
 #include "trackermodify.h"
 using namespace KCalCore;
 
-#include <kurl.h>
+#include <KUrl>
 
 using namespace mKCal;
 

@@ -41,7 +41,7 @@ using namespace KCalCore;
 
 #include <kdebug.h>
 #include <ksystemtimezone.h>
-#include <kurl.h>
+#include <KUrl>
 
 #include <QtDBus/QDBusPendingCallWatcher>
 #include <QtDBus/QDBusPendingReply>
