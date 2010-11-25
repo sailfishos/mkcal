@@ -232,13 +232,13 @@ class mKCal::TrackerModify::Private
 
       foreach (const QChar ch, in ) {
           if (ch == QLatin1Char('\t'))
-              literal.append(QLatin1String("\\\t"));
+              literal.append(QLatin1String("\\t"));
           else if (ch == QLatin1Char('\n'))
-              literal.append(QLatin1String("\\\n"));
+              literal.append(QLatin1String("\\n"));
           else if (ch == QLatin1Char('\r'))
-              literal.append(QLatin1String("\\\b"));
+              literal.append(QLatin1String("\\b"));
           else if (ch == QLatin1Char('\f'))
-              literal.append(QLatin1String("\\\f"));
+              literal.append(QLatin1String("\\f"));
           else if (ch == QLatin1Char('\"'))
               literal.append(QLatin1String("\\\""));
           else if (ch == QLatin1Char('\''))
