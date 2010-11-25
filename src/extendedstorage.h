@@ -607,6 +607,12 @@ class MKCAL_EXPORT ExtendedStorage
     void resetAlarms( const KCalCore::Incidence::List &incidences );
 
     /**
+      Set alarms for the incidence without removing old alarms. This is the
+      same as resetAlarms except that the old alarms are not removed.
+    */
+    void setAlarms( const KCalCore::Incidence::Ptr &incidence );
+
+    /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 
