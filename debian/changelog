@@ -1,3 +1,9 @@
+libmkcal (0.2.7) unstable; urgency=low
+
+  * Allow setting next alarm without clearing old alarms.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 26 Nov 2010 10:02:50 +0200
+
 libmkcal (0.2.6) unstable; urgency=low
 
   * Pass by value does not delete the contents
