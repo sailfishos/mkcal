@@ -1,7 +1,6 @@
 libmkcal (0.2.7) unstable; urgency=low
 
   * Allow setting next alarm without clearing old alarms.
-  * Fixes: NB#193322 - Notes created with multiple lines is not saved in tracker data base
 
  -- Meng Sun <meng.5.sun@nokia.com>  Fri, 26 Nov 2010 10:02:50 +0200
 
