@@ -221,7 +221,11 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         sqlite3_bind_int64(stmt1, index, secs);
         secs = d->mStorage->toLocalOriginTime(incidence->dtStart());
         sqlite3_bind_int64(stmt1, index, secs);
-        tzStart = incidence->dtStart().timeZone().name().toUtf8();
+        if ( incidence->dtStart().isDateOnly() && incidence->dtStart().timeSpec().isClockTime() ) {
+          tzStart = FLOATING_DATE;
+        } else {
+          tzStart = incidence->dtStart().timeZone().name().toUtf8();
+        }
         sqlite3_bind_text(stmt1, index, tzStart.constData(), tzStart.length(), SQLITE_STATIC);
       } else {
         sqlite3_bind_int(stmt1, index, 0);
@@ -236,11 +240,15 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         Event::Ptr event = incidence.staticCast<Event>();
         if ( event->hasEndDate() ) {
           dt = event->dtEnd();
-          tzEnd = dt.timeZone().name().toUtf8();
           secs = d->mStorage->toOriginTime( dt );
           sqlite3_bind_int64( stmt1, index, secs );
           secs = d->mStorage->toLocalOriginTime( dt );
           sqlite3_bind_int64( stmt1, index, secs);
+          if ( dt.isDateOnly() && dt.timeSpec().isClockTime() ) {
+            tzEnd = FLOATING_DATE;
+          } else {
+            tzEnd = dt.timeZone().name().toUtf8();
+          }
           sqlite3_bind_text( stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC );
         } else {
           // No end date, use start date if possible
@@ -249,7 +257,11 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
             sqlite3_bind_int64( stmt1, index, secs );
             secs = d->mStorage->toLocalOriginTime(incidence->dtStart() );
             sqlite3_bind_int64( stmt1, index, secs );
-            tzEnd = incidence->dtStart().timeZone().name().toUtf8();
+            if ( incidence->dtStart().isDateOnly()  && incidence->dtStart().timeSpec().isClockTime() ) {
+              tzEnd = FLOATING_DATE;
+            } else {
+              tzEnd = incidence->dtStart().timeZone().name().toUtf8();
+            }
             sqlite3_bind_text( stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC );
           } else {
             sqlite3_bind_int( stmt1, index, 0);
@@ -270,7 +282,11 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         sqlite3_bind_int64( stmt1, index, secs );
         secs = d->mStorage->toLocalOriginTime( dtStart );
         sqlite3_bind_int64( stmt1, index, secs );
-        tzStart = dtStart.timeZone().name().toUtf8();
+        if ( incidence->dtStart().isDateOnly()  && incidence->dtStart().timeSpec().isClockTime() ) {
+          tzStart = FLOATING_DATE;
+        } else {
+          tzStart = incidence->dtStart().timeZone().name().toUtf8();
+        }
         sqlite3_bind_text( stmt1, index, tzStart.constData(), tzStart.length(), SQLITE_STATIC );
       } else {
         sqlite3_bind_int( stmt1, index, 0 );
@@ -286,7 +302,11 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         sqlite3_bind_int64( stmt1, index, secs );
         secs = d->mStorage->toLocalOriginTime( dtDue );
         sqlite3_bind_int64( stmt1, index, secs );
-        tzEnd =  dtDue .timeZone().name().toUtf8();
+        if ( dtDue.isDateOnly()  && dtDue.timeSpec().isClockTime() ) {
+          tzEnd = FLOATING_DATE;
+        } else {
+          tzEnd = dtDue.timeZone().name().toUtf8();
+        }
         sqlite3_bind_text( stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC );
       } else {
         // No due date, use start date if possible.
@@ -296,7 +316,11 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
           sqlite3_bind_int64(stmt1, index, secs);
           secs = d->mStorage->toLocalOriginTime( dtStart );
           sqlite3_bind_int64(stmt1, index, secs);
-          tzEnd =  dtStart.timeZone().name().toUtf8();
+          if ( dtStart.isDateOnly() && dtStart.timeSpec().isClockTime()  ) {
+            tzEnd = FLOATING_DATE;
+          } else {
+            tzEnd = dtStart.timeZone().name().toUtf8();
+          }
           sqlite3_bind_text(stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
         } else {
           sqlite3_bind_int(stmt1, index, 0);

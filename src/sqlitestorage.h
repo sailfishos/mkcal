@@ -663,6 +663,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 #define COMMIT_TRANSACTION \
 "END;"
 
+#define FLOATING_DATE "FloatingDate"
 }
 
 #endif

@@ -3008,7 +3008,6 @@ void SqliteStorage::fileChanged( const QString &path )
 
 sqlite3_int64 SqliteStorage::toOriginTime( KDateTime dt )
 {
-  //kDebug() << "toOriginTime" << dt << d->mOriginTime.secsTo_long( dt );
   return d->mOriginTime.secsTo_long(dt);
 }
 
@@ -3034,21 +3033,28 @@ KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds, QString zonename
 
   if ( seconds != 0 ) {
     if ( !zonename.isEmpty() ) {
-      // First try system zones.
-      KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
-      if ( ktimezone.isValid() ) {
-        dt =
-          d->mOriginTime.addSecs( seconds ).toUtc().toTimeSpec( KDateTime::Spec( ktimezone ) );
+      if ( zonename == QLatin1String(FLOATING_DATE) ) {
+          QDate originDate = d->mOriginTime.date();
+          originDate.addDays( seconds / 86400 );
+          KDateTime dateOnly(originDate, KDateTime::ClockTime );
+          return dateOnly;
       } else {
-        // Then try calendar specific zones.
-        ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
-        ICalTimeZone icaltimezone = zones.value( zonename );
-        if ( icaltimezone.isValid() ) {
+        // First try system zones.
+        KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
+        if ( ktimezone.isValid() ) {
           dt =
-            d->mOriginTime.addSecs( seconds ).toUtc().toTimeSpec( KDateTime::Spec( icaltimezone ) );
+            d->mOriginTime.addSecs( seconds ).toUtc().toTimeSpec( KDateTime::Spec( ktimezone ) );
         } else {
-          // Invalid zone, fall back to UTC.
-          dt = d->mOriginTime.addSecs( seconds ).toUtc();
+          // Then try calendar specific zones.
+          ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
+          ICalTimeZone icaltimezone = zones.value( zonename );
+          if ( icaltimezone.isValid() ) {
+            dt =
+              d->mOriginTime.addSecs( seconds ).toUtc().toTimeSpec( KDateTime::Spec( icaltimezone ) );
+          } else {
+            // Invalid zone, fall back to UTC.
+            dt = d->mOriginTime.addSecs( seconds ).toUtc();
+          }
         }
       }
     } else {
@@ -3056,7 +3062,7 @@ KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds, QString zonename
       dt = d->mOriginTime.addSecs( seconds ).toClockTime();
     }
   }
-  //kDebug() << "fromOriginTime" << seconds << zonename << dt;
+//  kDebug() << "fromOriginTime" << seconds << zonename << dt;
   return dt;
 }
 
