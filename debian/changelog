@@ -1,3 +1,9 @@
+libmkcal (0.2.8) unstable; urgency=low
+
+  * Fixes: NB#200009 - MfE: Allday recurrent event instances moved to one day
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 29 Nov 2010 14:24:02 +0200
+
 libmkcal (0.2.7) unstable; urgency=low
 
   * Allow setting next alarm without clearing old alarms.
