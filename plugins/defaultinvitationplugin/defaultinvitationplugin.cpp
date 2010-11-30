@@ -39,8 +39,6 @@ public:
   Private() : mStore( 0 ), mDefaultAccount( 0 ), mInit ( false ),
   mErrorCode( ServiceInterface::ErrorOk )
   {
-    init();  //Doing the init on the constructor means that
-             //if default account is changed, we won't know until reconstucted
   }
   ~Private() {
     uninit();
@@ -180,7 +178,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     return false;
   }
 
-//  d->init();
+  d->init();
 
   ICalFormat icf;
   QString ical =  icf.createScheduleMessage( invitation, iTIPPublish ) ;
@@ -208,7 +206,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
   d->mErrorCode = ServiceInterface::ErrorOk;
 
-//  d->init();
+  d->init();
   // Is there an organizer?
   Person::Ptr organizer = invitation->organizer();
   if (organizer->isEmpty() || organizer->email().isEmpty()) { // we do not have an organizer
@@ -254,7 +252,7 @@ bool DefaultInvitationPlugin::multiCalendar() const
 QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook)
 {
   Q_UNUSED( notebook );
-//  d->init();
+  d->init();
   QString email ( d->defaultAddress() );
 //  d->uninit();
   return email;
