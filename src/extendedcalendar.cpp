@@ -1839,7 +1839,7 @@ Incidence::List ExtendedCalendar::incidences( bool hasDate,
   while ( i1.hasNext() ) {
     i1.next();
     Todo::Ptr todo = i1.value();
-    if ( hasDate && todo->hasDueDate() ) { // todos with due date
+    if ( hasDate && todo->hasDueDate() && isVisible( todo )) { // todos with due date
       if ( !todo->recurs() ) { // non-recurring todos
         if ( ( !start.isValid() || start <= todo->dtDue() ) &&
              ( !end.isValid() || end >= todo->dtDue() ) ) {
@@ -1873,7 +1873,7 @@ Incidence::List ExtendedCalendar::incidences( bool hasDate,
   while ( i2.hasNext() ) {
     i2.next();
     Event::Ptr event = i2.value();
-    if ( hasDate && // events with end and start dates
+    if ( hasDate &&  isVisible( event ) && // events with end and start dates
          event->dtStart().isValid() && event->dtEnd().isValid() ) {
       if ( !event->recurs() ) { // non-recurring events
         if ( ( !start.isValid() || start <= event->dtEnd() ) &&
@@ -1909,7 +1909,7 @@ Incidence::List ExtendedCalendar::incidences( bool hasDate,
   while ( i3.hasNext() ) {
     i3.next();
     Journal::Ptr journal = i3.value();
-    if ( hasDate && // journals with end and start dates
+    if ( hasDate &&  isVisible( journal ) && // journals with end and start dates
 // PENDING(kdab) Review
 #ifdef KDAB_TEMPORARILY_REMOVED
          journal->dtStart().isValid() && journal->dtEnd().isValid() ) {
