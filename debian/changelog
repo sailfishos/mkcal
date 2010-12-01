@@ -1,3 +1,10 @@
+libmkcal (0.2.9) unstable; urgency=low
+
+  * Small optimization on default plugin. Postpone Qmf connection until needed
+  * Fixes: NB#199435 - Events in the inactive calendar is listed in the list view.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 01 Dec 2010 14:55:43 +0200
+
 libmkcal (0.2.8) unstable; urgency=low
 
   * Fixes: NB#200009 - MfE: Allday recurrent event instances moved to one day
