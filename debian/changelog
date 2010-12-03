@@ -1,3 +1,9 @@
+libmkcal (0.2.10) unstable; urgency=low
+
+  * Check possible null params NO_REVIEWBOARD
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 03 Dec 2010 10:20:34 +0200
+
 libmkcal (0.2.9) unstable; urgency=low
 
   * Small optimization on default plugin. Postpone Qmf connection until needed
