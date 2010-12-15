@@ -1,3 +1,10 @@
+libmkcal (0.2.11) unstable; urgency=low
+
+  * Fixes: NB#211142 - Created calendar item is not displayed, but
+    reminder is played
+
+ -- Alexander Chumakov <alexander.chumakov@teleca.com>  Wed, 15 Dec 2010 15:33:23 +0300
+
 libmkcal (0.2.10) unstable; urgency=low
 
   * Check possible null params NO_REVIEWBOARD

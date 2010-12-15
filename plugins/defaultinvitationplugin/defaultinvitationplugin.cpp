@@ -95,14 +95,21 @@ public:
     QMailMessage message;
     // Setup account which should be used to send a message
     message.setParentAccountId( mDefaultAccount->id() );
+    // Get the outbox folder ID
+    QMailFolderId folderId = mDefaultAccount->standardFolder(QMailFolder::OutboxFolder);
+    if (!folderId.isValid()) {
+        folderId = QMailFolder::LocalStorageFolderId;
+    }
     // Put message to standard outbox folder fo that account
-    message.setParentFolderId( QMailFolderId( QMailFolder::OutboxFolder ) );
+    message.setParentFolderId( folderId );
+
     // Setup message status
-    message.setStatus((QMailMessage::Outbox | QMailMessage::Draft ), true);
+    message.setStatus(QMailMessage::Outbox, true);
     message.setStatus(QMailMessage::Outgoing, true);
     message.setStatus(QMailMessage::ContentAvailable, true);
     message.setStatus(QMailMessage::PartialContentAvailable, true);
     message.setStatus(QMailMessage::Read, true);
+    message.setDate(QMailTimeStamp(QDateTime::currentDateTime()));
 
     // Define recipeint's address
     QList<QMailAddress> addresses;
@@ -114,23 +121,29 @@ public:
     message.setFrom( mDefaultAccount->fromAddress() );
     // Define subject
     message.setSubject( subject );
-    // Define message body
-    QMailMessagePart msg = QMailMessagePart::fromData( body,
-                               QMailMessageContentDisposition::Attachment,
-                               QMailMessageContentType( "plain/text" ),
-                               QMailMessageBodyFwd::QuotedPrintable );
-    message.appendPart(msg);
-    // add attachment
+    message.setMessageType(QMailMessage::Email);
+    message.setMultipartType(QMailMessagePartContainerFwd::MultipartAlternative);
 
-    QMailBase64Codec encoder( QMailBase64Codec::Text );
-    QByteArray base64Data = encoder.encode( attachment );
-    QMailMessagePart att = QMailMessagePart::fromData( base64Data,
-                               QMailMessageContentDisposition::Attachment,
-                               QMailMessageContentType( "application/ics" ),
-                               QMailMessageBodyFwd::Base64 );
-    message.appendPart(att);
-    message.setMultipartType(QMailMessagePartContainer::MultipartMixed);
-    message.setStatus(QMailMessage::LocalOnly, true);
+    // Create the MIME part representing the message body
+    QMailMessagePart bodyPart = QMailMessagePart::fromData(
+        body,
+        QMailMessageContentDisposition(QMailMessageContentDisposition::None),
+        QMailMessageContentType("text/plain; charset=\"utf-8\""),
+        QMailMessageBody::QuotedPrintable);
+    bodyPart.removeHeaderField("Content-Disposition");
+
+    // Create the calendar MIME part
+    QMailMessagePart calendarPart = QMailMessagePart::fromData(
+        attachment,
+        QMailMessageContentDisposition(QMailMessageContentDisposition::None),
+        QMailMessageContentType("text/calendar; charset=\"utf-8\"; method=REQUEST"),
+        QMailMessageBody::Base64);
+    calendarPart.removeHeaderField("Content-Disposition");
+    calendarPart.appendHeaderField("Content-Class","urn:content-classes:calendarmessage");
+
+    message.appendPart(bodyPart);
+    message.appendPart(calendarPart);
+
     // send (to outbox)
     if (!mStore->addMessage(&message))
       return false;
@@ -167,6 +180,7 @@ DefaultInvitationPlugin::~DefaultInvitationPlugin()
 bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid, const Incidence::Ptr &invitation, const QString &body)
 {
 
+  Q_UNUSED( body );
   Q_UNUSED( accountId );
   Q_UNUSED( notebookUid );
 
@@ -188,7 +202,8 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     emails.append( att->email() );
   }
 
-  bool res = d->sendMail(emails, invitation->summary(), body, ical);
+  const QString &description = invitation->description();
+  const bool res = d->sendMail( emails, invitation->summary(), description, ical );
 
 //  d->uninit();
   return res;
