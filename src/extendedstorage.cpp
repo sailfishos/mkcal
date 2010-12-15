@@ -579,19 +579,7 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     if ( alarmTime.isUtc() ) {
       e.setTicker( alarmTime.toTime_t() );
     } else {
-      QDate date = alarmTime.date();
-      QTime time = alarmTime.time();
-
-      try {
-        e.setTime(date.year(), date.month(), date.day(), time.hour(), time.minute());
-      } catch (Timed::Exception &e) {
-        qDebug() << "Got Maemo::Timed::Exception" << e.message();
-        return;
-      }
-
-      if ( !alarmTime.isClockTime() ) {
-        e.setTimezone( alarmTime.timeZone().name() );
-      }
+      e.setTicker( alarmTime.toUtc().toTime_t() );
     }
     // The code'll crash (=exception) iff the content is empty. So
     // we have to check here.
