@@ -1,3 +1,10 @@
+libmkcal (0.2.12) unstable; urgency=low
+
+  * Fixes: NB#212065 - Alarm notification not shown in device for events synchronized from N900
+  * Fixes: NB#211142 - Created calendar item is not displayed, but reminder is played
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 16 Dec 2010 12:32:43 +0200
+
 libmkcal (0.2.11) unstable; urgency=low
 
   * Fixes: NB#211142 - Created calendar item is not displayed, but
