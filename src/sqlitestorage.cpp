@@ -47,9 +47,13 @@ using namespace KCalCore;
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
-#include <QtDBus/QDBusInterface>
-#include <QtDBus/QDBusConnectionInterface>
-#include <QtDBus/QDBusPendingCall>
+#include <QSparqlConnection>
+#include <QSparqlQuery>
+
+#if defined(MKCAL_TRACKER_SYNC)
+#include <QSparqlResult>
+#include <QSparqlError>
+#endif
 
 #include <iostream>
 using namespace std;
@@ -80,15 +84,24 @@ class mKCal::SqliteStorage::Private
         mDatabase( 0 ),
         mFormat( 0 ),
         mUseTracker( useTracker ),
-        mDBusIf( 0 ),
         mIsLoading( false ),
-        mIsOpened( false )
+        mIsOpened( false ),
+        mTrackerConnection( 0 )
     {}
     ~Private()
-    {}
+    {
+        if ( mTrackerConnection ) {
+            delete mTrackerConnection;
+            mTrackerConnection = 0;
+        }
+    }
 
     void modifyTracker(const Incidence::Ptr &incidence, DBOperation dbop, const QString notebookUid )
     {
+      if ( !mUseTracker )  {
+          return;
+      }
+
       QStringList insertQuery;
       QStringList deleteQuery;
       TrackerModify tracker;
@@ -108,20 +121,45 @@ class mKCal::SqliteStorage::Private
           }
         }
 
-        kDebug() << query;
+//        kDebug() << query;
 
-#if defined(MKCAL_TRACKER_SYNC)
-          QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
-          update.waitForFinished();
-          if ( update.isError() ) {
-            kError() << "tracker query error:" << update.error().message();
-          }
-#else
-          (void)mDBusIf->asyncCall( "SparqlUpdate", query );
-#endif
-
+        mSparql.append( query );
+        mSparql.append( QChar( QLatin1Char( ' ' ) ) );
       }
     }
+
+    void executeTracker()
+    {
+        if ( !mUseTracker )  {
+            return;
+        }
+
+        QSparqlQuery query( mSparql, QSparqlQuery::InsertStatement );
+        if ( !mTrackerConnection ) {
+            mTrackerConnection = new QSparqlConnection("QTRACKER_DIRECT");
+        }
+
+
+
+
+#if defined(MKCAL_TRACKER_SYNC)
+
+        QSparqlResult *result = mTrackerConnection->exec( query );
+        result->waitForFinished();
+
+        if  ( result->hasError() ) {
+            QSparqlError error = result->lastError();
+            kWarning() << error.message();
+        }
+
+        delete result;
+#else
+        mTrackerConnection->exec( query );
+#endif
+
+
+    }
+
     ExtendedCalendar::Ptr mCalendar;
     SqliteStorage *mStorage;
     QString mDatabaseName;
@@ -131,7 +169,6 @@ class mKCal::SqliteStorage::Private
     sqlite3 *mDatabase;
     SqliteFormat *mFormat;
     bool mUseTracker;
-    QDBusInterface *mDBusIf;
     QMultiHash<QString,Incidence::Ptr> mIncidencesToInsert;
     QMultiHash<QString,Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString,Incidence::Ptr> mIncidencesToDelete;
@@ -140,6 +177,8 @@ class mKCal::SqliteStorage::Private
     bool mIsOpened;
     KDateTime mOriginTime;
     QDateTime mPreWatcherDbTime;
+    QString mSparql;
+    QSparqlConnection *mTrackerConnection;
 
     int loadIncidences( sqlite3_stmt *stmt1,
                         const char *query2, int qsize2, const char *query3, int qsize3,
@@ -211,40 +250,6 @@ bool SqliteStorage::open()
     return false;
   }
 
-  if (d->mUseTracker) {
-    QDBusConnection bus = QDBusConnection::sessionBus();
-
-    if ( !bus.isConnected() )  {
-      kError() << "DBus connection failed";
-      return false;
-    }
-
-    bool retried = false;
-  retry:
-    QStringList serviceNames = bus.interface()->registeredServiceNames();
-    qDebug() << "DBus service names:" << serviceNames;
-
-    d->mDBusIf =
-      new QDBusInterface( "org.freedesktop.Tracker1", "/org/freedesktop/Tracker1/Resources",
-                          "org.freedesktop.Tracker1.Resources", bus );
-    // TODO delete row above and uncomment row below after tracker has released new protected interfaces
-    //d->mDBusIf = new QDBusInterface( "org.fd.T.Resources.SparqlUpdate",
-    //                                 "/org/fd/T/Resources/SparqlUpdate",
-    //                                 "org.fd.T.Resources.SparqlUpdate", bus );
-    if ( !d->mDBusIf->isValid() ) {
-      if ( d->mDBusIf ) {
-        delete d->mDBusIf;
-        d->mDBusIf = 0;
-      }
-      if ( !retried ) {
-        // Try again, let tracker to start.
-        retried = true;
-        goto retry;
-      }
-      kError() << "Could not establish a DBus connection to Tracker";
-      return false;
-    }
-  }
   KDateTime::setFromStringDefault( KDateTime::Spec::UTC() );
 
   rv = sqlite3_open( d->mDatabaseName.toUtf8(), &d->mDatabase );
@@ -2166,6 +2171,8 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
     }
   }
 
+  executeTracker();
+
   if ( dbop == DBDelete ) {
     // Remove all alarms.
     mStorage->clearAlarms(validIncidences);
@@ -2230,10 +2237,6 @@ bool SqliteStorage::close()
     if ( d->mFormat ) {
       delete d->mFormat;
       d->mFormat = 0;
-    }
-    if ( d->mDBusIf ) {
-      delete d->mDBusIf;
-      d->mDBusIf = 0;
     }
     d->mIsOpened = false;
   }
@@ -2973,14 +2976,11 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
 
     kDebug() << query;
 
-    QDBusPendingReply<> update = mDBusIf->asyncCall( "SparqlUpdate", query );
-#if defined(MKCAL_TRACKER_SYNC)
-    update.waitForFinished();
-    if ( update.isError() ) {
-      kError() << "tracker query error:" << update.error().message();
-      return false;
-    }
-#endif
+    mSparql.append( query );
+    mSparql.append( QChar( QLatin1Char( ' ' ) ) );
+
+    executeTracker();
+
   }
   return true;
 }

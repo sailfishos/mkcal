@@ -43,7 +43,7 @@ INCLUDEPATH += . \
     /usr/include/dbus-1.0 \
     /usr/include/qt4/QtDBus
 
-DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
+DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT #MKCAL_TRACKER_SYNC
 LIBS += -lQtDBus \
     -lsqlite3 \
     -luuid \
@@ -68,7 +68,7 @@ headers.files += *.h \
     klibport/*.h
 pkgconfig.path += /${DESTDIR}/usr/lib/pkgconfig
 pkgconfig.files += ../*.pc
-CONFIG += kcalcoren
+CONFIG += kcalcoren qtsparql
 INSTALLS += libraries \
     headers \
     pkgconfig

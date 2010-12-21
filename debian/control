@@ -2,13 +2,13 @@ Source: libmkcal
 Section: libs
 Priority: optional
 Maintainer: Alvaro Manera <alvaro.manera@nokia.com>
-Build-Depends: debhelper (>= 5), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev, libqmf-dev, libmeegotouch-dev (>= 0.20.12.1-2), doxygen, aegis-builder (>= 1.4), libkcalcoren-dev
+Build-Depends: debhelper (>= 5), libical-dev (>= 0.43), libqt4-dev (>= 4.5), libsqlite3-dev (>= 3.6.3), uuid-dev, tracker, tzdata, libtimed-dev, libdbus-1-dev, libqmf-dev, libmeegotouch-dev (>= 0.20.12.1-2), doxygen, aegis-builder (>= 1.4), libkcalcoren-dev, libqtsparql-dev
 Standards-Version: 3.8.0
 
 Package: libmkcal
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, libqtsparql-tracker-direct
 Description: Extended KDE kcal calendar library port for Maemo.
  KDE kcal calendar library port for Maemo.
 
