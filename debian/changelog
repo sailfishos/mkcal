@@ -1,3 +1,9 @@
+libmkcal (0.2.13) unstable; urgency=low
+
+  * Moving from Tracker Dbus connection to QSparql using Direct
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 21 Dec 2010 13:32:49 +0200
+
 libmkcal (0.2.12) unstable; urgency=low
 
   * Fixes: NB#212065 - Alarm notification not shown in device for events synchronized from N900
