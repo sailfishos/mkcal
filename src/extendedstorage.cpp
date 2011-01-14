@@ -576,6 +576,7 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
       }
     }
     Timed::Event& e = events.append();
+    e.setUserModeFlag();
     if ( alarmTime.isUtc() ) {
       e.setTicker( alarmTime.toTime_t() );
     } else {
