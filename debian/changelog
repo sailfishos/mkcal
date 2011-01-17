@@ -1,3 +1,9 @@
+libmkcal (0.2.15) unstable; urgency=low
+
+  * Fixes: NB#215914 - calendar event can bring device to ACT_DEAD to active state
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 17 Jan 2011 10:40:24 +0200
+
 libmkcal (0.2.14) unstable; urgency=low
 
   * NO_REVIEWBOARD: fixed order by syntax
