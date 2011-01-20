@@ -1,3 +1,9 @@
+libmkcal (0.2.16) unstable; urgency=low
+
+  * Fixes: Bug 6227 - importing/exporting iCalendar 2.0: adding time to UNTIL changes semantic
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 20 Jan 2011 10:06:09 +0200
+
 libmkcal (0.2.15) unstable; urgency=low
 
   * Fixes: NB#215914 - calendar event can bring device to ACT_DEAD to active state
