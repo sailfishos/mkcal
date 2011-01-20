@@ -1111,14 +1111,16 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       KDateTime end = d->mStorage->fromOriginTime(date, timezone);
       event->setDtEnd(end);
 
+      QTime startLocalTime ( start.toLocalZone().time() );
+      QTime endLocalTime ( end.toLocalZone().time() );
       if ( (start.isValid() &&
-            start.toLocalZone().time().hour()== 0 &&
-            start.toLocalZone().time().minute()== 0 &&
-            start.toLocalZone().time().second()== 0) &&
+            startLocalTime.hour()== 0 &&
+            startLocalTime.minute()== 0 &&
+            startLocalTime.second()== 0) &&
            (!end.isValid() ||
-            (end.toLocalZone().time().hour()== 0 &&
-             end.toLocalZone().time().minute()== 0 &&
-             end.toLocalZone().time().second()== 0 &&
+            (endLocalTime.hour()== 0 &&
+             endLocalTime.minute()== 0 &&
+             endLocalTime.second()== 0 &&
              end > start)) )
         event->setAllDay(true);
       incidence = event;
@@ -1148,14 +1150,17 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
             todo->setHasDueDate( true );
           }
         }
+
+	QTime startLocalTime ( start.toLocalZone().time() );
+	QTime dueLocalTime ( due.toLocalZone().time() );
         if ( (start.isValid() &&
-              start.toLocalZone().time().hour()== 0 &&
-              start.toLocalZone().time().minute()== 0 &&
-              start.toLocalZone().time().second()== 0) &&
+              startLocalTime.hour()== 0 &&
+              startLocalTime.minute()== 0 &&
+              startLocalTime.second()== 0) &&
              (!due.isValid() ||
-              (due.toLocalZone().time().hour()== 0 &&
-               due.toLocalZone().time().minute()== 0 &&
-               due.toLocalZone().time().second()== 0 &&
+              (dueLocalTime.hour()== 0 &&
+               dueLocalTime.minute()== 0 &&
+               dueLocalTime.second()== 0 &&
                due > start)) )
           todo->setAllDay(true);
         incidence = todo;
@@ -1168,10 +1173,11 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 7));
           KDateTime start = d->mStorage->fromOriginTime(date, timezone);
           journal->setDtStart(start);
+	  QTime startLocalTime ( start.toLocalZone().time() );
           if ( (start.isValid() &&
-                start.toLocalZone().time().hour()== 0 &&
-                start.toLocalZone().time().minute()== 0 &&
-                start.toLocalZone().time().second()== 0))
+                startLocalTime.hour()== 0 &&
+                startLocalTime.minute()== 0 &&
+                startLocalTime.second()== 0))
             journal->setAllDay(true);
           incidence = journal;
         }
@@ -1509,6 +1515,14 @@ bool SqliteFormat::Private::selectRecursives( Incidence::Ptr incidence, int rowi
       date = sqlite3_column_int64(stmt, 3);
       timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 5));
       recurrule->setEndDt(mStorage->fromOriginTime(date, timezone));
+      incidence->recurrence()->setAllDay( false );
+      if (recurrule->endDt().isValid()) {
+	QTime endDtLocalTime ( recurrule->endDt().toLocalZone().time() );
+	if (endDtLocalTime.hour() == 0 &&
+	    endDtLocalTime.minute() == 0 &&
+	    endDtLocalTime.second() == 0 )
+	  incidence->recurrence()->setAllDay( true );
+      }
 
       recurrule->setDuration(sqlite3_column_int(stmt, 6));  // count
       // Frequency
@@ -2786,14 +2800,16 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       KDateTime end = d->mStorage->fromOriginTime( date, timezone );
       event->setDtEnd( end );
 
+      QTime startLocalTime ( start.toLocalZone().time() );
+      QTime endLocalTime ( end.toLocalZone().time() );
       if ( ( start.isValid() &&
-             start.toLocalZone().time().hour() == 0 &&
-             start.toLocalZone().time().minute() == 0 &&
-             start.toLocalZone().time().second() == 0 ) &&
+             startLocalTime.hour() == 0 &&
+             startLocalTime.minute() == 0 &&
+             startLocalTime.second() == 0 ) &&
            ( !end.isValid() ||
-            ( end.toLocalZone().time().hour() == 0 &&
-              end.toLocalZone().time().minute() == 0 &&
-              end.toLocalZone().time().second() == 0 &&
+            ( endLocalTime.hour() == 0 &&
+              endLocalTime.minute() == 0 &&
+              endLocalTime.second() == 0 &&
               end > start ) ) ) {
         event->setAllDay( true );
       }
@@ -2825,14 +2841,16 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
             todo->setHasDueDate( true );
           }
         }
+	QTime startLocalTime ( start.toLocalZone().time() );
+	QTime dueLocalTime ( due.toLocalZone().time() );
         if ( ( start.isValid() &&
-               start.toLocalZone().time().hour() == 0 &&
-               start.toLocalZone().time().minute() == 0 &&
-               start.toLocalZone().time().second() == 0 ) &&
+               startLocalTime.hour() == 0 &&
+               startLocalTime.minute() == 0 &&
+               startLocalTime..second() == 0 ) &&
              ( !due.isValid() ||
-              ( due.toLocalZone().time().hour() == 0 &&
-                due.toLocalZone().time().minute() == 0 &&
-                due.toLocalZone().time().second() == 0 &&
+              ( dueLocalTime.hour() == 0 &&
+                dueLocalTime.minute() == 0 &&
+                dueLocalTime.second() == 0 &&
                 due > start ) ) ) {
           todo->setAllDay( true );
         }
@@ -2846,10 +2864,11 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
           timezone = QString::fromUtf8( (const char *)sqlite3_column_text( stmt1, 6 ) );
           KDateTime start = d->mStorage->fromOriginTime( date, timezone );
           journal->setDtStart( start );
+	  QTime startLocalTime ( start.toLocalZone().time() );
           if ( ( start.isValid() &&
-                 start.toLocalZone().time().hour() == 0 &&
-                 start.toLocalZone().time().minute() == 0 &&
-                 start.toLocalZone().time().second() == 0 ) ) {
+                 startLocalTime.hour() == 0 &&
+                 startLocalTime.minute() == 0 &&
+                 startLocalTime.second() == 0 ) ) {
             journal->setAllDay( true );
           }
           incidence = journal;
@@ -3191,6 +3210,14 @@ bool SqliteFormat::Private::selectRecursives( Incidence::Ptr incidence, int rowi
       date = sqlite3_column_int64( stmt, 3 );
       timezone = QString::fromUtf8( (const char *)sqlite3_column_text( stmt, 4 ) );
       recurrule->setEndDt( mStorage->fromOriginTime( date, timezone ) );
+      incidence->recurrence()->setAllDay( false );
+      if (recurrule->endDt().isValid()) {
+	QTime endDtLocalTime ( recurrule->endDt().toLocalZone().time() );
+	if (endDtLocalTime.hour() == 0 &&
+	    endDtLocalTime.minute() == 0 &&
+	    endDtLocalTime.second() == 0 )
+	  incidence->recurrence()->setAllDay( true );
+      }
 
       recurrule->setDuration( sqlite3_column_int( stmt, 5 ) );  // count
       // Frequency
