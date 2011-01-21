@@ -361,11 +361,6 @@ bool ExtendedCalendar::deleteEvent( const Event::Ptr &event )
       d->mAttendeeIncidences.remove( (*it)->email(), event );
     }
 
-    // Delete child-events.
-    if ( !event->hasRecurrenceId() ) {
-      deleteEventInstances( event );
-    }
-
     KDateTime nowUTC = KDateTime::currentUtcDateTime();
     event->setLastModified( nowUTC );
     return true;
@@ -544,11 +539,6 @@ bool ExtendedCalendar::deleteTodo( const Todo::Ptr &todo )
     Attendee::List::ConstIterator it;
     for ( it = list.begin(); it != list.end(); ++it ) {
       d->mAttendeeIncidences.remove( (*it)->email(), todo );
-    }
-
-    // Delete child-todos.
-    if ( !todo->hasRecurrenceId() ) {
-      deleteTodoInstances(todo);
     }
 
     KDateTime nowUTC = KDateTime::currentUtcDateTime();
@@ -1187,11 +1177,6 @@ bool ExtendedCalendar::deleteJournal( const Journal::Ptr &journal )
       d->mAttendeeIncidences.remove( (*it)->email(), journal );
     }
 
-    // Delete child-journals.
-    if ( !journal->hasRecurrenceId() ) {
-      deleteJournalInstances( journal );
-    }
-
     KDateTime nowUTC = KDateTime::currentUtcDateTime();
     journal->setLastModified( nowUTC );
 
@@ -1451,7 +1436,18 @@ Incidence::List ExtendedCalendar::incidences( const QDate &date, const QList<KCa
 
 bool ExtendedCalendar::deleteIncidenceInstances( const Incidence::Ptr &incidence )
 {
-  Q_UNUSED(incidence);
+  if ( !incidence ) {
+    return false;
+  }
+
+  if ( incidence->type() == Incidence::TypeEvent ) {
+    return deleteEventInstances( incidence.staticCast<Event>() );
+  } else   if ( incidence->type() == Incidence::TypeTodo ) {
+    return deleteTodoInstances( incidence.staticCast<Todo>() );
+  } else   if ( incidence->type() == Incidence::TypeJournal ) {
+    return deleteJournalInstances( incidence.staticCast<Journal>() );
+  }
+
   return false;
 }
 
