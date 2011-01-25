@@ -102,6 +102,10 @@ class mKCal::ExtendedStorage::Private
     QList<ExtendedStorageObserver*> mObservers;
     QHash<QString,Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
+
+#if defined(TIMED_SUPPORT)
+    void setAlarms( const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now);
+#endif
 };
 //@endcond
 
@@ -536,11 +540,39 @@ void ExtendedStorage::resetAlarms( const Incidence::Ptr &incidence )
 
 void ExtendedStorage::resetAlarms( const Incidence::List &incidences )
 {
+#if defined(TIMED_SUPPORT)
+  Timed::Interface timed;
+  KDateTime now = KDateTime::currentLocalDateTime();
+  // list of all timed events
+  Timed::Event::List events;
+
   foreach(const Incidence::Ptr incidence, incidences) {
     clearAlarms( incidence );
-    setAlarms( incidence );
+    d->setAlarms( incidence, events, now );
 
   }
+  //Add all alarms at once
+  QDBusReply < QList<QVariant> > reply = timed.add_events_sync( events );
+  if ( reply.isValid() ) {
+    foreach (QVariant v, reply.value()) {
+      bool ok = true;
+      uint cookie = v.toUInt(&ok);
+      if (ok && cookie) {
+        kDebug() << "added alarm: " << cookie;
+      } else {
+        kError() << "failed to add alarm";
+      }
+    }
+  } else {
+    kError() << "failed to add alarms: " << reply.error().message();
+  }
+
+#else
+  foreach(const Incidence::Ptr incidence, incidences) {
+    clearAlarms( incidence );
+    setAlarms( incidence);
+  }
+#endif
 }
 
 void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
@@ -793,3 +825,101 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
   setDefaultNotebook(nbDefault);
   return nbDefault;
 }
+
+
+#if defined(TIMED_SUPPORT)
+void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now) {
+
+  Alarm::List alarms = incidence->alarms();
+
+  foreach ( const Alarm::Ptr alarm, alarms ) {
+    if ( !alarm->enabled() ) {
+      continue;
+    }
+
+    KDateTime alarmTime = alarm->nextTime( now, true );
+    if ( !alarmTime.isValid() ) {
+      continue;
+    }
+
+    if ( now.addSecs( 60 ) > alarmTime ) {
+      // don't allow alarms at the same minute -> take next alarm if so
+      alarmTime = alarm->nextTime( now.addSecs( 60 ), true );
+      if ( !alarmTime.isValid() ) {
+        continue;
+      }
+    }
+    Timed::Event& e = events.append();
+    e.setUserModeFlag();
+    if ( alarmTime.isUtc() ) {
+      e.setTicker( alarmTime.toTime_t() );
+    } else {
+      e.setTicker( alarmTime.toUtc().toTime_t() );
+    }
+    // The code'll crash (=exception) iff the content is empty. So
+    // we have to check here.
+    QString s;
+
+    s = incidence->summary();
+    // Timed braindeath: Required field, BUT if empty, it asserts
+    if ( s.isEmpty() ) {
+      s = ' ';
+    }
+    e.setAttribute( "TITLE", s );
+    e.setAttribute( "PLUGIN", "libCalendarReminder" );
+    e.setAttribute( "APPLICATION", "libextendedkcal" );
+    //e.setAttribute( "translation", "organiser" );
+    // This really has to exist or code is badly broken
+    Q_ASSERT( !incidence->uid().isEmpty() );
+    e.setAttribute( "uid", incidence->uid() );
+#ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
+    e.setAttribute( "alarmtime", alarmTime.toString() );
+#endif
+    if ( !incidence->location().isEmpty() ) {
+      e.setAttribute( "location", incidence->location() );
+    }
+    if ( incidence->recurs() ) {
+      e.setAttribute( "recurs", "true" );
+    }
+
+    // TODO - consider this how it should behave for recurrence
+    if ( ( incidence->type() == Incidence::TypeTodo ) ) {
+      Todo::Ptr todo = incidence.staticCast<Todo>();
+
+      if ( todo->hasDueDate() ) {
+        e.setAttribute( "time", todo->dtDue( true ).toString() );
+      }
+      e.setAttribute( "type", "todo" );
+    } else if ( incidence->dtStart().isValid() ) {
+      e.setAttribute( "time", incidence->dtStart().toString() );
+      e.setAttribute( "type", "event" );
+    }
+
+    if ( incidence->hasRecurrenceId() ) {
+      e.setAttribute( "recurrenceId", incidence->recurrenceId().toString() );
+    }
+    e.setAttribute( "notebook", mCalendar->notebook( incidence->uid() ) );
+
+    Timed::Event::Button &s15 = e.addButton();
+    s15.setAttribute( "snooze_value", "15" );
+    s15.setSnooze( 900 );
+    s15.setAttribute( "label", "Snooze 15 minutes" );
+
+    Timed::Event::Button &s10 = e.addButton();
+    s10.setAttribute( "snooze_value", "10" );
+    s10.setSnooze( 600 );
+    s10.setAttribute( "label", "Snooze 10 minutes" );
+
+    Timed::Event::Button &s05 = e.addButton();
+    s05.setAttribute( "snooze_value", "5" );
+    s05.setSnooze( 300 );
+    s05.setAttribute( "label", "Snooze 5 minutes" );
+
+    Timed::Event::Button &open = e.addButton();
+    open.setAttribute( "label", "Close" );
+
+    e.hideSnoozeButton1();
+    e.setAlignedSnoozeFlag();
+  }
+}
+#endif
