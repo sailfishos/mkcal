@@ -1,3 +1,9 @@
+libmkcal (0.2.18) unstable; urgency=low
+
+  * Fixes: NB#220999 - com.nokia.time.add_events D-Bus method is called too often during the initial ms exchange sync
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 26 Jan 2011 10:49:11 +0200
+
 libmkcal (0.2.17) unstable; urgency=low
 
   * Fixes: NB#6061 - importing/exporting iCalendar 2.0: deleteIncidence(Incidence::Ptr) removes multiple incidences
