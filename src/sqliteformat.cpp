@@ -253,7 +253,10 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         } else {
           // No end date, use start date if possible
           if ( incidence->dtStart().isValid() ) {
-            secs = d->mStorage->toOriginTime(incidence->dtStart());
+	    if ( incidence->allDay() )
+	      secs = d->mStorage->toOriginTime(incidence->dtStart().addDays(1));
+	    else
+	      secs = d->mStorage->toOriginTime(incidence->dtStart());
             sqlite3_bind_int64( stmt1, index, secs );
             secs = d->mStorage->toLocalOriginTime(incidence->dtStart() );
             sqlite3_bind_int64( stmt1, index, secs );
@@ -312,7 +315,10 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         // No due date, use start date if possible.
         if (todo->hasStartDate()) {
           KDateTime dtStart = todo->dtStart( true );    //TODO Can be optimize, is the same as above
-          secs = d->mStorage->toOriginTime( dtStart );
+	  if ( incidence->allDay() )
+	    secs = d->mStorage->toOriginTime( dtStart.addDays(1) );
+	  else
+	    secs = d->mStorage->toOriginTime( dtStart );
           sqlite3_bind_int64(stmt1, index, secs);
           secs = d->mStorage->toLocalOriginTime( dtStart );
           sqlite3_bind_int64(stmt1, index, secs);
