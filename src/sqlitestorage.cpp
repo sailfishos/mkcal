@@ -49,9 +49,9 @@ using namespace KCalCore;
 #include <QtCore/QFileInfo>
 #include <QSparqlConnection>
 #include <QSparqlQuery>
+#include <QSparqlResult>
 
 #if defined(MKCAL_TRACKER_SYNC)
-#include <QSparqlResult>
 #include <QSparqlError>
 #endif
 
@@ -139,6 +139,8 @@ class mKCal::SqliteStorage::Private
             mTrackerConnection = new QSparqlConnection("QTRACKER_DIRECT");
         }
 
+        mSparql.clear();
+
 
 
 
@@ -154,7 +156,8 @@ class mKCal::SqliteStorage::Private
 
         delete result;
 #else
-        mTrackerConnection->exec( query );
+        QSparqlResult *result = mTrackerConnection->exec( query );
+        connect( result, SIGNAL( finished() ), mStorage, SLOT( queryFinished() ) );
 #endif
 
 
@@ -3075,6 +3078,10 @@ bool SqliteStorage::initializeDatabase()
   return false;
 }
 
+void SqliteStorage::queryFinished()
+{
+  delete sender(); //Cleanup the memory
+}
 
 void SqliteStorage::virtual_hook( int id, void *data )
 {
