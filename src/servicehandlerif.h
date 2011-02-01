@@ -39,6 +39,13 @@ class QString;
 
 /** \brief Interface implemented by plugins for handling services.
 
+    This plugins implement service specific things that are hidden form the
+    application.
+
+    @warning The class who implements this interface has to inherit also from QObject if the
+    download of attachments on demand is supported.
+    In that case then the plugin has to emit a signal downloadProgress(int percentage) to
+    notify the application how the download is being done.
     */
 
 class ServiceInterface {
@@ -58,11 +65,18 @@ public:
     };
 
     /** \brief returns icon of service.
-        @return icon.
+        @return Path to the Icon.
     */
-    virtual QIcon icon() const = 0;
+    virtual QString icon() const = 0;
+
+
+    /** \brief returns name of service.
+        @return Path to the Icon.
+    */
+    virtual QString uiName() const = 0;
 
     /** \brief is this service supporting multiple calendars.
+        This name is something to be show to the user
         @return true is service supports multiple calendars otherwise false.
     */
     virtual  bool multiCalendar() const = 0;
@@ -80,7 +94,19 @@ public:
     */
     virtual QString displayName(const mKCal::Notebook::Ptr &notebook) const = 0;
 
-    /** \brief sttart the download of an attachment.
+    /** \brief Start the download of an attachment.
+        This cannot be a blocking operation.
+
+        If used also the implementor of this class has to emit the following signals:
+
+            - downloadProgress(int percentage) which will inform the application how the progress is doing.
+            - downloadFinished(const QString &uri) to notify that the download is done
+            - downloadError(const QString &uri) to notify that the download failed.
+
+        There has to be a signal also to notify that the
+        More than one download at a time can be started.
+
+
         @param notebook pointer to the notebook
         @param uri uri of attachment to be downloaded
         @param path path where attachment to be downloaded to
@@ -115,6 +141,25 @@ public:
         @return The name of the service.
      */
     virtual QString serviceName() const = 0;
+
+    /** \brief A service might have a default Notebook in the set of notebooks supported
+        It can be a null value.
+        If multi Calendar is supported, in some situations it might be required to select
+        a default calendar from all of the ones supported. This function allows exactly that.
+        @return The name of the service.
+     */
+    virtual QString defaultNotebook() const = 0;
+
+    /** \brief Checks if a give Product Id obtained in an iCal file is handled by this plugin.
+        In some situations special behaviour might be needed for invitation from certain
+        providers. To check if this is the case, this function is used.
+
+        For example it can be used to put it in the right notebook
+
+        @param The string that was in the iCal file
+        @return The true if it is from the service provider
+     */
+    virtual bool checkProductId(const QString &prodId) const = 0;
 
     /** \brief In case of error, more detailed information can be provided
         Sometimes the true/false is not enough, so in case of false

@@ -36,6 +36,7 @@ public:
   QHash<QString, ServiceInterface*> mServices;
 
   bool mLoaded;
+  int mDownloadId;
   ServiceHandler::ErrorCode mError;
   ExecutedPlugin mExecutedPlugin;
 
@@ -48,7 +49,7 @@ public:
 
 };
 
-ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false),
+ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
           mError(ServiceHandler::ErrorOk), mExecutedPlugin(None)
 
 {
@@ -212,21 +213,21 @@ bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QStrin
 }
 
 
-QIcon ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
 {
   if ( storage.isNull() || notebook.isNull() )
-    return QIcon();
+    return QString();
 
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
   if ( service ) {
-    QIcon res = service->icon();
+    QString res ( service->icon() );
     if ( res.isNull() ) {
       d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
     }
     return res;
   } else {
-    return QIcon();
+    return QString();
   }
 }
 
@@ -285,10 +286,10 @@ QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const Extende
   }
 }
 
-bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path)
+int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path)
 {
   if ( storage.isNull() || notebook.isNull() )
-    return false;
+    return -1;
 
   ServiceInterface* service = d->getServicePlugin(notebook, storage);
 
@@ -297,9 +298,9 @@ bool ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Ext
     if ( !res ) {
       d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
     }
-    return res;
+    return d->mDownloadId++;
   } else {
-    return false;
+    return -1;
   }
 }
 
@@ -358,6 +359,60 @@ QStringList ServiceHandler::sharedWith(const Notebook::Ptr &notebook, const Exte
     return QStringList();
   }
 }
+
+QString ServiceHandler::defaultNotebook(const QString &productId)
+{
+    Q_UNUSED(productId);
+
+    return QString(); //Empty implementation so far
+
+}
+
+
+QStringList ServiceHandler::availableServices()
+{
+    if (!d->mLoaded)
+      d->loadPlugins();
+    QStringList result;
+
+    foreach ( ServiceInterface* service, d->mServices) {
+      result.append( service->serviceName() );
+    }
+
+    return result;
+
+}
+
+QString ServiceHandler::icon(QString serviceId)
+{
+    if (!d->mLoaded)
+      d->loadPlugins();
+
+    QHash<QString, ServiceInterface*>::const_iterator i;
+    i = d->mServices.find( serviceId );
+
+    if (i != d->mServices.end()) {
+      return i.value()->icon();
+    } else {
+        return QString();
+    }
+}
+
+QString ServiceHandler::uiName(QString serviceId)
+{
+    if (!d->mLoaded)
+      d->loadPlugins();
+
+    QHash<QString, ServiceInterface*>::const_iterator i;
+    i = d->mServices.find( serviceId );
+
+    if (i != d->mServices.end()) {
+      return i.value()->uiName();
+    } else {
+        return QString();
+    }
+}
+
 
 ServiceHandler::ErrorCode ServiceHandler::error() const
 {

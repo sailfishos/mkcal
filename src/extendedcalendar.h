@@ -720,7 +720,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
     /**
        List of ExpandedIncidences.
     */
-    typedef QList<ExpandedIncidence> ExpandedIncidenceList;
+    typedef QVector<ExpandedIncidence> ExpandedIncidenceList;
+    typedef QVectorIterator<ExpandedIncidence> ExpandedIncidenceIterator;
 
     /**
       Expand recurring incidences in a list.
@@ -878,6 +879,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
     */
     KCalCore::Incidence::List contactIncidences( const KCalCore::Person::Ptr &person,
                                                  const KDateTime &start, const KDateTime &end );
+
+    using KCalCore::Calendar::journals;
 
     /**
       Get journals between given times.
