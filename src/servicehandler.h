@@ -23,6 +23,7 @@
 */
 
 #include <incidence.h>
+#include <QObject>
 #include "mkcal_export.h"
 #include "notebook.h"
 #include "extendedcalendar.h"
@@ -38,8 +39,9 @@ namespace mKCal {
 
   /** Singleton class to get the exact handler (plugin) of the service
   */
-  class MKCAL_EXPORT ServiceHandler
+  class MKCAL_EXPORT ServiceHandler : QObject
   {
+    Q_OBJECT
   private:
     /** Constructor, is a singleton so you cannot do anything
       */
@@ -114,7 +116,7 @@ namespace mKCal {
       @param storage Pointer to the storage in use
       @return Icon
       */
-    QIcon icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     /** multiCalendar
       It would load the appropiate plugin to do it
@@ -146,9 +148,10 @@ namespace mKCal {
       @param storage Pointer to the storage in use
       @param uri uri of attachment to be downloaded
       @param path path whre attachment to be downloaded to
-      @return True if OK, false in case of error
+      @return Id of the attachment download. It will be used to notify changes about it. If < 0
+      there was an error.
       */
-    bool downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path);
+    int downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path);
 
     /** deleteAttachment
       It would load the appropiate plugin to do it
@@ -177,6 +180,14 @@ namespace mKCal {
       */
     QStringList sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
+    /** Try to get the notebook where to put the inviatation.
+      This is done based on the product Id of the invitation received. (in the iCal file).
+
+      @param productId the id of the generator of the iCal
+      @return a string with the id of the notebook. it can be null
+      */
+    QString defaultNotebook(const QString &productId);
+
     /** \brief In case of error, more detailed information can be provided
         Sometimes the true/false is not enough, so in case of false
         more details can be obtained.
@@ -186,6 +197,46 @@ namespace mKCal {
         @return the ErrorCode of what happened
       */
     ServiceHandler::ErrorCode error() const;
+
+
+    ///MultiCalendar services
+
+    /** \brief List available Services
+         There can be many available services. This method returns the ids of the plugins that handle
+         those services.
+         @note this id can be used in the Notebook creation to "attach" a notebook to a certain
+         service.
+         @return list of the ids of the plugins available
+       */
+    QStringList availableServices();
+
+
+    /** \brief Get the Icon of a service based on the id of the plugin
+
+      @return Path to the icon
+      @see availableMulticalendarServices
+
+      */
+    QString icon(QString serviceId);
+
+    /** \brief Get the Name tp be shown on the UI of a service based on the id of the plugin
+
+      @return Name of the service
+      @see availableMulticalendarServices
+
+      */
+    QString uiName(QString serviceId);
+
+  signals:
+
+    /** Monitors the progress of the download. The id is the return value got when download started */
+    void downloadProgress(int id, int percentage);
+
+    /** Informs that the download is over. The id is the return value got when download started */
+    void downloadFinished(int id);
+
+    /** Informs that the download is finished with errors. The id is the return value got when download started */
+    void downloadError(int id, ErrorCode error);
 
   };
 

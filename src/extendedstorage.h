@@ -449,6 +449,14 @@ class MKCAL_EXPORT ExtendedStorage
                                       const KCalCore::Incidence::Ptr &incidence,
                                       const QString &notebookUid = QString() ) = 0;
 
+    /**
+      Get deletion time of incidence
+
+      @param incidence incidence to check
+      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime() 
+    */
+    virtual KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence ) = 0;
+
     // Observer Specific Methods //
 
     /**

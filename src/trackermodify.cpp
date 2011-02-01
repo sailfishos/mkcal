@@ -338,13 +338,15 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
   } else if ( incidence->type() == Incidence::TypeTodo ) {
     Todo::Ptr todo = incidence.staticCast<Todo>();
     if ( todo->hasStartDate() || todo->recurs() ) {
-      insertQuery << "; ncal:dtstart [ a ncal:NcalDateTime; ncal:dateTime \""
-                  << d->kdatetime2String( todo->dtStart(), false ) << "\"";
-      if ( !todo->dtStart().isUtc() ) {
-        insertQuery << "; ncal:ncalTimezone <urn:x-ical:timezone:"
-                    << todo->dtStart().timeZone().name() << ">";
+      if ( todo->dtStart().isValid() ) {
+	insertQuery << "; ncal:dtstart [ a ncal:NcalDateTime; ncal:dateTime \""
+		    << d->kdatetime2String( todo->dtStart(), false ) << "\"";
+	if ( !todo->dtStart().isUtc() ) {
+	  insertQuery << "; ncal:ncalTimezone <urn:x-ical:timezone:"
+		      << todo->dtStart().timeZone().name() << ">";
+	}
+	insertQuery << " ]";
       }
-      insertQuery << " ]";
     }
     if ( todo->hasDueDate() ) {
       insertQuery << "; ncal:due [ a ncal:NcalDateTime; ncal:dateTime \""

@@ -228,7 +228,10 @@ public:
     {
         return true;
     }
-
+    KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence )
+    {
+      return KDateTime();
+    }
     void virtual_hook( int, void * ) {
       return;
     }

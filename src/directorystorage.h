@@ -351,6 +351,12 @@ class MKCAL_EXPORT DirectoryStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::incidenceDeletedDate()
+    */
+    KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence );
+
+    /**
+      @copydoc
       ExtendedStorage::notifyOpened( const KCalCore::Incidence::Ptr & )
     */
     bool notifyOpened( const KCalCore::Incidence::Ptr &incidence );

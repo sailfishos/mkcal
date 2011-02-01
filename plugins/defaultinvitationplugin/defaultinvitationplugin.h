@@ -50,7 +50,9 @@ public:
     //! \reimp_end
 
     //! \reimp ServiceHandler mKCal
-    QIcon icon() const;
+    QString icon() const;
+
+    QString uiName() const;
 
     bool multiCalendar() const;
 
@@ -67,6 +69,10 @@ public:
     QStringList sharedWith(const mKCal::Notebook::Ptr &notebook);
 
     QString serviceName() const;
+
+    QString defaultNotebook() const;
+
+    bool checkProductId(const QString &prodId) const;
 
     ErrorCode error() const;
 

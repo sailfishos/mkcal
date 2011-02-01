@@ -809,6 +809,12 @@ bool TrackerStorage::duplicateIncidences( Incidence::List *list, const Incidence
   return false;
 }
 
+KDateTime TrackerStorage::incidenceDeletedDate( const Incidence::Ptr &incidence )
+{
+  Q_UNUSED( incidence );
+  return KDateTime();
+}
+
 bool TrackerStorage::notifyOpened( const Incidence::Ptr &incidence )
 {
   Q_UNUSED( incidence );

@@ -253,9 +253,14 @@ QString DefaultInvitationPlugin::pluginName() const
   return name;
 }
 
-QIcon DefaultInvitationPlugin::icon() const
+QString DefaultInvitationPlugin::icon() const
 {
-  return QIcon();
+  return QString();
+}
+
+QString DefaultInvitationPlugin::uiName() const
+{
+  return QLatin1String("Default");
 }
 
 bool DefaultInvitationPlugin::multiCalendar() const
@@ -318,6 +323,20 @@ QString DefaultInvitationPlugin::DefaultInvitationPlugin::serviceName() const
 {
   d->mErrorCode = ServiceInterface::ErrorOk;
   return name;
+}
+
+
+QString DefaultInvitationPlugin::defaultNotebook() const
+{
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return QString();
+}
+
+bool DefaultInvitationPlugin::checkProductId(const QString &prodId) const
+{
+  Q_UNUSED(prodId);
+  d->mErrorCode = ServiceInterface::ErrorNotSupported;
+  return false;
 }
 
 ServiceInterface::ErrorCode DefaultInvitationPlugin::error() const
