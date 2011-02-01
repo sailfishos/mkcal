@@ -320,6 +320,12 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::incidenceDeletedDate()
+    */
+    KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence );
+
+    /**
+      @copydoc
       ExtendedStorage::virtual_hook()
     */
     virtual void virtual_hook( int id, void *data );
@@ -655,6 +661,8 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select * from Components where DateDeleted>=? and DateCreated<?"
 #define SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK \
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
+#define SELECT_COMPONENTS_BY_UID_AND_DELETED \
+"select DateDeleted from Components where UID=? and DateDeleted<>0"
 #define SELECT_ATTENDEE_AND_COUNT \
 "select Email, Name, count(Email) from Attendee where Email<>0 group by Email"
 
