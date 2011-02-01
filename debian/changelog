@@ -1,3 +1,9 @@
+libmkcal (0.2.21) unstable; urgency=low
+
+  * Fixes: NB#219991 - Need api to know time when an incidence has been deleted
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 01 Feb 2011 10:37:29 +0200
+
 libmkcal (0.2.20) unstable; urgency=low
 
   * Fixes: NB#223114 - calendar events are not updated in tracker database
