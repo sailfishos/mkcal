@@ -729,6 +729,12 @@ bool DirectoryStorage::duplicateIncidences( Incidence::List *list, const Inciden
   return true;
 }
 
+KDateTime DirectoryStorage::incidenceDeletedDate( const Incidence::Ptr &incidence )
+{
+  Q_UNUSED( incidence );
+  return KDateTime();
+}
+
 bool DirectoryStorage::notifyOpened( const Incidence::Ptr &incidence )
 {
   Q_UNUSED( incidence );

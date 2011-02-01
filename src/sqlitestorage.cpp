@@ -2711,6 +2711,46 @@ bool SqliteStorage::duplicateIncidences( Incidence::List *list, const Incidence:
 
 }
 
+KDateTime SqliteStorage::incidenceDeletedDate( const Incidence::Ptr &incidence )
+{
+  int index;
+  QByteArray u;
+  int rv = 0;
+  sqlite3_int64 date;
+  KDateTime deletionDate = KDateTime();
+
+  const char *query = SELECT_COMPONENTS_BY_UID_AND_DELETED;
+  int qsize = sizeof( SELECT_COMPONENTS_BY_UID_AND_DELETED );
+  sqlite3_stmt *stmt = NULL;
+  const char *tail = NULL;
+
+  sqlite3_prepare_v2( d->mDatabase, query, qsize, &stmt, &tail );
+  index = 1;
+  u = incidence->uid().toUtf8();
+  sqlite3_bind_text( stmt, index, u.constData(), u.length(), SQLITE_STATIC );
+
+  if ( !d->mSem.acquire() ) {
+    kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+    return deletionDate;
+  }
+
+  sqlite3_step( stmt );
+  if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
+    date = sqlite3_column_int64(stmt, 0);
+    deletionDate = d->mStorage->fromOriginTime(date);
+  }
+
+ error:
+  sqlite3_reset( stmt );
+  sqlite3_finalize( stmt );
+
+  if ( !d->mSem.release() ) {
+    kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+  }
+  return deletionDate;
+}
+
+
 bool SqliteStorage::loadNotebooks()
 {
   const char *query = SELECT_CALENDARS_ALL;
@@ -3034,10 +3074,7 @@ KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds, QString zonename
   if ( seconds != 0 ) {
     if ( !zonename.isEmpty() ) {
       if ( zonename == QLatin1String(FLOATING_DATE) ) {
-          QDate originDate = d->mOriginTime.date();
-          originDate.addDays( seconds / 86400 );
-          KDateTime dateOnly(originDate, KDateTime::ClockTime );
-          return dateOnly;
+	  dt = d->mOriginTime.addSecs( seconds ).toClockTime();
       } else {
         // First try system zones.
         KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
