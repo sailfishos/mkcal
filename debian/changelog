@@ -1,3 +1,10 @@
+libmkcal (0.3.0) unstable; urgency=low
+
+  * Fixes: NB#223717 - <MemLeak> memory keep on increasing in sqlitestorage.cpp
+  * API Break, changes in Plugins interfaces:
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 01 Feb 2011 13:28:52 +0200
+
 libmkcal (0.2.21) unstable; urgency=low
 
   * Fixes: NB#219991 - Need api to know time when an incidence has been deleted
