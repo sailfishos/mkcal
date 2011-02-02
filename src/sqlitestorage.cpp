@@ -86,6 +86,7 @@ class mKCal::SqliteStorage::Private
         mUseTracker( useTracker ),
         mIsLoading( false ),
         mIsOpened( false ),
+        mIsSaved( false ),
         mTrackerConnection( 0 )
     {}
     ~Private()
@@ -178,6 +179,7 @@ class mKCal::SqliteStorage::Private
     QHash<QString, QString> mUidMappings;
     bool mIsLoading;
     bool mIsOpened;
+    bool mIsSaved;
     KDateTime mOriginTime;
     QDateTime mPreWatcherDbTime;
     QString mSparql;
@@ -1918,6 +1920,8 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
 
 bool SqliteStorage::save()
 {
+  d->mIsSaved = false;
+
   if ( !d->mIsOpened ) {
     return false;
   }
@@ -2048,7 +2052,9 @@ bool SqliteStorage::save()
   if ( !d->mSem.release() ) {
     kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
   }
-  d->mChanged.resize( 0 ); // make a change to create signal
+
+  if (d->mIsSaved)
+    d->mChanged.resize( 0 ); // make a change to create signal
 
   if ( errors == 0 ) {
     setFinished( false, "save completed" );
@@ -2211,6 +2217,8 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
 
   query = COMMIT_TRANSACTION;
   sqlite3_exec( mDatabase );
+
+  mIsSaved = true;
 
   return errors == 0;
 
@@ -2949,6 +2957,7 @@ bool SqliteStorage::Private::saveTimezones()
     sqlite3_bind_text( stmt1, index, data, data.length(), SQLITE_STATIC );
     sqlite3_step( stmt1 );
     success = true;
+    mIsSaved = true;
     kDebug() << "updated timezones in database";
 
     error:
@@ -3037,7 +3046,6 @@ void SqliteStorage::fileChanged( const QString &path )
     d->mPreWatcherDbTime = QDateTime();
     return;
   }
-
   clearLoaded();
   if ( !d->loadTimezones() ) {
     kError() << "loading timezones failed";
