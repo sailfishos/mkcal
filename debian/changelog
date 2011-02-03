@@ -1,3 +1,9 @@
+libmkcal (0.3.1) unstable; urgency=low
+
+  * Creating signal only when db is really changed in save
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 03 Feb 2011 10:06:38 +0200
+
 libmkcal (0.3.0) unstable; urgency=low
 
   * Fixes: NB#223717 - <MemLeak> memory keep on increasing in sqlitestorage.cpp
