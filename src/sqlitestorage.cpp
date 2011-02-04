@@ -3125,7 +3125,7 @@ bool SqliteStorage::initializeDatabase()
 
 void SqliteStorage::queryFinished()
 {
-  delete sender(); //Cleanup the memory
+  sender()->deleteLater(); //Cleanup the memory
 }
 
 void SqliteStorage::virtual_hook( int id, void *data )
