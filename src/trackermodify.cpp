@@ -320,14 +320,8 @@ bool TrackerModify::queries( const Incidence::Ptr &incidence, DBOperation dbop,
       insertQuery << " ]";
     }
     if ( event->hasEndDate() ) {
-      if ( event->allDay() ) {
-        // +1 day because end date is non-inclusive.
-        insertQuery << "; ncal:dtend [ a ncal:NcalDateTime; ncal:dateTime \""
-                    << d->kdatetime2String( event->dtEnd().addDays( 1 ), false ) << "\"";
-      } else {
-        insertQuery << "; ncal:dtend [ a ncal:NcalDateTime; ncal:dateTime \""
-                    << d->kdatetime2String( event->dtEnd(), false ) << "\"";
-      }
+      insertQuery << "; ncal:dtend [ a ncal:NcalDateTime; ncal:dateTime \""
+		  << d->kdatetime2String( event->dtEnd(), false ) << "\"";
       if ( !event->dtEnd().isUtc() ) {
         insertQuery << "; ncal:ncalTimezone <urn:x-ical:timezone:"
                     << event->dtEnd().timeZone().name() << ">";
