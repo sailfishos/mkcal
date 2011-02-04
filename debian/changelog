@@ -1,3 +1,9 @@
+libmkcal (0.3.2) unstable; urgency=low
+
+  * NO_REVIEWBOARD: removed old hack - add 1 day if allday, not needed anymore
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 04 Feb 2011 10:07:41 +0200
+
 libmkcal (0.3.1) unstable; urgency=low
 
   * Creating signal only when db is really changed in save
