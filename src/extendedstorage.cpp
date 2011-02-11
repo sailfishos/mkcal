@@ -430,9 +430,10 @@ bool ExtendedStorage::deleteNotebook( const Notebook::Ptr &nb, bool onlyMemory )
     if ( allIncidences( &list, nb->uid() ) ) {
       kDebug() << "deleting" << list.size() << "notes of notebook" << nb->name();
       for ( it = list.begin(); it != list.end(); ++it ) {
-        Incidence::Ptr incidence = *it;
-        load ( incidence->uid(), incidence->recurrenceId() );
-        Incidence::Ptr toDelete = calendar()->incidence( incidence->uid() );
+        load ( (*it)->uid(), (*it)->recurrenceId() );
+      }
+      for ( it = list.begin(); it != list.end(); ++it ) {
+        Incidence::Ptr toDelete = calendar()->incidence( (*it)->uid(), (*it)->recurrenceId() );
         calendar()->deleteIncidence( toDelete );
       }
       if ( !list.isEmpty() ) {
