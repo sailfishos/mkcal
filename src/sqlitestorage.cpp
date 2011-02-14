@@ -1763,8 +1763,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
                      << event->dtStart() << event->dtEnd()
                      << "in calendar";
             mCalendar->deleteEvent( old ); // move old to deleted
-            mCalendar->addEvent( event ); // and replace it with this one
-            mCalendar->setNotebook( event, notebookUid );
+            mCalendar->addEvent( event, notebookUid ); // and replace it with this one
           } else {
             event = old;
           }
@@ -1772,8 +1771,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
           kDebug() << "adding event" << event->uid()
                    << event->dtStart() << event->dtEnd()
                    << "in calendar";
-          mCalendar->addEvent( event );
-          mCalendar->setNotebook( event, notebookUid );
+          mCalendar->addEvent( event, notebookUid );
         }
         if ( event != old ) {
           count++; // added into calendar
@@ -1801,8 +1799,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
                      << todo->dtDue() << todo->created()
                      << "in calendar";
             mCalendar->deleteTodo( old ); // move old to deleted
-            mCalendar->addTodo( todo ); // and replace it with this one
-            mCalendar->setNotebook( todo, notebookUid );
+            mCalendar->addTodo( todo, notebookUid ); // and replace it with this one
           } else {
             todo = old;
           }
@@ -1810,8 +1807,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
           kDebug() << "adding todo" << todo->uid()
                    << todo->dtDue() << todo->created()
                    << "in calendar";
-          mCalendar->addTodo( todo );
-          mCalendar->setNotebook( todo, notebookUid );
+          mCalendar->addTodo( todo, notebookUid );
         }
         if ( todo != old ) {
           count++; // added into calendar
@@ -1839,8 +1835,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
                      << journal->dtStart() << journal->created()
                      << "in calendar";
             mCalendar->deleteJournal( old ); // move old to deleted
-            mCalendar->addJournal( journal ); // and replace it with this one
-            mCalendar->setNotebook( journal, notebookUid );
+            mCalendar->addJournal( journal, notebookUid ); // and replace it with this one
           } else {
             journal = old;
           }
@@ -1848,8 +1843,7 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
           kDebug() << "adding journal" << journal->uid()
                    << journal->dtStart() << journal->created()
                    << "in calendar";
-          mCalendar->addJournal( journal );
-          mCalendar->setNotebook( journal, notebookUid );
+          mCalendar->addJournal( journal, notebookUid );
         }
         if ( journal != old ) {
           count++; // added into calendar
