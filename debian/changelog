@@ -1,3 +1,11 @@
+libmkcal (0.3.3) unstable; urgency=low
+
+  * Fix possible crash. NO_REVIEWBOARD
+  * Fixes: NB#226736 - Few of the recurring events and also normal events are not deleted from calendar on deleting mfe account.
+  * NO_REVIEWBOARD: minor performance improvement
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 14 Feb 2011 15:20:15 +0200
+
 libmkcal (0.3.2) unstable; urgency=low
 
   * NO_REVIEWBOARD: removed old hack - add 1 day if allday, not needed anymore
