@@ -1,3 +1,9 @@
+libmkcal (0.3.4) unstable; urgency=low
+
+  * Fixes: NB#6049 - importing/exporting iCalendar 2.0: properties modified
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 15 Feb 2011 13:57:44 +0200
+
 libmkcal (0.3.3) unstable; urgency=low
 
   * Fix possible crash. NO_REVIEWBOARD
