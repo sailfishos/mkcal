@@ -1754,12 +1754,11 @@ bool SqliteFormat::Private::selectAttendees( Incidence::Ptr incidence, int rowid
       if (isOrganizer) {
           Person::Ptr person = Person::Ptr( new Person ( name, email ) );
           incidence->setOrganizer( person );
-      } else {
-        Attendee::Ptr attendee = Attendee::Ptr( new Attendee( name, email, rsvp, status, role ) );
-        attendee->setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7)));
-        attendee->setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 8)));
-        incidence->addAttendee(attendee, false);
       }
+      Attendee::Ptr attendee = Attendee::Ptr( new Attendee( name, email, rsvp, status, role ) );
+      attendee->setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7)));
+      attendee->setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 8)));
+      incidence->addAttendee(attendee, false);
     }
   } while (rv != SQLITE_DONE);
 
