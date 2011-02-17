@@ -1513,6 +1513,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
   ExtendedCalendar::ExpandedIncidenceList returnList;
   Incidence::List::Iterator iit;
   KDateTime brokenDtStart = dtStart.addSecs(-1);
+  KDateTime::Spec ts = timeSpec();
 
   // used for comparing with entries that have broken dtEnd => we use
   // dtStart and compare it against this instead. As this is allocated
@@ -1577,6 +1578,23 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 #ifdef DEBUG_EXPANSION
       kDebug() << "---appending" << (*iit)->summary() << dt.toString();
 #endif /* DEBUG_EXPANSION */
+      if ( (*iit)->recurs() ) {
+	if ( !(*iit)->dtStart().isDateOnly() ) {
+	  if ( !(*iit)->recursAt( (*iit)->dtStart() ) ) {
+#ifdef DEBUG_EXPANSION
+	    kDebug() << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
+#endif /* DEBUG_EXPANSION */
+	    continue;
+	  }
+	} else {
+	  if ( !(*iit)->recursOn(  (*iit)->dtStart().date(), ts ) ) {
+#ifdef DEBUG_EXPANSION
+	    kDebug() << "--not recurring on" << (*iit)->dtStart() << (*iit)->summary();
+#endif /* DEBUG_EXPANSION */
+	    continue;
+	  }
+	}
+      }
       returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
       appended++;
     } else {
@@ -1670,7 +1688,6 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
                                   bool *expandLimitHit )
 {
   ExtendedCalendar::ExpandedIncidenceList returnList;
-  ExtendedCalendar::ExpandedIncidenceList::Iterator iit;
   int i;
 
   if ( expandLimitHit )
