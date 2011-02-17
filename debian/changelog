@@ -1,3 +1,9 @@
+libmkcal (0.3.5) unstable; urgency=low
+
+  * Fixes: NB#192795 - Editing first instance of recurrent event creates duplicate in agenda view
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Thu, 17 Feb 2011 14:50:18 +0200
+
 libmkcal (0.3.4) unstable; urgency=low
 
   * Fixes: NB#6049 - importing/exporting iCalendar 2.0: properties modified
