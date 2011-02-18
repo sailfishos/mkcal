@@ -1,3 +1,9 @@
+libmkcal (0.3.6) unstable; urgency=low
+
+  * Fixes: NB#220999 - com.nokia.time.add_events D-Bus method is called too often during the initial ms exchange sync
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Fri, 18 Feb 2011 10:17:34 +0200
+
 libmkcal (0.3.5) unstable; urgency=low
 
   * Fixes: NB#192795 - Editing first instance of recurrent event creates duplicate in agenda view
