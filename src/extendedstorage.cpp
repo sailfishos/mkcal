@@ -580,6 +580,8 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
 {
 #if defined(TIMED_SUPPORT)
   Timed::Interface timed;
+  int alarmNumer = 0;
+
   if ( !timed.isValid() ) {
     kError() << "cannot set alarm for incidence: "
              << "alarm interface is not valid" << timed.lastError();
@@ -609,6 +611,7 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
       }
     }
     Timed::Event& e = events.append();
+    alarmNumer++;
     e.setUserModeFlag();
     if ( alarmTime.isUtc() ) {
       e.setTicker( alarmTime.toTime_t() );
@@ -681,19 +684,23 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     e.setAlignedSnoozeFlag();
   }
 
-  QDBusReply < QList<QVariant> > reply = timed.add_events_sync( events );
-  if ( reply.isValid() ) {
-    foreach (QVariant v, reply.value()) {
-      bool ok = true;
-      uint cookie = v.toUInt(&ok);
-      if (ok && cookie) {
-        kDebug() << "added alarm: " << cookie;
-      } else {
-        kError() << "failed to add alarm";
+  if (alarmNumer > 0) {
+    QDBusReply < QList<QVariant> > reply = timed.add_events_sync( events );
+    if ( reply.isValid() ) {
+      foreach (QVariant v, reply.value()) {
+        bool ok = true;
+        uint cookie = v.toUInt(&ok);
+        if (ok && cookie) {
+          kDebug() << "added alarm: " << cookie;
+        } else {
+          kError() << "failed to add alarm";
+        }
       }
+    } else {
+      kError() << "failed to add alarms: " << reply.error().message();
     }
   } else {
-    kError() << "failed to add alarms: " << reply.error().message();
+      kDebug() << "No alarms to send";
   }
 #else
   Q_UNUSED( incidence );
