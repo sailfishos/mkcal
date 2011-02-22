@@ -149,7 +149,7 @@ class MKCAL_EXPORT ExtendedStorage
       Load incidences at given date into the memory.
 
       @param date date
-      @return true if the load was successful; false otherwise.
+      @return true if the load was successful and specific date wasn't already loaded; false otherwise.
     */
     virtual bool load( const QDate &date ) = 0;
 
@@ -158,7 +158,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @param start is the starting date
       @param end is the ending date
-      @return true if the load was successful; false otherwise.
+      @return true if the load was successful and specific dates wasn't already loaded; false otherwise.
     */
     virtual bool load( const QDate &start, const QDate &end ) = 0;
 
