@@ -735,6 +735,21 @@ KDateTime DirectoryStorage::incidenceDeletedDate( const Incidence::Ptr &incidenc
   return KDateTime();
 }
 
+int DirectoryStorage::eventCount()
+{
+  return 0;
+}
+
+int DirectoryStorage::todoCount()
+{
+  return 0;
+}
+
+int DirectoryStorage::journalCount()
+{
+  return 0;
+}
+
 bool DirectoryStorage::notifyOpened( const Incidence::Ptr &incidence )
 {
   Q_UNUSED( incidence );

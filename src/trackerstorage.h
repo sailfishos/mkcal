@@ -300,6 +300,24 @@ class MKCAL_EXPORT TrackerStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::eventCount()
+    */
+    int eventCount();
+
+    /**
+      @copydoc
+      ExtendedStorage::todoCount()
+    */
+    int todoCount();
+
+    /**
+      @copydoc
+      ExtendedStorage::journalCount()
+    */
+    int journalCount();
+
+    /**
+      @copydoc
       ExtendedStorage::notifyOpened( const KCalCore::Incidence::Ptr & )
     */
     bool notifyOpened( const KCalCore::Incidence::Ptr &incidence );
