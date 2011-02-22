@@ -326,6 +326,24 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
     /**
       @copydoc
+      ExtendedStorage::eventCount()
+    */
+    int eventCount();
+
+    /**
+      @copydoc
+      ExtendedStorage::todoCount()
+    */
+    int todoCount();
+
+    /**
+      @copydoc
+      ExtendedStorage::journalCount()
+    */
+    int journalCount();
+
+    /**
+      @copydoc
       ExtendedStorage::virtual_hook()
     */
     virtual void virtual_hook( int id, void *data );
@@ -668,6 +686,12 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select DateDeleted from Components where UID=? and DateDeleted<>0"
 #define SELECT_ATTENDEE_AND_COUNT \
 "select Email, Name, count(Email) from Attendee where Email<>0 group by Email"
+#define SELECT_EVENT_COUNT \
+"select count(*) from Components where Type='Event' and DateDeleted=0"
+#define SELECT_TODO_COUNT \
+"select count(*) from Components where Type='Todo' and DateDeleted=0"
+#define SELECT_JOURNAL_COUNT \
+"select count(*) from Components where Type='Journal' and DateDeleted=0"
 
 #define BEGIN_TRANSACTION \
 "BEGIN IMMEDIATE;"

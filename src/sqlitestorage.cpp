@@ -204,6 +204,7 @@ class mKCal::SqliteStorage::Private
                            const char *query5, int qsize5,const char *query6, int qsize6,
                            DBOperation dbop, const KDateTime &after,
                            const QString &notebookUid, const QString &summary = QString() );
+    int selectCount( const char *query, int qsize );
     bool checkVersion();
     bool saveTimezones();
     bool loadTimezones();
@@ -2755,6 +2756,59 @@ KDateTime SqliteStorage::incidenceDeletedDate( const Incidence::Ptr &incidence )
   return deletionDate;
 }
 
+//@cond PRIVATE
+int SqliteStorage::Private::selectCount( const char *query, int qsize )
+{
+  int rv = 0;
+  int count = 0;
+  sqlite3_stmt *stmt = NULL;
+  const char *tail = NULL;
+
+  if ( !mSem.acquire() ) {
+    kError() << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+    return count;
+  }
+
+  sqlite3_prepare_v2( mDatabase, query, qsize, &stmt, &tail );
+  sqlite3_step( stmt );
+  if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
+    count = sqlite3_column_int(stmt, 0);
+  }
+
+ error:
+  sqlite3_reset( stmt );
+  sqlite3_finalize( stmt );
+
+  if ( !mSem.release() ) {
+    kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+  }
+  return count;
+}
+//@endcond
+
+int SqliteStorage::eventCount()
+{
+  const char *query = SELECT_EVENT_COUNT;
+  int qsize = sizeof( SELECT_EVENT_COUNT );
+
+  return d->selectCount(query,qsize);
+}
+
+int SqliteStorage::todoCount()
+{
+  const char *query = SELECT_TODO_COUNT;
+  int qsize = sizeof( SELECT_TODO_COUNT );
+
+  return d->selectCount(query,qsize);
+}
+
+int SqliteStorage::journalCount()
+{
+  const char *query = SELECT_JOURNAL_COUNT;
+  int qsize = sizeof( SELECT_JOURNAL_COUNT );
+
+  return d->selectCount(query,qsize);
+}
 
 bool SqliteStorage::loadNotebooks()
 {
