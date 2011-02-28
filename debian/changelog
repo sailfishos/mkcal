@@ -1,3 +1,10 @@
+libmkcal (0.3.8) unstable; urgency=low
+
+  * Removing some debug output
+  * Fixes: NB#229433 - event indicator disappears after editing a recurring event for the current month.
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Mon, 28 Feb 2011 10:06:00 +0200
+
 libmkcal (0.3.7) unstable; urgency=low
 
   * Fixes: NB#226481 - MKcal provides count methods only for incidences currently in memory
