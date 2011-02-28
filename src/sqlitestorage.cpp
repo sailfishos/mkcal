@@ -1768,9 +1768,9 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
             event = old;
           }
         } else {
-          kDebug() << "adding event" << event->uid()
-                   << event->dtStart() << event->dtEnd()
-                   << "in calendar";
+//          kDebug() << "adding event" << event->uid()
+//                   << event->dtStart() << event->dtEnd()
+//                   << "in calendar";
           mCalendar->addEvent( event, notebookUid );
         }
         if ( event != old ) {
