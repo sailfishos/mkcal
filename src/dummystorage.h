@@ -232,6 +232,18 @@ public:
     {
       return KDateTime();
     }
+    int eventCount()
+    {
+      return 0;
+    }
+    int todoCount()
+    {
+      return 0;
+    }
+    int journalCount()
+    {
+      return 0;
+    }
     void virtual_hook( int, void * ) {
       return;
     }

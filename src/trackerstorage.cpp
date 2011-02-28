@@ -815,6 +815,21 @@ KDateTime TrackerStorage::incidenceDeletedDate( const Incidence::Ptr &incidence 
   return KDateTime();
 }
 
+int TrackerStorage::eventCount()
+{
+  return 0;
+}
+
+int TrackerStorage::todoCount()
+{
+  return 0;
+}
+
+int TrackerStorage::journalCount()
+{
+  return 0;
+}
+
 bool TrackerStorage::notifyOpened( const Incidence::Ptr &incidence )
 {
   Q_UNUSED( incidence );

@@ -149,7 +149,7 @@ class MKCAL_EXPORT ExtendedStorage
       Load incidences at given date into the memory.
 
       @param date date
-      @return true if the load was successful; false otherwise.
+      @return true if the load was successful and specific date wasn't already loaded; false otherwise.
     */
     virtual bool load( const QDate &date ) = 0;
 
@@ -158,7 +158,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @param start is the starting date
       @param end is the ending date
-      @return true if the load was successful; false otherwise.
+      @return true if the load was successful and specific dates wasn't already loaded; false otherwise.
     */
     virtual bool load( const QDate &start, const QDate &end ) = 0;
 
@@ -456,6 +456,27 @@ class MKCAL_EXPORT ExtendedStorage
       @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime() 
     */
     virtual KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence ) = 0;
+
+    /**
+      Get count of events
+
+      @return count of events 
+    */
+    virtual int eventCount() = 0;
+
+    /**
+      Get count of todos
+
+      @return count of todos 
+    */
+    virtual int todoCount() = 0;
+
+    /**
+      Get count of journals
+
+      @return count of journals 
+    */
+    virtual int journalCount() = 0;
 
     // Observer Specific Methods //
 

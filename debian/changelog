@@ -1,3 +1,10 @@
+libmkcal (0.3.7) unstable; urgency=low
+
+  * Fixes: NB#226481 - MKcal provides count methods only for incidences currently in memory
+  * Fixes: NB#225848 - libmkcal-doc doesn't describe situations where bool mKCal::ExtendedStorage::load() can fail
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 22 Feb 2011 13:36:57 +0200
+
 libmkcal (0.3.6) unstable; urgency=low
 
   * Fixes: NB#220999 - com.nokia.time.add_events D-Bus method is called too often during the initial ms exchange sync
