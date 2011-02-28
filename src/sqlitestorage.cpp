@@ -1760,9 +1760,9 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         }
         if ( old ) {
           if ( event->revision() > old->revision() ) {
-            kDebug() << "updating event" << event->uid()
-                     << event->dtStart() << event->dtEnd()
-                     << "in calendar";
+//            kDebug() << "updating event" << event->uid()
+//                     << event->dtStart() << event->dtEnd()
+//                     << "in calendar";
             mCalendar->deleteEvent( old ); // move old to deleted
             mCalendar->addEvent( event, notebookUid ); // and replace it with this one
           } else {
@@ -1805,9 +1805,9 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
             todo = old;
           }
         } else {
-          kDebug() << "adding todo" << todo->uid()
-                   << todo->dtDue() << todo->created()
-                   << "in calendar";
+//          kDebug() << "adding todo" << todo->uid()
+//                   << todo->dtDue() << todo->created()
+//                   << "in calendar";
           mCalendar->addTodo( todo, notebookUid );
         }
         if ( todo != old ) {
@@ -1832,18 +1832,18 @@ int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
         }
         if ( old ) {
           if ( journal->revision() > old->revision() ) {
-            kDebug() << "updating journal" << journal->uid()
-                     << journal->dtStart() << journal->created()
-                     << "in calendar";
+//            kDebug() << "updating journal" << journal->uid()
+//                     << journal->dtStart() << journal->created()
+//                     << "in calendar";
             mCalendar->deleteJournal( old ); // move old to deleted
             mCalendar->addJournal( journal, notebookUid ); // and replace it with this one
           } else {
             journal = old;
           }
         } else {
-          kDebug() << "adding journal" << journal->uid()
-                   << journal->dtStart() << journal->created()
-                   << "in calendar";
+//          kDebug() << "adding journal" << journal->uid()
+//                   << journal->dtStart() << journal->created()
+//                   << "in calendar";
           mCalendar->addJournal( journal, notebookUid );
         }
         if ( journal != old ) {
