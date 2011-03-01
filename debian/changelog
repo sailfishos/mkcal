@@ -1,3 +1,9 @@
+libmkcal (0.3.10) unstable; urgency=low
+
+  * Fixes: NB#231411 - <Other> Dynamic symbol namespace pollution in /usr/lib/libmkcal.so.0 NO_REVIEWBOARD
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Tue, 01 Mar 2011 13:37:58 +0200
+
 libmkcal (0.3.9) unstable; urgency=low
 
   * Removing some debug output
