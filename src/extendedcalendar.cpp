@@ -123,6 +123,32 @@ class mKCal::ExtendedCalendar::Private
     void insertEvent( const Event::Ptr &event, const KDateTime::Spec &timeSpec );
     void insertTodo( const Todo::Ptr &todo, const KDateTime::Spec &timeSpec );
     void insertJournal( const Journal::Ptr &journal, const KDateTime::Spec &timeSpec );
+
+    /**
+     * Figure when particular recurrence of an incidence starts.
+     *
+     * The start is a hint that is used as rough approximation (it may
+     * be result of expandMultiDay).
+     */
+    static QDateTime incidenceRecurrenceStart( const KCalCore::Incidence::Ptr &incidence, const QDateTime start );
+
+    /**
+     * Figure appropriate end time for incidence.
+     *
+     * This functon should be used only on results of expandMultiDay,
+     * and therefore the start may or may not be incidence start time.
+     *
+     * param start The start time gotten from say, expandMultiDay
+     * param endWithinDay Whether we should try to end within the day or not.
+     *
+     * return The time when the event ends. While this function returns
+     * QDateTime, the date will be always same as start.date(); this is
+     * just convenience API. Only exception is all-day case, where date
+     * = start.date()+1, and time is 0,0,0.
+     */
+    static QDateTime incidenceEndTime( const KCalCore::Incidence::Ptr &incidence,
+				       const QDateTime start,
+				       bool endWithinDay );
 };
 
 ExtendedCalendar::ExtendedCalendar( const KDateTime::Spec &timeSpec )
@@ -1494,13 +1520,61 @@ Incidence::List ExtendedCalendar::sortIncidences( Incidence::List *incidenceList
   return incidenceListSorted;
 }
 
+//@cond PRIVATE
+QDateTime ExtendedCalendar::Private::incidenceRecurrenceStart(const KCalCore::Incidence::Ptr &incidence,
+							      const QDateTime ost)
+{
+    if (!incidence)
+	return QDateTime();
+
+    if (!incidence->recurs())
+        return incidence->dtStart().toLocalZone().dateTime();
+
+    // Then figure how far off from the start of this recurrence we are
+    KDateTime dt(ost.addSecs(1));
+    return incidence->recurrence()->getPreviousDateTime(dt).toLocalZone().dateTime();
+}
+
+
+QDateTime ExtendedCalendar::Private::incidenceEndTime(const KCalCore::Incidence::Ptr &incidence,
+						      const QDateTime ost,
+						      bool endWithinDay)
+{
+    if (!incidence)
+	return QDateTime();
+
+    // First off, figure how long the initial event is
+    KDateTime dtS(incidence->dtStart());
+    KDateTime dtE(incidence->dateTime(Incidence::RoleEnd));
+    int duration = dtE.toTime_t() - dtS.toTime_t();
+
+    KDateTime dt(ost);
+    KDateTime start(incidenceRecurrenceStart(incidence, ost));
+
+    int duration0 = dt.toTime_t() - start.toTime_t();
+
+    int left = duration - duration0;
+
+    QDateTime r = dt.addSecs(left).dateTime();
+    if (r.date() != ost.date())
+    {
+        r = QDateTime(r.date(), QTime(0, 0, 0));
+        if (endWithinDay) {
+	    r = r.addDays(1);
+	    r = r.addSecs(-1);
+	}
+    }
+    return r;
+}
+//@endcond
+
 static bool expandedIncidenceSortLessThan( const ExtendedCalendar::ExpandedIncidence &e1,
                                            const ExtendedCalendar::ExpandedIncidence &e2 )
 {
-  if ( e1.first < e2.first ) {
+  if ( e1.first.dtStart < e2.first.dtStart ) {
     return true;
   }
-  if ( e1.first > e2.first ) {
+  if ( e1.first.dtStart > e2.first.dtStart ) {
     return false;
   }
   // e1 == e2 => perform secondary check based on created date
@@ -1514,6 +1588,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
   Incidence::List::Iterator iit;
   KDateTime brokenDtStart = dtStart.addSecs(-1);
   KDateTime::Spec ts = timeSpec();
+  ExpandedIncidenceValidity validity;
 
   // used for comparing with entries that have broken dtEnd => we use
   // dtStart and compare it against this instead. As this is allocated
@@ -1545,7 +1620,9 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
     if ( !dt.isValid() ) {
       // Just leave the dateless incidences there (they will be
       // sorted out)
-      returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+      validity.dtStart = dt.dateTime();
+      validity.dtEnd = d->incidenceEndTime(*iit, dt.dateTime(), true);
+      returnList.append( ExpandedIncidence( validity, *iit ) );
       continue;
     }
 
@@ -1585,7 +1662,9 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 	    kDebug() << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
 	  } else {
-	    returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	    validity.dtStart = dt.dateTime();
+	    validity.dtEnd = d->incidenceEndTime(*iit, dt.dateTime(), true);
+	    returnList.append( ExpandedIncidence( validity, *iit ) );
 	    appended++;
 	  }
 	} else {
@@ -1594,12 +1673,16 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 	    kDebug() << "--not recurring on" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
 	  } else {
-	    returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	    validity.dtStart = dt.dateTime();
+	    validity.dtEnd = d->incidenceEndTime(*iit, dt.dateTime(), true);
+	    returnList.append( ExpandedIncidence( validity, *iit ) );
 	    appended++;
 	  }
 	}
       } else {
-	returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	validity.dtStart = dt.dateTime();
+	validity.dtEnd = d->incidenceEndTime(*iit, dt.dateTime(), true);
+	returnList.append( ExpandedIncidence( validity, *iit ) );
 	appended++;
       }
     } else {
@@ -1660,7 +1743,9 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
           kDebug() << "---appending(recurrence)"
                    << (*iit)->summary() << dtr.toString();
 #endif /* DEBUG_EXPANSION */
-          returnList.append( ExpandedIncidence( dtr.dateTime(), *iit ) );
+	  validity.dtStart = dtr.dateTime();
+	  validity.dtEnd = d->incidenceEndTime(*iit, dtr.dateTime(), true);
+          returnList.append( ExpandedIncidence( validity, *iit ) );
           appended++;
         } else {
 #ifdef DEBUG_EXPANSION
@@ -1694,6 +1779,7 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
 {
   ExtendedCalendar::ExpandedIncidenceList returnList;
   int i;
+  ExpandedIncidenceValidity validity;
 
   if ( expandLimitHit )
     *expandLimitHit = false;
@@ -1707,7 +1793,7 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
 
     if ( inc->type() != Incidence::TypeEvent || !e->isMultiDay() ) {
       if ( merge ) {
-        QDate d = ei.first.date();
+        QDate d = ei.first.dtStart.date();
         if ( ( !startDate.isValid() || startDate <= d )
              && ( !endDate.isValid() || endDate >= d ) ) {
           returnList.append( ei );
@@ -1726,8 +1812,8 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
     }
 
     // Initialize dts/dte to the current recurrence (if any)
-    dts = KDateTime( ei.first.date(), dts.time() );
-    dte = KDateTime( ei.first.date().addDays( 1 ), QTime(0, 0, 0) );
+    dts = KDateTime( ei.first.dtStart.date(), dts.time() );
+    dte = KDateTime( ei.first.dtStart.date().addDays( 1 ), QTime(0, 0, 0) );
 
     int added = 0;
     for (i = 0 ; i < days ; i++) {
@@ -1736,7 +1822,9 @@ ExtendedCalendar::expandMultiDay( const ExtendedCalendar::ExpandedIncidenceList 
         // Have to check it against time boundaries using the dts/dte, though
           if ( ( !startDate.isValid() || startDate < dte.date() )
                && ( !endDate.isValid() || endDate >= dts.date() ) ) {
-            returnList.append( ExtendedCalendar::ExpandedIncidence( dts.dateTime(), inc ) );
+	    validity.dtStart = dts.dateTime();
+	    validity.dtEnd = d->incidenceEndTime(inc, dts.dateTime(), true);
+            returnList.append( ExtendedCalendar::ExpandedIncidence( validity, inc ) );
             if (added++ == maxExpand) {
               if (expandLimitHit)
                 *expandLimitHit = true;
