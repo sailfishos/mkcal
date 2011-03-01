@@ -137,7 +137,7 @@ class MKCAL_EXPORT SqliteFormat
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( SqliteFormat )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 };

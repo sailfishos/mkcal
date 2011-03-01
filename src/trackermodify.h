@@ -77,7 +77,7 @@ class MKCAL_EXPORT TrackerModify
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( TrackerModify )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 };

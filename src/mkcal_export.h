@@ -27,4 +27,8 @@
 #define MKCAL_EXPORT __attribute__ ((visibility("default")))
 #endif
 
+#ifndef MKCAL_HIDE
+#define MKCAL_HIDE __attribute__ ((visibility("hidden")))
+#endif
+
 #endif

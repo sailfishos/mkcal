@@ -398,7 +398,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( SqliteStorage )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 

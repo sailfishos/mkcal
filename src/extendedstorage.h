@@ -713,7 +713,7 @@ class MKCAL_EXPORT ExtendedStorage
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedStorage )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 };

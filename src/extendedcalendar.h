@@ -955,7 +955,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 };
