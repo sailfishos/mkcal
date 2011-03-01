@@ -1584,19 +1584,24 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
 #ifdef DEBUG_EXPANSION
 	    kDebug() << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
-	    continue;
+	  } else {
+	    returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	    appended++;
 	  }
 	} else {
 	  if ( !(*iit)->recursOn(  (*iit)->dtStart().date(), ts ) ) {
 #ifdef DEBUG_EXPANSION
 	    kDebug() << "--not recurring on" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
-	    continue;
+	  } else {
+	    returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	    appended++;
 	  }
 	}
+      } else {
+	returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
+	appended++;
       }
-      returnList.append( ExpandedIncidence( dt.dateTime(), *iit ) );
-      appended++;
     } else {
 #ifdef DEBUG_EXPANSION
       kDebug() << "-- no match" << dt.toString() << dte.toString() << dte.isValid() << brokenEnd;
