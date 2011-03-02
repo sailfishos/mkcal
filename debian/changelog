@@ -1,3 +1,9 @@
+libmkcal (0.3.11) unstable; urgency=low
+
+  * Getting enddates in expandRecurrences and expandMultiDay
+
+ -- Meng Sun <meng.5.sun@nokia.com>  Wed, 02 Mar 2011 09:22:51 +0200
+
 libmkcal (0.3.10) unstable; urgency=low
 
   * Fixes: NB#231411 - <Other> Dynamic symbol namespace pollution in /usr/lib/libmkcal.so.0 NO_REVIEWBOARD
