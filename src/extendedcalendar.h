@@ -710,12 +710,23 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending );
 
     /**
+       Single expanded incidence validity struct.  The first field contains the
+       time in local timezone when the (recurrent) incidence starts.
+       The second field contains time in local timezone when the (recurrent) incidence ends.
+    */
+    typedef struct ExpandedIncidenceValidity
+    {
+      QDateTime dtStart;
+      QDateTime dtEnd;
+    } ExpandedIncidenceValidity;
+
+    /**
        Single expanded incidence tuple.  The first field contains the
        time in local timezone when the (recurrent) incidence starts.
        The second field contains a pointer to the actual Incidence
        instance.
     */
-    typedef QPair<QDateTime,KCalCore::Incidence::Ptr> ExpandedIncidence;
+    typedef QPair<ExpandedIncidenceValidity,KCalCore::Incidence::Ptr> ExpandedIncidence;
 
     /**
        List of ExpandedIncidences.
@@ -955,7 +966,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
   private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )
-    class Private;
+    class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 };
