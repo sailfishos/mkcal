@@ -411,7 +411,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
 #define sqlite3_exec( db )                                    \
 {                                                             \
-  kDebug() << "SQL query:" << query;                          \
+ /* kDebug() << "SQL query:" << query;    */                  \
   rv = sqlite3_exec( (db), query, NULL, 0, &errmsg );         \
   if ( rv ) {                                                 \
     if ( rv != SQLITE_CONSTRAINT ) {                          \
@@ -432,7 +432,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
 #define sqlite3_prepare_v2( db, query, qsize, stmt, tail )            \
 {                                                                     \
- /* kDebug() << "SQL query:" << query;     */                              \
+ /* kDebug() << "SQL query:" << query;     */                         \
   rv = sqlite3_prepare_v2( (db), (query), (qsize), (stmt), (tail) );  \
   if ( rv ) {                                                         \
     kError() << "sqlite3_prepare error code:" << rv;                  \
