@@ -1,0 +1,53 @@
+* Mon Apr 02 2012 Marko Saukko <sage@merproject.org> - 0.3.11
+- Added .yaml for spectacle.
+- Dropped QtSparql dependency with mkcal-0.3.11-drop-tracker.patch
+
+* Wed Sep 21 2011 Marko Saukko <marko.saukko@cybercom.com> - 0.3.11
+- Updated to version 0.3.11
+- Removed timed dependency as we should use connman time API's now.
+
+* Wed Apr 13 2011 Peter J Zhu <peter.j.zhu@intel.com> - 0.3.8
+- Build with tracker 0.10
+
+* Tue Mar 01 2011 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.3.8
+- Update version for BMC#6050
+
+* Fri Feb 04 2011 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.3.1
+- Fixing BMC#6050 in mkcal 
+
+* Thu Jan 27 2011 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.2.18
+- Update version, fixing BMC#6061, BMC#6227
+
+* Wed Dec 22 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.2.12
+- Update version, fixing BMC#11660
+
+* Wed Dec 08 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.2.6
+- Update version, required by kcalcore-update requested in BMC#6050
+
+* Fri Nov 12 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.2.3
+- Fixes: BMC#6039 "calendar changed" reported even if only read
+- Implements: BMC#10000 [FEA] Upgrade mkcal to 0.2.3
+
+* Thu Oct 21 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.1.24
+- Update  version
+- Add qmfclient build dependency
+- Fix automagic dependency generation
+
+* Mon Oct 04 2010 Fathi Boudra <fathi.boudra@nokia.com> - 0.1.5
+- Various cleanup in the packaging
+- Remove useless BuildRequires (dbus-1 and qtopiamail)
+- Use qmake macros
+- More verbosity in %files
+
+* Wed Aug 25 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.1.5
+- Include patch to fix pkgconfig file (Patrick Ohly)
+
+* Wed Aug 25 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.1.5
+- Remove unnecessary dependencies for -devel
+
+* Tue Aug 24 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.1.5
+- Update to latest version
+- Enable timed
+
+* Fri Aug 06 2010 Bernd Wachter <ext-bernd.wachter@nokia.com> - 0.1.0
+- Initial RPM

@@ -1,0 +1,27 @@
+diff --exclude='*~' -ruN mkcal-0.3.8.orig/src/extendedstorage.cpp mkcal-0.3.8/src/extendedstorage.cpp
+--- mkcal-0.3.8.orig/src/extendedstorage.cpp	2011-05-10 09:50:31.008136415 +0300
++++ mkcal-0.3.8/src/extendedstorage.cpp	2011-05-10 10:00:19.472851045 +0300
+@@ -47,9 +47,10 @@
+ #include <QtCore/QMap>
+ #include <QtDBus/QDBusConnection>
+ #include <QtDBus/QDBusInterface>
+-#include <QtDBus/QDBusReply>
+ #endif
+ 
++#include <QtDBus/QDBusReply>
++
+ #ifdef TIMED_SUPPORT
+ #include <timed/interface>
+ #include <timed/event>
+diff --exclude='*~' -ruN mkcal-0.3.8.orig/src/src.pro mkcal-0.3.8/src/src.pro
+--- mkcal-0.3.8.orig/src/src.pro	2011-05-10 09:50:31.009127964 +0300
++++ mkcal-0.3.8/src/src.pro	2011-05-10 09:50:45.670857734 +0300
+@@ -43,7 +43,7 @@
+     /usr/include/dbus-1.0 \
+     /usr/include/qt4/QtDBus
+ 
+-DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT #MKCAL_TRACKER_SYNC
++DEFINES += MEEGO UUID TIMED_SUPPORT #MKCAL_TRACKER_SYNC
+ LIBS += -lQtDBus \
+     -lsqlite3 \
+     -luuid \

@@ -1,0 +1,30 @@
+Name: mkcal
+Summary: Extended KDE kcal calendar library port for Maemo
+Version: "%{ver_maj}.%{ver_min}.%{ver_pat}"
+Release: 1
+Group: System/Libraries
+License: LGPLv2
+Sources:
+    - "%{name}-%{version}.tar.gz"
+Patches:
+    - mkcal-0.3.8-no-mtf.patch
+    - mkcal-0.3.11-no-timed.patch
+    - mkcal-0.3.11-disable-plugins.patch
+    - mkcal-0.3.11-drop-tracker.patch
+Description: "%{summary}."
+
+PkgBR:
+    - doxygen
+    - fdupes
+PkgConfigBR:
+    - QtCore
+    - libkcalcoren
+    - sqlite3
+    - uuid
+Configure: none
+Builder: none
+SubPackages:
+    - Name: devel
+      Summary: Development files for %{name}
+      Group: Development/Libraries
+      Description: "%{summary}."

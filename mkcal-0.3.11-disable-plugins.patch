@@ -1,0 +1,13 @@
+diff -ruN --exclude='*~' mkcal-0.3.11.orig/mkcal.pro mkcal-0.3.11/mkcal.pro
+--- mkcal-0.3.11.orig/mkcal.pro	2011-11-30 16:44:29.052246605 +0200
++++ mkcal-0.3.11/mkcal.pro	2011-11-30 16:44:40.921517372 +0200
+@@ -1,8 +1,7 @@
+ # QMake project file for libmkcal
+ 
+ TEMPLATE = subdirs
+-SUBDIRS =   src \
+-            plugins
++SUBDIRS =   src
+ 
+ VER_MAJ = ${VER_MAJ}
+ VER_MIN = ${VER_MIN}
