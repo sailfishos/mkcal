@@ -1,3 +1,6 @@
+* Thu Jul 05 2012 Ruediger Gad <r.c.g@gmx.de> - 0.3.11
+- Fixes MER#387: mkcal qtmobility plugin fails to load 
+
 * Mon Apr 02 2012 Marko Saukko <sage@merproject.org> - 0.3.11
 - Added .yaml for spectacle.
 - Dropped QtSparql dependency with mkcal-0.3.11-drop-tracker.patch

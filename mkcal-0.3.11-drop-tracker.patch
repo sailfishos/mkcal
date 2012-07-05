@@ -1,15 +1,19 @@
-From 6113811a78bd6c53ebf44655d1eab02af9cd1edd Mon Sep 17 00:00:00 2001
-From: Marko Saukko <marko.saukko@gmail.com>
-Date: Mon, 2 Apr 2012 13:40:36 +0300
+From d7ff38e92fcd4d7e25f2ef47c08ef2a0bd146530 Mon Sep 17 00:00:00 2001
+From: Ruediger Gad <r.c.g@gmx.de>
+Date: Thu, 5 Jul 2012 22:33:08 +0200
 Subject: [PATCH] Added USE_TRACKER define to cut out the qtsparql dependency
  and tracker related functionality.
 
 Signed-off-by: Marko Saukko <marko.saukko@gmail.com>
+[r.c.g@gmx.de: Fix #MER387 mkcal qtmobility plugin fails to load
+ by letting SqliteStorage::notifyOpened(...) return always false if
+ USE_TRACKER is not defined.]
+Signed-off-by: Ruediger Gad <r.c.g@gmx.de>
 ---
- src/extendedcalendar.cpp |   11 ++++++++-
- src/sqlitestorage.cpp    |   52 ++++++++++++++++++++++++++++++++++++++--------
- src/sqlitestorage.h      |    4 +++
- 3 files changed, 56 insertions(+), 11 deletions(-)
+ src/extendedcalendar.cpp |   11 ++++++++--
+ src/sqlitestorage.cpp    |   54 ++++++++++++++++++++++++++++++++++++++--------
+ src/sqlitestorage.h      |    4 ++++
+ 3 files changed, 58 insertions(+), 11 deletions(-)
 
 diff --git a/src/extendedcalendar.cpp b/src/extendedcalendar.cpp
 index c44ec77..5bdd771 100644
@@ -37,7 +41,7 @@ index c44ec77..5bdd771 100644
    return ss.staticCast<ExtendedStorage>();
  }
 diff --git a/src/sqlitestorage.cpp b/src/sqlitestorage.cpp
-index 2d6255e..2bbaf2b 100644
+index 2d6255e..64898e3 100644
 --- a/src/sqlitestorage.cpp
 +++ b/src/sqlitestorage.cpp
 @@ -33,7 +33,9 @@
@@ -175,23 +179,23 @@ index 2d6255e..2bbaf2b 100644
  
  bool SqliteStorage::open()
  {
-@@ -1694,6 +1719,7 @@ int SqliteStorage::loadContactIncidences( const Person::Ptr &person, int limit,
-   return count;
- }
+@@ -1696,11 +1721,15 @@ int SqliteStorage::loadContactIncidences( const Person::Ptr &person, int limit,
  
-+#ifdef USE_TRACKER
  bool SqliteStorage::notifyOpened( const Incidence::Ptr &incidence )
  {
++#ifdef USE_TRACKER
    if ( incidence && d->mUseTracker ) {
-@@ -1702,6 +1728,7 @@ bool SqliteStorage::notifyOpened( const Incidence::Ptr &incidence )
+     return d->notifyOpened( incidence );
+   } else {
      return false;
    }
- }
++#else
++  return false;
 +#endif
+ }
  
  int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
-                                             const char *query2, int qsize2,
-@@ -2147,11 +2174,14 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
+@@ -2147,11 +2176,14 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
        kError() << sqlite3_errmsg( mDatabase ) << "for incidence" << (*it)->uid();
        errors++;
      }
@@ -207,7 +211,7 @@ index 2d6255e..2bbaf2b 100644
      sqlite3_reset( stmt1 );
      sqlite3_reset( stmt2 );
      if ( stmt3 ) {
-@@ -2175,7 +2205,9 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
+@@ -2175,7 +2207,9 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
      }
    }
  
@@ -217,7 +221,7 @@ index 2d6255e..2bbaf2b 100644
  
    if ( dbop == DBDelete ) {
      // Remove all alarms.
-@@ -3065,6 +3097,7 @@ bool SqliteStorage::Private::loadTimezones()
+@@ -3065,6 +3099,7 @@ bool SqliteStorage::Private::loadTimezones()
    return success;
  }
  
@@ -225,7 +229,7 @@ index 2d6255e..2bbaf2b 100644
  bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
  {
    TrackerModify tracker;
-@@ -3084,6 +3117,7 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
+@@ -3084,6 +3119,7 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
    }
    return true;
  }
@@ -261,5 +265,5 @@ index c49bd66..f3b63e4 100644
      /**
        @copydoc
 -- 
-1.7.7.6
+1.7.10.4
 
