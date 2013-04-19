@@ -18,8 +18,8 @@
 
 #include <QObject>
 
-#include <QMailAccountId>
-#include <QMailTransmitAction>
+#include <qmailaccount.h>
+#include <qmailserviceaction.h>
 
 class TransmitHelper : public QObject
 {

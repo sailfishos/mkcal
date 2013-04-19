@@ -1,0 +1,35 @@
+Name: mkcal-qt5
+Summary: Extended KDE kcal calendar library port for Maemo
+Version: 0.3.11
+Release: 1
+Group: System/Libraries
+License: LGPLV2
+URL: 
+Sources:
+    - "%{name}-%{version}.tar.bz2"
+Description: |
+    Extended KDE kcal calendar library port for Maemo
+PkgConfigBR:
+    - Qt5Core
+    - Qt5Gui
+    - Qt5DBus
+    - libkcalcoren-qt5
+    - QtSparql-qt5
+    - sqlite3
+    - dbus-1
+    - timed-qt5
+Configure: none
+Builder: qmake
+Files:
+- "%{_libdir}/libmkcal-qt5.so.*"
+SubPackages:
+ - Name: devel
+   Summary: Development files for mkcal
+   Group: Development/Libraries
+   Files:
+       - "%{_includedir}/mkcal-qt5/*"
+       - "%{_libdir}/libmkcal-qt5.so"
+       - "%{_libdir}/pkgconfig/*.pc"
+   Description: |
+    This package contains the files necessary to develop
+    applications using mkcal

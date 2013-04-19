@@ -1,8 +1,10 @@
 # QMake project file for libmkcal
 
 TEMPLATE = subdirs
-SUBDIRS =   src \
-            plugins
+SUBDIRS =   src
+
+# add to Qt 5 also when qmfclient is ported
+equals(QT_MAJOR_VERSION, 4): SUBDIRS += plugins
 
 VER_MAJ = ${VER_MAJ}
 VER_MIN = ${VER_MIN}
@@ -12,10 +14,12 @@ include(doc/doc.pro)
 coverage.CONFIG += recursive
 QMAKE_EXTRA_TARGETS += coverage
 
-qtconfigfiles.files = mkcal.prf
-qtconfigfiles.path = /usr/share/qt4/mkspecs/features
+equals(QT_MAJOR_VERSION, 4) {
+    qtconfigfiles.files = mkcal.prf
+    qtconfigfiles.path = /usr/share/qt4/mkspecs/features
 
-INSTALLS += qtconfigfiles
+    INSTALLS += qtconfigfiles
+}
 
 CONFIG(debug,debug|release) {
 

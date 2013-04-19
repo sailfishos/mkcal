@@ -51,9 +51,15 @@ using namespace KCalCore;
 #endif
 
 #ifdef TIMED_SUPPORT
-#include <timed/interface>
-#include <timed/event>
-#include <timed/exception>
+# if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#  include <timed-qt5/interface.h>
+#  include <timed-qt5/event-declarations.h>
+#  include <timed-qt5/exception.h>
+# else
+#  include <timed/interface>
+#  include <timed/event>
+#  include <timed/exception>
+# endif
 using namespace Maemo;
 #endif
 
@@ -752,7 +758,7 @@ void ExtendedStorage::clearAlarms( const KCalCore::Incidence::List &incidences )
     }
   }
 #else
-  Q_UNUSED( incidence );
+  Q_UNUSED( incidences );
 #endif
 }
 

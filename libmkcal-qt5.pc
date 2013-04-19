@@ -1,0 +1,13 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${prefix}/lib/
+includedir=${prefix}/include/mkcal-qt5
+
+
+Name: Mkcal-qt5
+Description: Maemo mkcal calendar library
+Version: 0.3.11
+Libs: -L${libdir} -lmkcal-qt5 
+Libs.private: -luuid -lical -licalss -licalvcal -lsqlite3 -L/usr/lib/ -lkcalcoren-qt5 -lQtSparql-qt5 -lQt5Network -L/usr/lib -lQt5DBus -lQt5Core -lpthread   
+Cflags:  -I${includedir}
+

@@ -26,10 +26,9 @@ CONFIG(debug,debug|release) {
         $(OBJECTS_DIR)/*.gcno
 }
 TEMPLATE = lib
-TARGET = mkcal
-VER_MAJ = ${VER_MAJ}
-VER_MIN = ${VER_MIN}
-VER_PAT = ${VER_PAT}
+equals(QT_MAJOR_VERSION, 4): TARGET = mkcal
+equals(QT_MAJOR_VERSION, 5): TARGET = mkcal-qt5
+VERSION+= 0.3.11
 
 DEPENDPATH += . \
     klibport \
@@ -37,20 +36,22 @@ DEPENDPATH += . \
 INCLUDEPATH += . \
     .. \
     qtlockedfile/src \
-    /usr/include/libical \
     /usr/include/glib-2.0 \
     /usr/lib/glib-2.0/include \
-    /usr/include/dbus-1.0 \
-    /usr/include/qt4/QtDBus
+    /usr/include/dbus-1.0
 
-DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT #MKCAL_TRACKER_SYNC
-LIBS += -lQtDBus \
-    -lsqlite3 \
-    -luuid \
+#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
+DEFINES += MEEGO UUID TIMED_SUPPORT #MKCAL_TRACKER_SYNC
 
-contains (DEFINES, TIMED_SUPPORT) {
-     LIBS += -ltimed
-}
+CONFIG += link_pkgconfig
+PKGCONFIG += uuid \
+    libical \
+    sqlite3
+
+equals(QT_MAJOR_VERSION, 4): PKGCONFIG += timed libkcalcoren QtSparql
+equals(QT_MAJOR_VERSION, 5): PKGCONFIG += timed-qt5 libkcalcoren-qt5 QtSparql-qt5
+
+QT += dbus
 
 contains (DEFINES, MKCAL_FOR_MEEGO) {
     LIBS += -lmeegotouchcore
@@ -59,17 +60,19 @@ contains (DEFINES, MKCAL_FOR_MEEGO) {
 
 QT -= gui
 
-QMAKE_CLEAN += lib*.so*
-libraries.path += /${DESTDIR}/usr/lib
-libraries.files += lib*.so.*.*.*
-headers.path += /${DESTDIR}/usr/include/mkcal
+target.path = $$INSTALL_ROOT/usr/lib
+equals(QT_MAJOR_VERSION, 4): headers.path += $$INSTALL_ROOT/usr/include/mkcal
+equals(QT_MAJOR_VERSION, 5): headers.path += $$INSTALL_ROOT/usr/include/mkcal-qt5
 headers.files += *.h \
     kdedate/*.h \
     klibport/*.h
-pkgconfig.path += /${DESTDIR}/usr/lib/pkgconfig
-pkgconfig.files += ../*.pc
-CONFIG += kcalcoren qtsparql
-INSTALLS += libraries \
+
+pkgconfig.path = $$INSTALL_ROOT/usr/lib/pkgconfig
+equals(QT_MAJOR_VERSION, 4): pkgconfig.files = ../libmkcal.pc
+equals(QT_MAJOR_VERSION, 5): pkgconfig.files = ../libmkcal-qt5.pc
+
+CONFIG += qtsparql
+INSTALLS += target \
     headers \
     pkgconfig
 #QMAKE_CXXFLAGS += -Werror  #in the debian/rules now

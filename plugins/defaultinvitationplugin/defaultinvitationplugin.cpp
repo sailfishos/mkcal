@@ -21,10 +21,10 @@
 #include <QTimer>
 
 #ifdef MKCAL_FOR_MEEGO
-#include <QMailAccount>
-#include <QMailStore>
-#include <QMailAddress>
-#include <QMailBase64Codec>
+#include <qmailaccount.h>
+#include <qmailstore.h>
+#include <qmailaddress.h>
+#include <qmailcodec.h>
 #include "transmitemail.h"
 #endif
 

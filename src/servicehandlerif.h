@@ -23,7 +23,6 @@
 */
 
 #include <QtCore/QtPlugin>
-#include <Qt/qicon.h>
 
 #include "notebook.h"
 
