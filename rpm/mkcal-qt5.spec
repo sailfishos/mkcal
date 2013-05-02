@@ -13,6 +13,7 @@ Version:    0.3.11
 Release:    1
 Group:      System/Libraries
 License:    LGPLV2
+URL:        https://github.com/mer-packages/mkcal
 Source0:    %{name}-%{version}.tar.bz2
 Source100:  mkcal-qt5.yaml
 Requires(post): /sbin/ldconfig
@@ -21,7 +22,6 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(libkcalcoren-qt5)
-BuildRequires:  pkgconfig(QtSparql-qt5)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(timed-qt5)
@@ -50,7 +50,7 @@ applications using mkcal
 # >> build pre
 # << build pre
 
-%qmake 
+%qmake5 
 
 make %{?jobs:-j%jobs}
 

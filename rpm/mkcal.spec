@@ -21,7 +21,7 @@ BuildRequires:  pkgconfig(sqlite3)
 #BuildRequires:  pkgconfig(tracker-client-0.10)
 BuildRequires:  pkgconfig(uuid)
 BuildRequires:  pkgconfig(qmfclient)
-BuildRequires:  pkgconfig(QtSparql)
+#BuildRequires:  pkgconfig(QtSparql)
 
 %description
 %{summary}.

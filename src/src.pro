@@ -48,8 +48,8 @@ PKGCONFIG += uuid \
     libical \
     sqlite3
 
-equals(QT_MAJOR_VERSION, 4): PKGCONFIG += timed libkcalcoren QtSparql
-equals(QT_MAJOR_VERSION, 5): PKGCONFIG += timed-qt5 libkcalcoren-qt5 QtSparql-qt5
+equals(QT_MAJOR_VERSION, 4): PKGCONFIG += timed libkcalcoren
+equals(QT_MAJOR_VERSION, 5): PKGCONFIG += timed-qt5 libkcalcoren-qt5
 
 QT += dbus
 
@@ -71,7 +71,7 @@ pkgconfig.path = $$INSTALL_ROOT/usr/lib/pkgconfig
 equals(QT_MAJOR_VERSION, 4): pkgconfig.files = ../libmkcal.pc
 equals(QT_MAJOR_VERSION, 5): pkgconfig.files = ../libmkcal-qt5.pc
 
-CONFIG += qtsparql
+#CONFIG += qtsparql
 INSTALLS += target \
     headers \
     pkgconfig

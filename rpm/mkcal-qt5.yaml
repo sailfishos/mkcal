@@ -4,7 +4,7 @@ Version: 0.3.11
 Release: 1
 Group: System/Libraries
 License: LGPLV2
-URL: 
+URL:  https://github.com/mer-packages/mkcal
 Sources:
     - "%{name}-%{version}.tar.bz2"
 Description: |
@@ -14,12 +14,11 @@ PkgConfigBR:
     - Qt5Gui
     - Qt5DBus
     - libkcalcoren-qt5
-    - QtSparql-qt5
     - sqlite3
     - dbus-1
     - timed-qt5
 Configure: none
-Builder: qmake
+Builder: qmake5
 Files:
 - "%{_libdir}/libmkcal-qt5.so.*"
 SubPackages:

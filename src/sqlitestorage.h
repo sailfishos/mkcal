@@ -72,7 +72,9 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
     */
     explicit SqliteStorage( const ExtendedCalendar::Ptr &cal,
                             const QString &databaseName,
+#ifdef USE_TRACKER
                             bool useTracker = false,
+#endif
                             bool validateNotebooks = false );
 
     /**
@@ -85,10 +87,12 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
     */
     QString databaseName() const;
 
+#ifdef USE_TRACKER
     /**
       Returns true if tracker is also used in saves.
     */
     bool useTracker() const;
+#endif
 
     /**
       @copydoc

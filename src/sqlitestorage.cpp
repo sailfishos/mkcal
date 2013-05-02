@@ -33,7 +33,9 @@
 #include <config-mkcal.h>
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
+#ifdef USE_TRACKER
 #include "trackermodify.h"
+#endif
 #include <memorycalendar.h>
 
 #include <icalformat.h>
@@ -47,12 +49,14 @@ using namespace KCalCore;
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#ifdef USE_TRACKER
 #include <QSparqlConnection>
 #include <QSparqlQuery>
 #include <QSparqlResult>
 
 #if defined(MKCAL_TRACKER_SYNC)
 #include <QSparqlError>
+#endif
 #endif
 
 #include <iostream>
@@ -74,7 +78,11 @@ class mKCal::SqliteStorage::Private
 {
   public:
     Private( const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
-             const QString &databaseName, bool useTracker )
+             const QString &databaseName
+#ifdef USE_TRACKER
+             , bool useTracker 
+#endif
+           )
       : mCalendar( calendar ),
         mStorage( storage ),
         mDatabaseName( databaseName ),
@@ -83,20 +91,25 @@ class mKCal::SqliteStorage::Private
         mWatcher( 0 ),
         mDatabase( 0 ),
         mFormat( 0 ),
+#ifdef USE_TRACKER
         mUseTracker( useTracker ),
+        mTrackerConnection( 0 ),
+#endif
         mIsLoading( false ),
         mIsOpened( false ),
-        mIsSaved( false ),
-        mTrackerConnection( 0 )
+        mIsSaved( false )
     {}
     ~Private()
     {
+#ifdef USE_TRACKER
         if ( mTrackerConnection ) {
             delete mTrackerConnection;
             mTrackerConnection = 0;
         }
+#endif
     }
 
+#ifdef USE_TRACKER
     void modifyTracker(const Incidence::Ptr &incidence, DBOperation dbop, const QString notebookUid )
     {
       if ( !mUseTracker )  {
@@ -163,7 +176,7 @@ class mKCal::SqliteStorage::Private
 
 
     }
-
+#endif
     ExtendedCalendar::Ptr mCalendar;
     SqliteStorage *mStorage;
     QString mDatabaseName;
@@ -172,7 +185,10 @@ class mKCal::SqliteStorage::Private
     QFileSystemWatcher *mWatcher;
     sqlite3 *mDatabase;
     SqliteFormat *mFormat;
+#ifdef USE_TRACKER
     bool mUseTracker;
+    QSparqlConnection *mTrackerConnection;
+#endif
     QMultiHash<QString,Incidence::Ptr> mIncidencesToInsert;
     QMultiHash<QString,Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString,Incidence::Ptr> mIncidencesToDelete;
@@ -183,7 +199,6 @@ class mKCal::SqliteStorage::Private
     KDateTime mOriginTime;
     QDateTime mPreWatcherDbTime;
     QString mSparql;
-    QSparqlConnection *mTrackerConnection;
 
     int loadIncidences( sqlite3_stmt *stmt1,
                         const char *query2, int qsize2, const char *query3, int qsize3,
@@ -208,15 +223,23 @@ class mKCal::SqliteStorage::Private
     bool checkVersion();
     bool saveTimezones();
     bool loadTimezones();
+#ifdef USE_TRACKER
     bool notifyOpened( Incidence::Ptr incidence );
-
+#endif
 };
 //@endcond
 
 SqliteStorage::SqliteStorage( const ExtendedCalendar::Ptr &cal, const QString &databaseName,
-                              bool useTracker, bool validateNotebooks )
+#ifdef USE_TRACKER
+                              bool useTracker, 
+#endif
+                              bool validateNotebooks )
   : ExtendedStorage( cal, validateNotebooks ),
-    d( new Private( cal, this, databaseName, useTracker ) )
+    d( new Private( cal, this, databaseName
+#ifdef USE_TRACKER
+      , useTracker
+#endif
+    ) )
 {
   d->mOriginTime = KDateTime( QDate( 1970, 1, 1 ), QTime( 0, 0, 0 ), KDateTime::UTC );
   kDebug() << "time of origin is " << d->mOriginTime << d->mOriginTime.toTime_t();
@@ -235,10 +258,12 @@ QString SqliteStorage::databaseName() const
   return d->mDatabaseName;
 }
 
+#ifdef USE_TRACKER
 bool SqliteStorage::useTracker() const
 {
   return d->mUseTracker;
 }
+#endif
 
 bool SqliteStorage::open()
 {
@@ -1696,11 +1721,15 @@ int SqliteStorage::loadContactIncidences( const Person::Ptr &person, int limit, 
 
 bool SqliteStorage::notifyOpened( const Incidence::Ptr &incidence )
 {
+#ifdef USE_TRACKER
   if ( incidence && d->mUseTracker ) {
     return d->notifyOpened( incidence );
   } else {
     return false;
   }
+#else
+  return false;
+#endif
 }
 
 int SqliteStorage::Private::loadIncidences( sqlite3_stmt *stmt1,
@@ -2147,11 +2176,14 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
       kError() << sqlite3_errmsg( mDatabase ) << "for incidence" << (*it)->uid();
       errors++;
     }
+    
+#ifdef USE_TRACKER
     if ( mUseTracker ) {
       // Also save into tracker.
       modifyTracker( *it, dbop, notebookUid );
     }
-
+#endif
+    
     sqlite3_reset( stmt1 );
     sqlite3_reset( stmt2 );
     if ( stmt3 ) {
@@ -2175,7 +2207,9 @@ bool SqliteStorage::Private::saveIncidences( QHash<QString, Incidence::Ptr> &lis
     }
   }
 
+#ifdef USE_TRACKER
   executeTracker();
+#endif
 
   if ( dbop == DBDelete ) {
     // Remove all alarms.
@@ -3065,6 +3099,7 @@ bool SqliteStorage::Private::loadTimezones()
   return success;
 }
 
+#ifdef USE_TRACKER
 bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
 {
   TrackerModify tracker;
@@ -3084,6 +3119,7 @@ bool SqliteStorage::Private::notifyOpened( Incidence::Ptr incidence )
   }
   return true;
 }
+#endif
 //@endcond
 
 void SqliteStorage::fileChanged( const QString &path )
