@@ -16,6 +16,7 @@ PkgConfigBR:
     - libkcalcoren-qt5
     - sqlite3
     - dbus-1
+    - uuid
 Configure: none
 Builder: qmake5
 Files:

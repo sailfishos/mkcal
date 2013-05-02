@@ -24,6 +24,7 @@ BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(libkcalcoren-qt5)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(dbus-1)
+BuildRequires:  pkgconfig(uuid)
 
 %description
 Extended KDE kcal calendar library port for Maemo
