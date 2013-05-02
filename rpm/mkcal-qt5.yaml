@@ -17,6 +17,7 @@ PkgConfigBR:
     - sqlite3
     - dbus-1
     - uuid
+    - libical
 Configure: none
 Builder: qmake5
 Files:
