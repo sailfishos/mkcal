@@ -41,15 +41,15 @@ INCLUDEPATH += . \
     /usr/include/dbus-1.0
 
 #DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
-DEFINES += MEEGO UUID TIMED_SUPPORT #MKCAL_TRACKER_SYNC
+DEFINES += MEEGO UUID #MKCAL_TRACKER_SYNC
 
 CONFIG += link_pkgconfig
 PKGCONFIG += uuid \
     libical \
     sqlite3
 
-equals(QT_MAJOR_VERSION, 4): PKGCONFIG += timed libkcalcoren
-equals(QT_MAJOR_VERSION, 5): PKGCONFIG += timed-qt5 libkcalcoren-qt5
+equals(QT_MAJOR_VERSION, 4): PKGCONFIG += libkcalcoren
+equals(QT_MAJOR_VERSION, 5): PKGCONFIG += libkcalcoren-qt5
 
 QT += dbus
 
