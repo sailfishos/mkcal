@@ -1,3 +1,6 @@
+* Thu May 02 2013 Carsten Munk <carsten.munk> - 0.3.11
+- Add Qt5 port
+
 * Thu Jul 05 2012 Ruediger Gad <r.c.g@gmx.de> - 0.3.11
 - Fixes MER#387: mkcal qtmobility plugin fails to load 
 
