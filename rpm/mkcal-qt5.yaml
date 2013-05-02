@@ -13,10 +13,12 @@ PkgConfigBR:
     - Qt5Core
     - Qt5Gui
     - Qt5DBus
+    - Qt5Test
     - libkcalcoren-qt5
     - sqlite3
     - dbus-1
     - uuid
+    - libical
 Configure: none
 Builder: qmake5
 Files:
