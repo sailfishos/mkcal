@@ -402,6 +402,20 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
       KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
+
+    /**
+      Returns the earliest date after @a date on which an event occurs, or an invalid date if
+      there is no next date.
+     */ 
+    QDate nextEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
+
+    /**
+      Returns the latest date before @a date on which an event occurs, or an invalid date if
+      there is no previous date.
+     */ 
+    QDate previousEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
+
+
   // To-do Specific Methods //
 
     /**
