@@ -772,6 +772,16 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                              bool *expandLimitHit = 0 );
 
     /**
+      Returns a list of expanded events that occur on dates between start and end inclusive.
+      @param startInclusive if true, only events that begin on or after start are included, otherwise
+             events that begin before start, but continue into start will also be included.
+      @param endInclusive if true, only events that end on or before end are included.
+    */
+    ExpandedIncidenceList rawExpandedEvents( const QDate &start, const QDate &end,
+                                             bool startInclusive = false, bool endInclusive = false,
+                                             const KDateTime::Spec &timespec = KDateTime::Spec() ) const;
+
+    /**
       Expand multiday incidences in a list.
 
       This call expands the multiday events within the given list so

@@ -1005,6 +1005,64 @@ Event::List ExtendedCalendar::rawEventsForDate( const QDate &date,
   return Calendar::sortEvents( eventList, sortField, sortDirection );
 }
 
+ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents( const QDate &start, const QDate &end,
+                                                                             bool startInclusive, bool endInclusive,
+                                                                             const KDateTime::Spec &timespec ) const
+{
+  ExpandedIncidenceList eventList;
+
+  Event::Ptr ev;
+
+  KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
+  KDateTime ksdt( start, ts );
+  KDateTime kedt = KDateTime( end, ts ).addSecs( 24 * 3600 - 1 ); // End of day
+
+  // Iterate over all events. Look for recurring events that occur on this date
+  QHashIterator<QString,Event::Ptr>i( d->mEvents );
+  while ( i.hasNext() ) {
+    i.next();
+    ev = i.value();
+    if ( isVisible( ev ) ) {
+      if ( ev->recurs() ) {
+
+        DateTimeList times;
+
+        int extraDays = ( ev->isMultiDay() && !startInclusive )?
+                        ev->dtStart().date().daysTo( ev->dtEnd().date() ):0;
+        times = ev->recurrence()->timesInInterval( ksdt.addDays( -extraDays ), kedt );
+
+        for ( int ii = 0; ii < times.count(); ++ii ) {
+          KDateTime endDateTime = Duration( ev->dtStart(), ev->dtEnd() ).end( times.at( ii ) );
+          if ( endDateTime < ksdt || ( endInclusive && endDateTime > kedt ) )
+            continue;
+          ExpandedIncidenceValidity eiv = { times.at(ii).toTimeSpec(ts).dateTime(),
+                                            endDateTime.toTimeSpec(ts).dateTime() };
+          eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+        }
+
+      } else {
+        if ( ev->isMultiDay() ) {
+          if ( ( startInclusive == false || ev->dtStart() >= ksdt ) &&
+               ev->dtStart() <= kedt && ev->dtEnd() >= ksdt &&
+               ( endInclusive == false || ev->dtEnd() <= kedt ) ) {
+            ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec( ts ).dateTime(),
+                                              ev->dtEnd().toTimeSpec( ts ).dateTime() };
+            eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+          }
+        } else {
+          if ( ev->dtStart() >= ksdt && ev->dtStart() <= kedt ) {
+            ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec( ts ).dateTime(),
+                                              ev->dtEnd().toTimeSpec( ts ).dateTime() };
+            eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+          }
+        }
+      }
+    }
+  }
+
+  return eventList;
+}
+
 Event::List ExtendedCalendar::rawEvents( const QDate &start, const QDate &end,
                                          const KDateTime::Spec &timespec, bool inclusive ) const
 {
