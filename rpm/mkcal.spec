@@ -5,7 +5,7 @@
 %define ver_pat 11
 
 Name:           mkcal
-Version:        0.3.11
+Version:        0.3.12
 Release:        1
 License:        LGPLv2
 Summary:        Extended KDE kcal calendar library port for Maemo
