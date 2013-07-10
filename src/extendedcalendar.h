@@ -402,6 +402,20 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
       KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
+
+    /**
+      Returns the earliest date after @a date on which an event occurs, or an invalid date if
+      there is no next date.
+     */ 
+    QDate nextEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
+
+    /**
+      Returns the latest date before @a date on which an event occurs, or an invalid date if
+      there is no previous date.
+     */ 
+    QDate previousEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
+
+
   // To-do Specific Methods //
 
     /**
@@ -756,6 +770,16 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                              const KDateTime &end,
                                              int maxExpand = 1000,
                                              bool *expandLimitHit = 0 );
+
+    /**
+      Returns a list of expanded events that occur on dates between start and end inclusive.
+      @param startInclusive if true, only events that begin on or after start are included, otherwise
+             events that begin before start, but continue into start will also be included.
+      @param endInclusive if true, only events that end on or before end are included.
+    */
+    ExpandedIncidenceList rawExpandedEvents( const QDate &start, const QDate &end,
+                                             bool startInclusive = false, bool endInclusive = false,
+                                             const KDateTime::Spec &timespec = KDateTime::Spec() ) const;
 
     /**
       Expand multiday incidences in a list.

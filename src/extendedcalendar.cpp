@@ -1005,6 +1005,64 @@ Event::List ExtendedCalendar::rawEventsForDate( const QDate &date,
   return Calendar::sortEvents( eventList, sortField, sortDirection );
 }
 
+ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents( const QDate &start, const QDate &end,
+                                                                             bool startInclusive, bool endInclusive,
+                                                                             const KDateTime::Spec &timespec ) const
+{
+  ExpandedIncidenceList eventList;
+
+  Event::Ptr ev;
+
+  KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
+  KDateTime ksdt( start, ts );
+  KDateTime kedt = KDateTime( end, ts ).addSecs( 24 * 3600 - 1 ); // End of day
+
+  // Iterate over all events. Look for recurring events that occur on this date
+  QHashIterator<QString,Event::Ptr>i( d->mEvents );
+  while ( i.hasNext() ) {
+    i.next();
+    ev = i.value();
+    if ( isVisible( ev ) ) {
+      if ( ev->recurs() ) {
+
+        DateTimeList times;
+
+        int extraDays = ( ev->isMultiDay() && !startInclusive )?
+                        ev->dtStart().date().daysTo( ev->dtEnd().date() ):0;
+        times = ev->recurrence()->timesInInterval( ksdt.addDays( -extraDays ), kedt );
+
+        for ( int ii = 0; ii < times.count(); ++ii ) {
+          KDateTime endDateTime = Duration( ev->dtStart(), ev->dtEnd() ).end( times.at( ii ) );
+          if ( endDateTime < ksdt || ( endInclusive && endDateTime > kedt ) )
+            continue;
+          ExpandedIncidenceValidity eiv = { times.at(ii).toTimeSpec(ts).dateTime(),
+                                            endDateTime.toTimeSpec(ts).dateTime() };
+          eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+        }
+
+      } else {
+        if ( ev->isMultiDay() ) {
+          if ( ( startInclusive == false || ev->dtStart() >= ksdt ) &&
+               ev->dtStart() <= kedt && ev->dtEnd() >= ksdt &&
+               ( endInclusive == false || ev->dtEnd() <= kedt ) ) {
+            ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec( ts ).dateTime(),
+                                              ev->dtEnd().toTimeSpec( ts ).dateTime() };
+            eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+          }
+        } else {
+          if ( ev->dtStart() >= ksdt && ev->dtStart() <= kedt ) {
+            ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec( ts ).dateTime(),
+                                              ev->dtEnd().toTimeSpec( ts ).dateTime() };
+            eventList.append( qMakePair( eiv, ev.dynamicCast<Incidence>() ) );
+          }
+        }
+      }
+    }
+  }
+
+  return eventList;
+}
+
 Event::List ExtendedCalendar::rawEvents( const QDate &start, const QDate &end,
                                          const KDateTime::Spec &timespec, bool inclusive ) const
 {
@@ -1115,6 +1173,130 @@ Event::List ExtendedCalendar::eventInstances( const Incidence::Ptr &event,
 
   return Calendar::sortEvents( list, sortField, sortDirection );
 }
+
+QDate ExtendedCalendar::nextEventsDate( const QDate &date, const KDateTime::Spec &timespec )
+{
+  Event::Ptr ev;
+
+  KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
+
+  KDateTime kdt( date, ts );
+  KDateTime tomorrow = kdt.addDays( 1 );
+  KDateTime almostTomorrow = tomorrow;
+  almostTomorrow.setDateOnly( false );
+  almostTomorrow = almostTomorrow.addSecs( -1 );
+
+  KDateTime rv;
+
+  QHashIterator<QString,Event::Ptr>i( d->mEvents );
+  while ( i.hasNext() ) {
+    i.next();
+    ev = i.value();
+    if ( !isVisible( ev ) )
+      continue;
+
+    if ( ev->recurs() ) {
+      if ( ev->isMultiDay() ) {
+        int extraDays = ev->dtStart().date().daysTo( ev->dtEnd().date() );
+        for ( int i = 0; i <= extraDays; ++i ) {
+          if ( ev->recursOn( date.addDays( 1 - i ), ts ) )
+            return tomorrow.toTimeSpec( ts ).date(); 
+        }
+      }
+
+      KDateTime next = ev->recurrence()->getNextDateTime( almostTomorrow );
+      next.setDateOnly( true );
+
+      if ( !rv.isValid() || next < rv )
+        rv = next;
+    } else if ( ev->isMultiDay() ) {
+      KDateTime edate = ev->dtStart();
+      edate.setDateOnly( true );
+      if ( edate > kdt ) {
+        if ( !rv.isValid() || edate < rv )
+          rv = edate;
+      } else {
+        edate = ev->dtEnd();
+        edate.setDateOnly( true );
+        if ( edate > kdt )
+          rv = tomorrow;
+      }
+    } else {
+      KDateTime edate = ev->dtStart();
+      edate.setDateOnly( true );
+      if ( edate > kdt && ( !rv.isValid() || edate < rv ) )
+        rv = edate;
+    }
+
+    if ( rv == tomorrow )
+      break; // Bail early - you can't beat tomorrow
+  }
+
+  if ( !rv.isValid() )
+    return QDate();
+  else
+    return rv.toTimeSpec( ts ).date(); 
+}
+
+QDate ExtendedCalendar::previousEventsDate( const QDate &date, const KDateTime::Spec &timespec )
+{
+  Event::Ptr ev;
+
+  KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
+
+  KDateTime kdt( date, ts );
+  KDateTime yesterday = kdt.addDays( -1 );
+
+  KDateTime rv;
+
+  QHashIterator<QString,Event::Ptr>i( d->mEvents );
+  while ( i.hasNext() ) {
+    i.next();
+    ev = i.value();
+    if ( !isVisible( ev ) )
+      continue;
+
+    if ( ev->recurs() ) {
+      KDateTime prev = ev->recurrence()->getPreviousDateTime( kdt );
+      prev.setDateOnly( true );
+
+      if ( ev->isMultiDay() ) {
+        prev = prev.addDays( ev->dtStart().date().daysTo( ev->dtEnd().date() ) );
+        if (prev >= kdt)
+          return yesterday.toTimeSpec( ts ).date(); 
+      }
+
+      if ( !rv.isValid() || prev > rv )
+        rv = prev;
+    } else if ( ev->isMultiDay() ) {
+      KDateTime edate = ev->dtEnd();
+      edate.setDateOnly( true );
+      if ( edate < kdt ) {
+        if ( !rv.isValid() || edate > rv )
+          rv = edate;
+      } else {
+        edate = ev->dtStart();
+        edate.setDateOnly( true );
+        if ( edate < kdt )
+          rv = yesterday;
+      }
+    } else {
+      KDateTime edate = ev->dtStart();
+      edate.setDateOnly( true );
+      if ( edate < kdt && ( !rv.isValid() || edate > rv ) )
+        rv = edate;
+    }
+
+    if ( rv == yesterday )
+      break; // Bail early - you can't beat tomorrow
+  }
+
+  if ( !rv.isValid() )
+    return QDate();
+  else
+    return rv.toTimeSpec( ts ).date(); 
+}
+
 
 bool ExtendedCalendar::addJournal( const Journal::Ptr &aJournal )
 {
