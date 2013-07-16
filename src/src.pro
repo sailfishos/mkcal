@@ -28,7 +28,7 @@ CONFIG(debug,debug|release) {
 TEMPLATE = lib
 equals(QT_MAJOR_VERSION, 4): TARGET = mkcal
 equals(QT_MAJOR_VERSION, 5): TARGET = mkcal-qt5
-VERSION+= 0.3.11
+VERSION+= 0.3.13
 
 DEPENDPATH += . \
     klibport \
@@ -41,7 +41,13 @@ INCLUDEPATH += . \
     /usr/include/dbus-1.0
 
 #DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
-DEFINES += MEEGO UUID #MKCAL_TRACKER_SYNC
+
+DEFINES += MEEGO UUID
+
+equals(QT_MAJOR_VERSION, 5) {
+    DEFINES += TIMED_SUPPORT
+    PKGCONFIG += timed-qt5
+}
 
 CONFIG += link_pkgconfig
 PKGCONFIG += uuid \
