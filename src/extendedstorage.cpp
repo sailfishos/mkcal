@@ -668,26 +668,35 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     }
     e.setAttribute( "notebook", calendar()->notebook( incidence->uid() ) );
 
-    Timed::Event::Button &s15 = e.addButton();
-    s15.setAttribute( "snooze_value", "15" );
-    s15.setSnooze( 900 );
-    s15.setAttribute( "label", "Snooze 15 minutes" );
+    if (alarm->type() == Alarm::Procedure) {
+        QString prog = alarm->programFile();
+        if (!prog.isEmpty()) {
+            Timed::Event::Action &a = e.addAction();
+            a.runCommand(prog + " " + alarm->programArguments());
+            a.whenDue();
+        }
+    } else {
+        Timed::Event::Button &s15 = e.addButton();
+        s15.setAttribute( "snooze_value", "15" );
+        s15.setSnooze( 900 );
+        s15.setAttribute( "label", "Snooze 15 minutes" );
 
-    Timed::Event::Button &s10 = e.addButton();
-    s10.setAttribute( "snooze_value", "10" );
-    s10.setSnooze( 600 );
-    s10.setAttribute( "label", "Snooze 10 minutes" );
+        Timed::Event::Button &s10 = e.addButton();
+        s10.setAttribute( "snooze_value", "10" );
+        s10.setSnooze( 600 );
+        s10.setAttribute( "label", "Snooze 10 minutes" );
 
-    Timed::Event::Button &s05 = e.addButton();
-    s05.setAttribute( "snooze_value", "5" );
-    s05.setSnooze( 300 );
-    s05.setAttribute( "label", "Snooze 5 minutes" );
+        Timed::Event::Button &s05 = e.addButton();
+        s05.setAttribute( "snooze_value", "5" );
+        s05.setSnooze( 300 );
+        s05.setAttribute( "label", "Snooze 5 minutes" );
 
-    Timed::Event::Button &open = e.addButton();
-    open.setAttribute( "label", "Close" );
+        Timed::Event::Button &open = e.addButton();
+        open.setAttribute( "label", "Close" );
 
-    e.hideSnoozeButton1();
-    e.setAlignedSnoozeFlag();
+        e.hideSnoozeButton1();
+        e.setAlignedSnoozeFlag();
+    }
   }
 
   if (alarmNumer > 0) {
@@ -914,26 +923,35 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
     }
     e.setAttribute( "notebook", mCalendar->notebook( incidence->uid() ) );
 
-    Timed::Event::Button &s15 = e.addButton();
-    s15.setAttribute( "snooze_value", "15" );
-    s15.setSnooze( 900 );
-    s15.setAttribute( "label", "Snooze 15 minutes" );
+    if (alarm->type() == Alarm::Procedure) {
+        QString prog = alarm->programFile();
+        if (!prog.isEmpty()) {
+            Timed::Event::Action &a = e.addAction();
+            a.runCommand(prog + " " + alarm->programArguments());
+            a.whenDue();
+        }
+    } else {
+        Timed::Event::Button &s15 = e.addButton();
+        s15.setAttribute( "snooze_value", "15" );
+        s15.setSnooze( 900 );
+        s15.setAttribute( "label", "Snooze 15 minutes" );
 
-    Timed::Event::Button &s10 = e.addButton();
-    s10.setAttribute( "snooze_value", "10" );
-    s10.setSnooze( 600 );
-    s10.setAttribute( "label", "Snooze 10 minutes" );
+        Timed::Event::Button &s10 = e.addButton();
+        s10.setAttribute( "snooze_value", "10" );
+        s10.setSnooze( 600 );
+        s10.setAttribute( "label", "Snooze 10 minutes" );
 
-    Timed::Event::Button &s05 = e.addButton();
-    s05.setAttribute( "snooze_value", "5" );
-    s05.setSnooze( 300 );
-    s05.setAttribute( "label", "Snooze 5 minutes" );
+        Timed::Event::Button &s05 = e.addButton();
+        s05.setAttribute( "snooze_value", "5" );
+        s05.setSnooze( 300 );
+        s05.setAttribute( "label", "Snooze 5 minutes" );
 
-    Timed::Event::Button &open = e.addButton();
-    open.setAttribute( "label", "Close" );
+        Timed::Event::Button &open = e.addButton();
+        open.setAttribute( "label", "Close" );
 
-    e.hideSnoozeButton1();
-    e.setAlignedSnoozeFlag();
+        e.hideSnoozeButton1();
+        e.setAlignedSnoozeFlag();
+    }
   }
 }
 #endif

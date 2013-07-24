@@ -9,7 +9,7 @@ Name:       mkcal-qt5
 # << macros
 
 Summary:    Extended KDE kcal calendar library port for Maemo
-Version:    0.3.12
+Version:    0.3.13
 Release:    1
 Group:      System/Libraries
 License:    LGPLV2
@@ -27,6 +27,7 @@ BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(uuid)
 BuildRequires:  pkgconfig(libical)
+BuildRequires:  pkgconfig(timed-qt5)
 
 %description
 Extended KDE kcal calendar library port for Maemo
