@@ -2030,11 +2030,26 @@ Incidence::List ExtendedCalendar::incidences( const QDate &start, const QDate &e
 
 ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::Ptr &calendar )
 {
-  // This is the place where we configure our default backend
+  // Use a central storage location by default
+  QString privilegedDataDir = QString("%1/.local/share/system/privileged/").arg(QDir::homePath());
+  QString unprivilegedDataDir = QString("%1/.local/share/system/").arg(QDir::homePath());
+
+  // Allow override
   QString dbFile = QLatin1String( qgetenv( "SQLITESTORAGEDB" ) );
   if ( dbFile.isEmpty() ) {
-    dbFile = QDir::homePath() + QLatin1String( "/.calendar/db" );
-    QDir::home().mkdir(QLatin1String(".calendar"));
+    QDir databaseDir(privilegedDataDir);
+    if (databaseDir.exists() && databaseDir.isReadable()) {
+      // assume that it's also writable
+      databaseDir = privilegedDataDir + QLatin1String("Calendar/mkcal/");
+    } else {
+      databaseDir = unprivilegedDataDir + QLatin1String("Calendar/mkcal/");
+    }
+
+    if (!databaseDir.exists() && !databaseDir.mkpath(QString::fromLatin1("."))) {
+      qWarning() << "Unable to create calendar database directory:" << databaseDir.path();
+    }
+
+    dbFile = databaseDir.absoluteFilePath(QLatin1String("db"));
   }
 
 #ifdef USE_TRACKER
