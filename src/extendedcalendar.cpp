@@ -44,6 +44,7 @@ using namespace KCalCore;
 #include <kdebug.h>
 
 #include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 
 #include <cmath>
 
@@ -2028,6 +2029,14 @@ Incidence::List ExtendedCalendar::incidences( const QDate &start, const QDate &e
   return mergeIncidenceList( events( start, end ), todos( start, end ), journals( start, end ) );
 }
 
+// QDir::isReadable() doesn't support group permissions, only user permissions.
+bool directoryIsRW(const QString &dirPath)
+{
+  QFileInfo databaseDirInfo(dirPath);
+  return (databaseDirInfo.permission(QFile::ReadGroup | QFile::WriteGroup)
+       || databaseDirInfo.permission(QFile::ReadUser  | QFile::WriteUser));
+}
+
 ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::Ptr &calendar )
 {
   // Use a central storage location by default
@@ -2038,8 +2047,7 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage( const ExtendedCalendar::P
   QString dbFile = QLatin1String( qgetenv( "SQLITESTORAGEDB" ) );
   if ( dbFile.isEmpty() ) {
     QDir databaseDir(privilegedDataDir);
-    if (databaseDir.exists() && databaseDir.isReadable()) {
-      // assume that it's also writable
+    if (databaseDir.exists() && directoryIsRW(privilegedDataDir)) {
       databaseDir = privilegedDataDir + QLatin1String("Calendar/mkcal/");
     } else {
       databaseDir = unprivilegedDataDir + QLatin1String("Calendar/mkcal/");
