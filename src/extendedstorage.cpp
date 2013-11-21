@@ -660,6 +660,10 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
       e.setAttribute( "type", "todo" );
     } else if ( incidence->dtStart().isValid() ) {
       e.setAttribute( "time", incidence->dtStart().toString() );
+      e.setAttribute( "startDate", incidence->dtStart().toString() );
+      if (incidence->endDateForStart( incidence->dtStart()).isValid() ) {
+        e.setAttribute( "endDate", incidence->endDateForStart( incidence->dtStart()).toString() );
+      }
       e.setAttribute( "type", "event" );
     }
 
@@ -915,6 +919,10 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
       e.setAttribute( "type", "todo" );
     } else if ( incidence->dtStart().isValid() ) {
       e.setAttribute( "time", incidence->dtStart().toString() );
+      e.setAttribute( "startDate", incidence->dtStart().toString() );
+      if (incidence->endDateForStart( incidence->dtStart()).isValid() ) {
+        e.setAttribute( "endDate", incidence->endDateForStart( incidence->dtStart()).toString() );
+      }
       e.setAttribute( "type", "event" );
     }
 
