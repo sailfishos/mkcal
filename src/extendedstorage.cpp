@@ -619,6 +619,7 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     Timed::Event& e = events.append();
     alarmNumer++;
     e.setUserModeFlag();
+    e.setMaximalTimeoutSnoozeCounter( 2 );
     if ( alarmTime.isUtc() ) {
       e.setTicker( alarmTime.toTime_t() );
     } else {
@@ -878,6 +879,7 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
     }
     Timed::Event& e = events.append();
     e.setUserModeFlag();
+    e.setMaximalTimeoutSnoozeCounter( 2 );
     if ( alarmTime.isUtc() ) {
       e.setTicker( alarmTime.toTime_t() );
     } else {
