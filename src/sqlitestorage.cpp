@@ -3169,7 +3169,7 @@ KDateTime SqliteStorage::fromOriginTime( sqlite3_int64 seconds, QString zonename
   if ( seconds != 0 ) {
     if ( !zonename.isEmpty() ) {
       if ( zonename == QLatin1String(FLOATING_DATE) ) {
-	  dt = d->mOriginTime.addSecs( seconds ).toClockTime();
+        dt = d->mOriginTime.addSecs( seconds ).toClockTime();
       } else {
         // First try system zones.
         KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
