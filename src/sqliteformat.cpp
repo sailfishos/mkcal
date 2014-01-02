@@ -238,8 +238,14 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
 
       if ( incidence->type() == Incidence::TypeEvent ) {
         Event::Ptr event = incidence.staticCast<Event>();
+
         if ( event->hasEndDate() ) {
-          dt = event->dtEnd();
+          // all day inclusive of end time, add one day here and remove one day when reading
+          if ( event->allDay() ) {
+            dt = event->dtEnd().addDays(1);
+          } else {
+            dt = event->dtEnd();
+          }
           secs = d->mStorage->toOriginTime( dt );
           sqlite3_bind_int64( stmt1, index, secs );
           secs = d->mStorage->toLocalOriginTime( dt );
@@ -253,13 +259,18 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
         } else {
           // No end date, use start date if possible
           if ( incidence->dtStart().isValid() ) {
+            KDateTime effectiveDtEnd;
             if ( incidence->allDay() )
-              secs = d->mStorage->toOriginTime(incidence->dtStart().addDays(1));
+              effectiveDtEnd = incidence->dtStart().addDays(1);
             else
-              secs = d->mStorage->toOriginTime(incidence->dtStart());
+              effectiveDtEnd = incidence->dtStart();
+
+            secs = d->mStorage->toOriginTime(effectiveDtEnd);
             sqlite3_bind_int64( stmt1, index, secs );
-            secs = d->mStorage->toLocalOriginTime(incidence->dtStart() );
+
+            secs = d->mStorage->toLocalOriginTime(effectiveDtEnd);
             sqlite3_bind_int64( stmt1, index, secs );
+
             if ( incidence->dtStart().isDateOnly() && incidence->dtStart().timeSpec().isClockTime() ) {
               tzEnd = FLOATING_DATE;
             } else {
@@ -1115,7 +1126,6 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       date = sqlite3_column_int64(stmt1, 9);
       timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 11));
       KDateTime end = d->mStorage->fromOriginTime(date, timezone);
-      event->setDtEnd(end);
 
       QTime startLocalTime ( start.toLocalZone().time() );
       QTime endLocalTime ( end.toLocalZone().time() );
@@ -1126,9 +1136,17 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
            (!end.isValid() ||
             (endLocalTime.hour()== 0 &&
              endLocalTime.minute()== 0 &&
-             endLocalTime.second()== 0 &&
-             end > start)) ) {
+             endLocalTime.second()== 0)) ) {
+        // all day events saved with one extra day due to KCalCore::Event::dtEnd() being inclusive of end time
+        if ( end.isValid() ) {
+          KDateTime dtEnd = end.addDays(-1);
+          if (dtEnd > start) {
+            event->setDtEnd(dtEnd);
+          }
+        }
         event->setAllDay(true);
+      } else {
+        event->setDtEnd(end);
       }
       incidence = event;
     } else {
