@@ -2,6 +2,8 @@
 #include <QDebug>
 
 #include "tst_storage.h"
+#include "sqlitestorage.h"
+
 
 // random
 const char * const NotebookId("12345678-9876-1111-2222-222222222222");
@@ -163,6 +165,22 @@ void tst_storage::tst_alldayRecurrence()
   QCOMPARE(match, KDateTime(startDate.addDays(7), QTime(), KDateTime::ClockTime));
 }
 
+void tst_storage::tst_origintimes()
+{
+  SqliteStorage *ss = dynamic_cast<SqliteStorage*>(m_storage.data());
+  QVERIFY(ss);
+
+  KDateTime utcTime(QDate(2014, 1, 15), QTime(), KDateTime::UTC);
+  KDateTime clockTime(QDate(2014, 1, 15), QTime(), KDateTime::ClockTime);
+  KDateTime localTime(QDate(2014, 1, 15), QTime(), KDateTime::LocalZone);
+
+  // local origin time is the same as specific time set to utc
+  // note: currently origin time of clock time is saved as time in current time zone.
+  // that does not necessarily make sense, but better be careful when changing behavior there.
+  QCOMPARE(ss->toOriginTime(utcTime), ss->toLocalOriginTime(utcTime));
+  QCOMPARE(ss->toLocalOriginTime(clockTime), ss->toLocalOriginTime(utcTime));
+  QCOMPARE(ss->toLocalOriginTime(localTime), ss->toLocalOriginTime(utcTime));
+}
 
 void tst_storage::openDb(bool clear)
 {

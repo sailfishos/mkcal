@@ -1118,17 +1118,36 @@ Incidence::Ptr SqliteFormat::selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt
       // Set Event specific data.
       Event::Ptr event = Event::Ptr( new Event() );
       event->setAllDay(false);
-      date = sqlite3_column_int64(stmt1, 5);
       timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 7));
-      KDateTime start = d->mStorage->fromOriginTime(date, timezone);
+      KDateTime start;
+
+      if (timezone.isEmpty()) {
+        // consider empty timezone as clock time
+        date = sqlite3_column_int64(stmt1, 6);
+        start = d->mStorage->fromOriginTime(date);
+        start.setTimeSpec(KDateTime::ClockTime);
+      } else {
+        date = sqlite3_column_int64(stmt1, 5);
+        start = d->mStorage->fromOriginTime(date, timezone);
+      }
+
       event->setDtStart(start);
 
-      date = sqlite3_column_int64(stmt1, 9);
       timezone = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, 11));
-      KDateTime end = d->mStorage->fromOriginTime(date, timezone);
+      KDateTime end;
+
+      if (timezone.isEmpty()) {
+        date = sqlite3_column_int64(stmt1, 10);
+        end = d->mStorage->fromOriginTime(date);
+        end.setTimeSpec(KDateTime::ClockTime);
+      } else {
+        date = sqlite3_column_int64(stmt1, 9);
+        end = d->mStorage->fromOriginTime(date, timezone);
+      }
 
       QTime startLocalTime ( start.toLocalZone().time() );
       QTime endLocalTime ( end.toLocalZone().time() );
+
       if ( (start.isValid() &&
             startLocalTime.hour()== 0 &&
             startLocalTime.minute()== 0 &&
