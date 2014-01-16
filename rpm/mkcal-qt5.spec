@@ -52,6 +52,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libmkcal-qt5.so.*
+%{_bindir}/mkcaltool
 
 %files devel
 %defattr(-,root,root,-)
