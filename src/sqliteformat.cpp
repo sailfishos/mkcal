@@ -441,7 +441,7 @@ bool SqliteFormat::modifyComponents( const Incidence::Ptr &incidence, const QStr
       sqlite3_bind_int(stmt1, index, (int)event->transparency());
     }
     else {
-      sqlite3_bind_int(stmt1, index, NULL);
+      sqlite3_bind_int(stmt1, index, 0);
     }
 
     sqlite3_bind_int(stmt1, index, (int) incidence->localOnly() );
