@@ -37,3 +37,5 @@ CONFIG(debug,debug|release) {
 }
 
 CONFIG += ordered
+
+OTHER_FILES += rpm/*.spec
