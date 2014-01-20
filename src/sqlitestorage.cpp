@@ -1728,6 +1728,7 @@ bool SqliteStorage::notifyOpened( const Incidence::Ptr &incidence )
     return false;
   }
 #else
+  Q_UNUSED(incidence);
   return false;
 #endif
 }
