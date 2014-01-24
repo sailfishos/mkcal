@@ -61,6 +61,7 @@ using namespace KCalCore;
 #  include <timed/exception>
 # endif
 using namespace Maemo;
+static const QLatin1String RESET_ALARMS_CMD( "invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms" );
 #endif
 
 using namespace mKCal;
@@ -649,6 +650,12 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     }
     if ( incidence->recurs() ) {
       e.setAttribute( "recurs", "true" );
+      Timed::Event::Action &a = e.addAction();
+      a.runCommand( QString( "%1 %2 %3" )
+                    .arg( RESET_ALARMS_CMD )
+                    .arg( calendar()->notebook( incidence->uid() ) )
+                    .arg( incidence->uid() ) );
+      a.whenServed();
     }
 
     // TODO - consider this how it should behave for recurrence
@@ -678,7 +685,7 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
         if (!prog.isEmpty()) {
             Timed::Event::Action &a = e.addAction();
             a.runCommand(prog + " " + alarm->programArguments());
-            a.whenDue();
+            a.whenFinalized();
         }
     } else {
         e.setReminderFlag();
@@ -891,6 +898,12 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
     }
     if ( incidence->recurs() ) {
       e.setAttribute( "recurs", "true" );
+      Timed::Event::Action &a = e.addAction();
+      a.runCommand( QString( "%1 %2 %3" )
+                    .arg( RESET_ALARMS_CMD )
+                    .arg( mCalendar->notebook( incidence->uid() ) )
+                    .arg( incidence->uid() ) );
+      a.whenServed();
     }
 
     // TODO - consider this how it should behave for recurrence
@@ -920,7 +933,7 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
         if (!prog.isEmpty()) {
             Timed::Event::Action &a = e.addAction();
             a.runCommand(prog + " " + alarm->programArguments());
-            a.whenDue();
+            a.whenFinalized();
         }
     } else {
         e.setReminderFlag();
