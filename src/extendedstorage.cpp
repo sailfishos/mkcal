@@ -605,14 +605,24 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     }
 
     KDateTime now = KDateTime::currentLocalDateTime();
-    KDateTime alarmTime = alarm->nextTime( now, true );
+    KDateTime preTime = now;
+    if ( incidence->recurs() ) {
+      KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime( now );
+      if ( nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0 ) {
+        if ( now.addSecs( ::abs( alarm->startOffset().asSeconds() ) ) >= nextRecurrence ) {
+          preTime = nextRecurrence;
+        }
+      }
+    }
+
+    KDateTime alarmTime = alarm->nextTime( preTime, true );
     if ( !alarmTime.isValid() ) {
       continue;
     }
 
     if ( now.addSecs( 60 ) > alarmTime ) {
       // don't allow alarms at the same minute -> take next alarm if so
-      alarmTime = alarm->nextTime( now.addSecs( 60 ), true );
+      alarmTime = alarm->nextTime( preTime.addSecs( 60 ), true );
       if ( !alarmTime.isValid() ) {
         continue;
       }
@@ -846,7 +856,6 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
 
 #if defined(TIMED_SUPPORT)
 void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now) {
-
   Alarm::List alarms = incidence->alarms();
 
   foreach ( const Alarm::Ptr alarm, alarms ) {
@@ -854,14 +863,24 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
       continue;
     }
 
-    KDateTime alarmTime = alarm->nextTime( now, true );
+    KDateTime preTime = now;
+    if ( incidence->recurs() ) {
+      KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime( now );
+      if ( nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0 ) {
+        if ( now.addSecs( ::abs( alarm->startOffset().asSeconds() ) ) >= nextRecurrence ) {
+          preTime = nextRecurrence;
+        }
+      }
+    }
+
+    KDateTime alarmTime = alarm->nextTime( preTime, true );
     if ( !alarmTime.isValid() ) {
       continue;
     }
 
     if ( now.addSecs( 60 ) > alarmTime ) {
       // don't allow alarms at the same minute -> take next alarm if so
-      alarmTime = alarm->nextTime( now.addSecs( 60 ), true );
+      alarmTime = alarm->nextTime( preTime.addSecs( 60 ), true );
       if ( !alarmTime.isValid() ) {
         continue;
       }
