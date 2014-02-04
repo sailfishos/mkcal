@@ -1,7 +1,7 @@
 # QMake project file for libmkcal
 
 TEMPLATE = subdirs
-SUBDIRS = src tests
+SUBDIRS = src tests tools
 
 # add to Qt 5 also when qmfclient is ported
 equals(QT_MAJOR_VERSION, 4): SUBDIRS += plugins
@@ -37,3 +37,5 @@ CONFIG(debug,debug|release) {
 }
 
 CONFIG += ordered
+
+OTHER_FILES += rpm/*.spec

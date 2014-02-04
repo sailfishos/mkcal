@@ -61,6 +61,7 @@ using namespace KCalCore;
 #  include <timed/exception>
 # endif
 using namespace Maemo;
+static const QLatin1String RESET_ALARMS_CMD( "invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms" );
 #endif
 
 using namespace mKCal;
@@ -604,14 +605,24 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     }
 
     KDateTime now = KDateTime::currentLocalDateTime();
-    KDateTime alarmTime = alarm->nextTime( now, true );
+    KDateTime preTime = now;
+    if ( incidence->recurs() ) {
+      KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime( now );
+      if ( nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0 ) {
+        if ( now.addSecs( ::abs( alarm->startOffset().asSeconds() ) ) >= nextRecurrence ) {
+          preTime = nextRecurrence;
+        }
+      }
+    }
+
+    KDateTime alarmTime = alarm->nextTime( preTime, true );
     if ( !alarmTime.isValid() ) {
       continue;
     }
 
     if ( now.addSecs( 60 ) > alarmTime ) {
       // don't allow alarms at the same minute -> take next alarm if so
-      alarmTime = alarm->nextTime( now.addSecs( 60 ), true );
+      alarmTime = alarm->nextTime( preTime.addSecs( 60 ), true );
       if ( !alarmTime.isValid() ) {
         continue;
       }
@@ -649,6 +660,12 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
     }
     if ( incidence->recurs() ) {
       e.setAttribute( "recurs", "true" );
+      Timed::Event::Action &a = e.addAction();
+      a.runCommand( QString( "%1 %2 %3" )
+                    .arg( RESET_ALARMS_CMD )
+                    .arg( calendar()->notebook( incidence->uid() ) )
+                    .arg( incidence->uid() ) );
+      a.whenServed();
     }
 
     // TODO - consider this how it should behave for recurrence
@@ -678,28 +695,10 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
         if (!prog.isEmpty()) {
             Timed::Event::Action &a = e.addAction();
             a.runCommand(prog + " " + alarm->programArguments());
-            a.whenDue();
+            a.whenFinalized();
         }
     } else {
-        Timed::Event::Button &s15 = e.addButton();
-        s15.setAttribute( "snooze_value", "15" );
-        s15.setSnooze( 900 );
-        s15.setAttribute( "label", "Snooze 15 minutes" );
-
-        Timed::Event::Button &s10 = e.addButton();
-        s10.setAttribute( "snooze_value", "10" );
-        s10.setSnooze( 600 );
-        s10.setAttribute( "label", "Snooze 10 minutes" );
-
-        Timed::Event::Button &s05 = e.addButton();
-        s05.setAttribute( "snooze_value", "5" );
-        s05.setSnooze( 300 );
-        s05.setAttribute( "label", "Snooze 5 minutes" );
-
-        Timed::Event::Button &open = e.addButton();
-        open.setAttribute( "label", "Close" );
-
-        e.hideSnoozeButton1();
+        e.setReminderFlag();
         e.setAlignedSnoozeFlag();
     }
   }
@@ -857,7 +856,6 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
 
 #if defined(TIMED_SUPPORT)
 void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now) {
-
   Alarm::List alarms = incidence->alarms();
 
   foreach ( const Alarm::Ptr alarm, alarms ) {
@@ -865,14 +863,24 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
       continue;
     }
 
-    KDateTime alarmTime = alarm->nextTime( now, true );
+    KDateTime preTime = now;
+    if ( incidence->recurs() ) {
+      KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime( now );
+      if ( nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0 ) {
+        if ( now.addSecs( ::abs( alarm->startOffset().asSeconds() ) ) >= nextRecurrence ) {
+          preTime = nextRecurrence;
+        }
+      }
+    }
+
+    KDateTime alarmTime = alarm->nextTime( preTime, true );
     if ( !alarmTime.isValid() ) {
       continue;
     }
 
     if ( now.addSecs( 60 ) > alarmTime ) {
       // don't allow alarms at the same minute -> take next alarm if so
-      alarmTime = alarm->nextTime( now.addSecs( 60 ), true );
+      alarmTime = alarm->nextTime( preTime.addSecs( 60 ), true );
       if ( !alarmTime.isValid() ) {
         continue;
       }
@@ -909,6 +917,12 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
     }
     if ( incidence->recurs() ) {
       e.setAttribute( "recurs", "true" );
+      Timed::Event::Action &a = e.addAction();
+      a.runCommand( QString( "%1 %2 %3" )
+                    .arg( RESET_ALARMS_CMD )
+                    .arg( mCalendar->notebook( incidence->uid() ) )
+                    .arg( incidence->uid() ) );
+      a.whenServed();
     }
 
     // TODO - consider this how it should behave for recurrence
@@ -938,28 +952,10 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
         if (!prog.isEmpty()) {
             Timed::Event::Action &a = e.addAction();
             a.runCommand(prog + " " + alarm->programArguments());
-            a.whenDue();
+            a.whenFinalized();
         }
     } else {
-        Timed::Event::Button &s15 = e.addButton();
-        s15.setAttribute( "snooze_value", "15" );
-        s15.setSnooze( 900 );
-        s15.setAttribute( "label", "Snooze 15 minutes" );
-
-        Timed::Event::Button &s10 = e.addButton();
-        s10.setAttribute( "snooze_value", "10" );
-        s10.setSnooze( 600 );
-        s10.setAttribute( "label", "Snooze 10 minutes" );
-
-        Timed::Event::Button &s05 = e.addButton();
-        s05.setAttribute( "snooze_value", "5" );
-        s05.setSnooze( 300 );
-        s05.setAttribute( "label", "Snooze 5 minutes" );
-
-        Timed::Event::Button &open = e.addButton();
-        open.setAttribute( "label", "Close" );
-
-        e.hideSnoozeButton1();
+        e.setReminderFlag();
         e.setAlignedSnoozeFlag();
     }
   }
