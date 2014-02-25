@@ -1016,7 +1016,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents( con
 
   KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
   KDateTime ksdt( start, ts );
-  KDateTime kedt = KDateTime( end, ts ).addSecs( 24 * 3600 - 1 ); // End of day
+  KDateTime kedt = KDateTime( end, QTime(23, 59, 59), ts );
 
   // Iterate over all events. Look for recurring events that occur on this date
   QHashIterator<QString,Event::Ptr>i( d->mEvents );

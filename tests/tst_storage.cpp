@@ -182,6 +182,36 @@ void tst_storage::tst_origintimes()
   QCOMPARE(ss->toLocalOriginTime(localTime), ss->toLocalOriginTime(utcTime));
 }
 
+void tst_storage::tst_rawEvents()
+{
+  // TODO: Should split tests if making more cases outside storage
+  auto event = KCalCore::Event::Ptr(new KCalCore::Event);
+  // NOTE: no other events should be made happening this day
+  QDate startDate(2010, 12, 1);
+  event->setDtStart(KDateTime(startDate, QTime(12, 0), KDateTime::ClockTime));
+  event->setDtEnd(KDateTime(startDate, QTime(13, 0), KDateTime::ClockTime));
+
+  KCalCore::Recurrence *recurrence = event->recurrence();
+  recurrence->setDaily(1);
+  recurrence->setStartDateTime(event->dtStart());
+
+  m_calendar->addEvent(event, NotebookId);
+  m_storage->save();
+  QString uid = event->uid();
+  reloadDb();
+
+  auto fetchEvent = m_calendar->event(uid);
+  QVERIFY(fetchEvent);
+  KCalCore::Recurrence *fetchRecurrence = fetchEvent->recurrence();
+  QVERIFY(fetchRecurrence);
+
+  // should return occurrence for both days
+  mKCal::ExtendedCalendar::ExpandedIncidenceList events
+      = m_calendar->rawExpandedEvents(startDate, startDate.addDays(1), false, false, KDateTime::Spec(KDateTime::LocalZone));
+
+  QCOMPARE(events.size(), 2);
+}
+
 void tst_storage::openDb(bool clear)
 {
   m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
