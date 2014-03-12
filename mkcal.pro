@@ -4,22 +4,12 @@ TEMPLATE = subdirs
 SUBDIRS = src tests tools
 
 # add to Qt 5 also when qmfclient is ported
-equals(QT_MAJOR_VERSION, 4): SUBDIRS += plugins
+#SUBDIRS += plugins
 
-VER_MAJ = ${VER_MAJ}
-VER_MIN = ${VER_MIN}
-VER_PAT = ${VER_PAT}
 include(doc/doc.pro)
 # make coverage
 coverage.CONFIG += recursive
 QMAKE_EXTRA_TARGETS += coverage
-
-equals(QT_MAJOR_VERSION, 4) {
-    qtconfigfiles.files = mkcal.prf
-    qtconfigfiles.path = /usr/share/qt4/mkspecs/features
-
-    INSTALLS += qtconfigfiles
-}
 
 CONFIG(debug,debug|release) {
 
