@@ -26,8 +26,7 @@ CONFIG(debug,debug|release) {
         $(OBJECTS_DIR)/*.gcno
 }
 TEMPLATE = lib
-equals(QT_MAJOR_VERSION, 4): TARGET = mkcal
-equals(QT_MAJOR_VERSION, 5): TARGET = mkcal-qt5
+TARGET = mkcal-qt5
 VERSION+= 0.3.13
 
 DEPENDPATH += . \
@@ -42,40 +41,26 @@ INCLUDEPATH += . \
 
 #DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
 
-DEFINES += MEEGO UUID
-
-equals(QT_MAJOR_VERSION, 5) {
-    DEFINES += TIMED_SUPPORT
-    PKGCONFIG += timed-qt5
-}
+DEFINES += MEEGO UUID TIMED_SUPPORT
+PKGCONFIG += timed-qt5
 
 CONFIG += link_pkgconfig
 PKGCONFIG += uuid \
     libical \
-    sqlite3
-
-equals(QT_MAJOR_VERSION, 4): PKGCONFIG += libkcalcoren
-equals(QT_MAJOR_VERSION, 5): PKGCONFIG += libkcalcoren-qt5
+    sqlite3 \
+    libkcalcoren-qt5
 
 QT += dbus
-
-contains (DEFINES, MKCAL_FOR_MEEGO) {
-    LIBS += -lmeegotouchcore
-    INCLUDEPATH += /usr/include/meegotouch
-}
-
 QT -= gui
 
 target.path = $$INSTALL_ROOT/usr/lib
-equals(QT_MAJOR_VERSION, 4): headers.path += $$INSTALL_ROOT/usr/include/mkcal
-equals(QT_MAJOR_VERSION, 5): headers.path += $$INSTALL_ROOT/usr/include/mkcal-qt5
+headers.path += $$INSTALL_ROOT/usr/include/mkcal-qt5
 headers.files += *.h \
     kdedate/*.h \
     klibport/*.h
 
 pkgconfig.path = $$INSTALL_ROOT/usr/lib/pkgconfig
-equals(QT_MAJOR_VERSION, 4): pkgconfig.files = ../libmkcal.pc
-equals(QT_MAJOR_VERSION, 5): pkgconfig.files = ../libmkcal-qt5.pc
+pkgconfig.files = ../libmkcal-qt5.pc
 
 #CONFIG += qtsparql
 INSTALLS += target \

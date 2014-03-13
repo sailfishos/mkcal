@@ -51,15 +51,9 @@ using namespace KCalCore;
 #endif
 
 #ifdef TIMED_SUPPORT
-# if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#  include <timed-qt5/interface.h>
-#  include <timed-qt5/event-declarations.h>
-#  include <timed-qt5/exception.h>
-# else
-#  include <timed/interface>
-#  include <timed/event>
-#  include <timed/exception>
-# endif
+# include <timed-qt5/interface.h>
+# include <timed-qt5/event-declarations.h>
+# include <timed-qt5/exception.h>
 using namespace Maemo;
 static const QLatin1String RESET_ALARMS_CMD( "invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms" );
 #endif

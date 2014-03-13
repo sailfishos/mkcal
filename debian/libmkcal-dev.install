@@ -1,4 +1,0 @@
-usr/include/*
-usr/include/mkcal/*
-usr/lib/pkgconfig/*.pc
-usr/share/qt4/mkspecs/features/*.prf

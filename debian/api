@@ -1,6 +1,0 @@
-interface: libmkcal
-type: library
-scope: Platform
-state: unstable
-libs-pkg: libmkcal
-dev-pkg: libmkcal-dev
