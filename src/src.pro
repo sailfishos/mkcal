@@ -34,7 +34,6 @@ DEPENDPATH += . \
     versit
 INCLUDEPATH += . \
     .. \
-    qtlockedfile/src \
     /usr/include/glib-2.0 \
     /usr/lib/glib-2.0/include \
     /usr/include/dbus-1.0
@@ -73,8 +72,6 @@ HEADERS += extendedcalendar.h \
     notebook.h \
     sqliteformat.h \
     sqlitestorage.h \
-    qtlockedfile/src/qtlockedfile.cpp \
-    qtlockedfile/src/qtlockedfile_unix.cpp \
     servicehandlerif.h \
     servicehandler.h \
     compatibility.h \
@@ -85,7 +82,5 @@ SOURCES += extendedcalendar.cpp \
     notebook.cpp \
     sqliteformat.cpp \
     sqlitestorage.cpp \
-    qtlockedfile/src/qtlockedfile.cpp \
-    qtlockedfile/src/qtlockedfile_unix.cpp \
     compatibility.cpp \
     servicehandler.cpp
