@@ -66,15 +66,11 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 
       @param calendar is a pointer to a valid Calendar object.
       @param databaseName is the name of the database containing the Calendar data.
-      @param useTracker set to true to save everything into tracker as well
       @param validateNotebooks set to true for saving only those incidences
              that belong to an existing notebook of this storage
     */
     explicit SqliteStorage( const ExtendedCalendar::Ptr &cal,
                             const QString &databaseName,
-#ifdef USE_TRACKER
-                            bool useTracker = false,
-#endif
                             bool validateNotebooks = false );
 
     /**
@@ -86,13 +82,6 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
       Returns a string containing the name of the calendar database.
     */
     QString databaseName() const;
-
-#ifdef USE_TRACKER
-    /**
-      Returns true if tracker is also used in saves.
-    */
-    bool useTracker() const;
-#endif
 
     /**
       @copydoc

@@ -39,7 +39,7 @@ INCLUDEPATH += . \
     /usr/lib/glib-2.0/include \
     /usr/include/dbus-1.0
 
-#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
+#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
 
 DEFINES += MEEGO UUID TIMED_SUPPORT
 PKGCONFIG += timed-qt5
@@ -74,9 +74,6 @@ HEADERS += extendedcalendar.h \
     notebook.h \
     sqliteformat.h \
     sqlitestorage.h \
-    trackerformat.h \
-    trackermodify.h \
-    trackerstorage.h \
     qtlockedfile/src/qtlockedfile.cpp \
     qtlockedfile/src/qtlockedfile_unix.cpp \
     servicehandlerif.h \
@@ -90,9 +87,6 @@ SOURCES += extendedcalendar.cpp \
     notebook.cpp \
     sqliteformat.cpp \
     sqlitestorage.cpp \
-    trackerformat.cpp \
-    trackermodify.cpp \
-    trackerstorage.cpp \
     qtlockedfile/src/qtlockedfile.cpp \
     qtlockedfile/src/qtlockedfile_unix.cpp \
     compatibility.cpp \
