@@ -69,7 +69,6 @@ INSTALLS += target \
 #QMAKE_CXXFLAGS += -Werror  #in the debian/rules now
 QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
 HEADERS += extendedcalendar.h \
-    directorystorage.h \
     extendedstorage.h \
     notebook.h \
     sqliteformat.h \
@@ -82,7 +81,6 @@ HEADERS += extendedcalendar.h \
     dummystorage.h \
     mkcal_export.h
 SOURCES += extendedcalendar.cpp \
-    directorystorage.cpp \
     extendedstorage.cpp \
     notebook.cpp \
     sqliteformat.cpp \
