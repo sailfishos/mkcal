@@ -34,12 +34,11 @@ DEPENDPATH += . \
     versit
 INCLUDEPATH += . \
     .. \
-    qtlockedfile/src \
     /usr/include/glib-2.0 \
     /usr/lib/glib-2.0/include \
     /usr/include/dbus-1.0
 
-#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT MKCAL_TRACKER_SYNC
+#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
 
 DEFINES += MEEGO UUID TIMED_SUPPORT
 PKGCONFIG += timed-qt5
@@ -69,31 +68,19 @@ INSTALLS += target \
 #QMAKE_CXXFLAGS += -Werror  #in the debian/rules now
 QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
 HEADERS += extendedcalendar.h \
-    directorystorage.h \
     extendedstorage.h \
     notebook.h \
     sqliteformat.h \
     sqlitestorage.h \
-    trackerformat.h \
-    trackermodify.h \
-    trackerstorage.h \
-    qtlockedfile/src/qtlockedfile.cpp \
-    qtlockedfile/src/qtlockedfile_unix.cpp \
     servicehandlerif.h \
     servicehandler.h \
     compatibility.h \
     dummystorage.h \
     mkcal_export.h
 SOURCES += extendedcalendar.cpp \
-    directorystorage.cpp \
     extendedstorage.cpp \
     notebook.cpp \
     sqliteformat.cpp \
     sqlitestorage.cpp \
-    trackerformat.cpp \
-    trackermodify.cpp \
-    trackerstorage.cpp \
-    qtlockedfile/src/qtlockedfile.cpp \
-    qtlockedfile/src/qtlockedfile_unix.cpp \
     compatibility.cpp \
     servicehandler.cpp

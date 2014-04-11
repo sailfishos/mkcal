@@ -63,9 +63,8 @@
 
   @section introduction Introduction
 
-  mKCal library extends KCalCore library to add a persistence storage
-  in Sqlite db. Also it can be used with tracker so all elements can
-  be indexed and searched later.
+  mKCal library extends KCalCore library to add a persistant storage
+  in a sqlite database.
 
   This two libraries come from the original KCal from KDE. They have been
   split refactored, and some functionality has been added.
