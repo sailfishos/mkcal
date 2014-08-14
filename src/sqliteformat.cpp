@@ -1571,7 +1571,11 @@ bool SqliteFormat::Private::selectRecursives( Incidence::Ptr incidence, int rowi
         }
       }
 
-      recurrule->setDuration(sqlite3_column_int(stmt, 6));  // count
+      int duration = sqlite3_column_int(stmt, 6);  // count
+      if (duration == 0 && !recurrule->endDt().isValid()) {
+        duration = -1; // work around invalid recurrence state: recurring infinitely but having invalid end date
+      }
+      recurrule->setDuration(duration);
       // Frequency
       recurrule->setFrequency(sqlite3_column_int(stmt, 7)); // interval-field
 
