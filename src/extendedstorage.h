@@ -649,8 +649,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param color notebook's color in format "#FF0042", if empty default used
       @return pointer to the created notebook
     */
-    Notebook::Ptr createDefaultNotebook( QString name = "",
-                                         QString color = "");
+    Notebook::Ptr createDefaultNotebook( QString name = QString(),
+                                         QString color = QString());
 
     /**
       Standard trick to add virtuals later.
