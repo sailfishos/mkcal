@@ -84,3 +84,10 @@ SOURCES += extendedcalendar.cpp \
     sqlitestorage.cpp \
     compatibility.cpp \
     servicehandler.cpp
+
+unix {
+    HEADERS += \
+        semaphore_p.h
+    SOURCES += \
+        semaphore_p.cpp
+}
