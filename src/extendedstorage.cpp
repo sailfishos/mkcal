@@ -577,6 +577,7 @@ void ExtendedStorage::resetAlarms( const Incidence::List &incidences )
 #endif
 }
 
+// FIXME: combine code duplication between this and Private::setAlarms()
 void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
 {
 #if defined(TIMED_SUPPORT)
@@ -671,10 +672,18 @@ void ExtendedStorage::setAlarms( const Incidence::Ptr &incidence )
       }
       e.setAttribute( "type", "todo" );
     } else if ( incidence->dtStart().isValid() ) {
-      e.setAttribute( "time", incidence->dtStart().toString() );
-      e.setAttribute( "startDate", incidence->dtStart().toString() );
-      if (incidence->endDateForStart( incidence->dtStart()).isValid() ) {
-        e.setAttribute( "endDate", incidence->endDateForStart( incidence->dtStart()).toString() );
+      KDateTime eventStart;
+
+      if ( incidence->recurs() ) {
+        // assuming alarms not later than event start
+        eventStart = incidence->recurrence()->getNextDateTime( alarmTime.addSecs(-60) );
+      } else {
+        eventStart = incidence->dtStart();
+      }
+      e.setAttribute( "time", eventStart.toString() );
+      e.setAttribute( "startDate", eventStart.toString() );
+      if ( incidence->endDateForStart( eventStart).isValid() ) {
+        e.setAttribute( "endDate", incidence->endDateForStart( eventStart ).toString() );
       }
       e.setAttribute( "type", "event" );
     }
@@ -849,6 +858,7 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook( QString name, QString colo
 
 
 #if defined(TIMED_SUPPORT)
+// FIXME: combine code duplication between this and ExtendedStorage::setAlarms()
 void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now) {
   Alarm::List alarms = incidence->alarms();
 
@@ -928,10 +938,18 @@ void ExtendedStorage::Private::setAlarms( const Incidence::Ptr &incidence, Timed
       }
       e.setAttribute( "type", "todo" );
     } else if ( incidence->dtStart().isValid() ) {
-      e.setAttribute( "time", incidence->dtStart().toString() );
-      e.setAttribute( "startDate", incidence->dtStart().toString() );
-      if (incidence->endDateForStart( incidence->dtStart()).isValid() ) {
-        e.setAttribute( "endDate", incidence->endDateForStart( incidence->dtStart()).toString() );
+      KDateTime eventStart;
+
+      if ( incidence->recurs() ) {
+        // assuming alarms not later than event start
+        eventStart = incidence->recurrence()->getNextDateTime( alarmTime.addSecs(-60) );
+      } else {
+        eventStart = incidence->dtStart();
+      }
+      e.setAttribute( "time", eventStart.toString() );
+      e.setAttribute( "startDate", eventStart.toString() );
+      if ( incidence->endDateForStart( eventStart).isValid() ) {
+        e.setAttribute( "endDate", incidence->endDateForStart( eventStart ).toString() );
       }
       e.setAttribute( "type", "event" );
     }
