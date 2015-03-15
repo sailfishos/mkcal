@@ -4,7 +4,7 @@ Summary:    Extended KDE kcal calendar library port for Maemo
 Version:    0.3.13
 Release:    1
 Group:      System/Libraries
-License:    LGPLV2
+License:    LGPLv2+
 URL:        https://github.com/mer-packages/mkcal
 Source0:    %{name}-%{version}.tar.bz2
 Requires(post): /sbin/ldconfig
