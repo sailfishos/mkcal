@@ -763,6 +763,13 @@ void ExtendedStorage::clearAlarms( const KCalCore::Incidence::List &incidences )
     const QList<QVariant> &result = reply.value();
     for ( int i = 0; i < result.size(); i++ ) {
       uint32_t cookie = result[i].toUInt();
+      if ( !incidence->hasRecurrenceId() ) {
+        QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync( cookie );
+        const QMap<QString, QVariant> attributeMap = attributesReply.value();
+        if ( attributeMap.contains( "recurrenceId" ) ) {
+          continue;
+        }
+      }
       kDebug() << "removing alarm" << cookie << incidence->uid()
           << ( incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-" );
       QDBusReply<bool> reply = timed.cancel_sync( cookie );
