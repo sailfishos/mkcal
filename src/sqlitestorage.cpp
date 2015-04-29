@@ -1900,8 +1900,9 @@ bool SqliteStorage::save()
   if ( !d->mIncidencesToUpdate.isEmpty() ) {
     query1 = UPDATE_COMPONENTS;
     qsize1 = sizeof( UPDATE_COMPONENTS );
-    query2 = DELETE_CUSTOMPROPERTIES;
-    qsize2 = sizeof( DELETE_CUSTOMPROPERTIES );
+    //We cannot delete custom properties if we wish to support sync, as ETAG/URI values are stored here.
+    //query2 = DELETE_CUSTOMPROPERTIES;
+    //qsize2 = sizeof( DELETE_CUSTOMPROPERTIES );
     query3 = INSERT_CUSTOMPROPERTIES;
     qsize3 = sizeof( INSERT_CUSTOMPROPERTIES );
     query4 = DELETE_ATTENDEE;
@@ -1933,8 +1934,9 @@ bool SqliteStorage::save()
   if ( !d->mIncidencesToDelete.isEmpty() ) {
     query1 = DELETE_COMPONENTS;
     qsize1 = sizeof( DELETE_COMPONENTS );
-    query2 = DELETE_CUSTOMPROPERTIES;
-    qsize2 = sizeof( DELETE_CUSTOMPROPERTIES );
+    //We cannot delete custom properties if we wish to support sync, as ETAG/URI values are stored here.
+    //query2 = DELETE_CUSTOMPROPERTIES;
+    //qsize2 = sizeof( DELETE_CUSTOMPROPERTIES );
     query4 = DELETE_ATTENDEE;
     qsize4 = sizeof( DELETE_ATTENDEE );
     query6 = DELETE_ALARM;
