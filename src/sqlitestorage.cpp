@@ -42,7 +42,6 @@ using namespace KCalCore;
 #include <ksystemtimezone.h>
 
 #include <QFileSystemWatcher>
-#include <QSystemSemaphore>
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
@@ -52,6 +51,12 @@ using namespace std;
 
 #if defined(HAVE_UUID_UUID_H)
 #include <uuid/uuid.h>
+#endif
+
+#ifdef Q_OS_UNIX
+#include "semaphore_p.h"
+#else
+#include <QSystemSemaphore>
 #endif
 
 using namespace mKCal;
@@ -71,7 +76,11 @@ class mKCal::SqliteStorage::Private
       : mCalendar( calendar ),
         mStorage( storage ),
         mDatabaseName( databaseName ),
-        mSem( databaseName, 1, QSystemSemaphore::Create ),
+#ifdef Q_OS_UNIX
+        mSem( databaseName ),
+#else
+        mSem( databaseName, 1, QSystemSemaphore::Open ),
+#endif
         mChanged( databaseName + gChanged ),
         mWatcher( 0 ),
         mDatabase( 0 ),
@@ -87,7 +96,12 @@ class mKCal::SqliteStorage::Private
     ExtendedCalendar::Ptr mCalendar;
     SqliteStorage *mStorage;
     QString mDatabaseName;
+#ifdef Q_OS_UNIX
+    ProcessMutex mSem;
+#else
     QSystemSemaphore mSem;
+#endif
+
     QFile mChanged;
     QFileSystemWatcher *mWatcher;
     sqlite3 *mDatabase;
