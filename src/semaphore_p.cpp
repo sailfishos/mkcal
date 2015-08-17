@@ -33,6 +33,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include <sys/sem.h>
 #include <sys/stat.h>
@@ -61,7 +62,10 @@ int semaphoreInit(const char *id, size_t count, const int *initialValues)
     int rv = -1;
 
     // the specific value of proj_id is unimportant except that it must be non-zero, so 5?
-    key_t key = ::ftok(id, 5);
+    char *filepath = ::strdup(id);
+    char *dirpath = ::dirname(filepath);
+    key_t key = ::ftok(dirpath, 5);
+    ::free(filepath);
 
     rv = ::semget(key, count, 0);
     if (rv == -1) {
