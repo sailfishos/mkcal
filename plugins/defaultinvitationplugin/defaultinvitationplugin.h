@@ -37,10 +37,7 @@ class DefaultInvitationPlugin : public QObject, public InvitationHandlerInterfac
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.mkcal.DefaultInvitationHandlerInterface")
 
 public:
-    //! \brief DefaultInvitationPlugin constructor class.
     DefaultInvitationPlugin();
-
-    //! \brief DefaultInvitationPlugin destructor class.
     ~DefaultInvitationPlugin();
 
     //! \reimp InvitationHandler KCalCore

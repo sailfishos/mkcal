@@ -46,9 +46,6 @@ private:
     /** Constructor, is a singleton so you cannot do anything
       */
     ServiceHandler();
-
-    /** Desctructor
-      */
     ~ServiceHandler();
 
     ServiceHandlerPrivate *const d;

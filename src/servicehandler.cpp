@@ -26,11 +26,8 @@ enum ExecutedPlugin {
     SendUpdate
 };
 
-ServiceHandler *mInstance = 0;
-
 class ServiceHandlerPrivate
 {
-
 public:
     QHash<QString, InvitationHandlerInterface *> mPlugins;
     QHash<QString, ServiceInterface *> mServices;
@@ -38,23 +35,18 @@ public:
     bool mLoaded;
     int mDownloadId;
     ServiceHandler::ErrorCode mError;
-    ExecutedPlugin mExecutedPlugin;
 
     void loadPlugins();
-    bool executePlugin(const Incidence::Ptr &invitation, const QString body, const ExtendedCalendar::Ptr &calendar,
-                       const ExtendedStorage::Ptr &storage);
+    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
+                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
     ServiceInterface *getServicePlugin( const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
-
     ServiceHandlerPrivate();
-
 };
 
 ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
-    mError(ServiceHandler::ErrorOk), mExecutedPlugin(None)
-
+    mError(ServiceHandler::ErrorOk)
 {
-
 }
 
 void ServiceHandlerPrivate::loadPlugins()
@@ -84,9 +76,11 @@ void ServiceHandlerPrivate::loadPlugins()
     mLoaded = true;
 }
 
-bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, const QString body,
+bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
                                           const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
 {
+    if (!mLoaded)
+        loadPlugins();
 
     if ( storage.isNull() || invitation.isNull() || calendar.isNull() )
         return false;
@@ -109,32 +103,39 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
     if (i != mPlugins.end()) {
         // service needed to get possible error, because
         // invitationhandlerinterface does'n have error-function
-        QHash<QString, ServiceInterface *>::const_iterator is;
-        is = mServices.find( pluginName );
+        QHash<QString, ServiceInterface *>::const_iterator is = mServices.find( pluginName );
 
-        if (mExecutedPlugin == SendInvitation) {
-            if (i.value()->sendInvitation(accountId, notebookUid, invitation, body))
+        switch (action) {
+        case SendInvitation:
+            if (i.value()->sendInvitation(accountId, notebookUid, invitation, body)) {
                 return true;
-            else {
+            } else {
                 mError = (ServiceHandler::ErrorCode) is.value()->error();
                 return false;
             }
-        } else if (mExecutedPlugin == SendResponse)
-            if (i.value()->sendResponse(accountId, invitation, body))
+
+        case SendResponse:
+            if (i.value()->sendResponse(accountId, invitation, body)) {
                 return true;
-            else {
+            } else {
                 mError = (ServiceHandler::ErrorCode) is.value()->error();
                 return false;
-            } else if (mExecutedPlugin == SendUpdate)
-            if (i.value()->sendUpdate(accountId, invitation, body))
+            }
+
+        case SendUpdate:
+            if (i.value()->sendUpdate(accountId, invitation, body)) {
                 return true;
-            else {
+            } else {
                 mError = (ServiceHandler::ErrorCode) is.value()->error();
                 return false;
-            } else
+            }
+
+        default:
             return false;
-    } else
+        }
+    } else {
         return false;
+    }
 }
 
 ServiceInterface *ServiceHandlerPrivate::getServicePlugin( const Notebook::Ptr &notebook,
@@ -168,10 +169,9 @@ ServiceInterface *ServiceHandlerPrivate::getServicePlugin( const Notebook::Ptr &
     }
 }
 
-ServiceHandler::ServiceHandler():
-    d(new ServiceHandlerPrivate())
+ServiceHandler::ServiceHandler()
+    : d(new ServiceHandlerPrivate())
 {
-
 }
 
 bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QString &body,
@@ -180,11 +180,7 @@ bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QStr
     if ( storage.isNull() || invitation.isNull() || calendar.isNull() )
         return false;
 
-    if (!d->mLoaded)
-        d->loadPlugins();
-
-    d->mExecutedPlugin = SendInvitation;
-    return d->executePlugin( invitation, body, calendar, storage );
+    return d->executePlugin(SendInvitation, invitation, body, calendar, storage);
 }
 
 
@@ -194,11 +190,7 @@ bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString 
     if ( storage.isNull() || invitation.isNull() || calendar.isNull() )
         return false;
 
-    if (!d->mLoaded)
-        d->loadPlugins();
-
-    d->mExecutedPlugin = SendUpdate;
-    return d->executePlugin( invitation, body, calendar, storage );
+    return d->executePlugin(SendUpdate, invitation, body, calendar, storage);
 }
 
 
@@ -208,13 +200,8 @@ bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QStrin
     if ( storage.isNull() || invitation.isNull() || calendar.isNull() )
         return false;
 
-    if (!d->mLoaded)
-        d->loadPlugins();
-
-    d->mExecutedPlugin = SendResponse;
-    return d->executePlugin( invitation, body, calendar, storage );
+    return d->executePlugin(SendResponse, invitation, body, calendar, storage);
 }
-
 
 QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
 {
@@ -233,7 +220,6 @@ QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorag
         return QString();
     }
 }
-
 
 bool ServiceHandler::multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
 {
@@ -374,7 +360,6 @@ QString ServiceHandler::defaultNotebook(const QString &productId)
 
 }
 
-
 QStringList ServiceHandler::availableServices()
 {
     if (!d->mLoaded)
@@ -419,7 +404,6 @@ QString ServiceHandler::uiName(QString serviceId)
     }
 }
 
-
 ServiceHandler::ErrorCode ServiceHandler::error() const
 {
     return d->mError;
@@ -427,9 +411,5 @@ ServiceHandler::ErrorCode ServiceHandler::error() const
 
 ServiceHandler::~ServiceHandler()
 {
-
-    if (mInstance == 0) {
-        delete mInstance;
-    }
     delete d;
 }
