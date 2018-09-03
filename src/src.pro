@@ -74,15 +74,14 @@ HEADERS += extendedcalendar.h \
     sqlitestorage.h \
     servicehandlerif.h \
     servicehandler.h \
-    compatibility.h \
     dummystorage.h \
     mkcal_export.h
+
 SOURCES += extendedcalendar.cpp \
     extendedstorage.cpp \
     notebook.cpp \
     sqliteformat.cpp \
     sqlitestorage.cpp \
-    compatibility.cpp \
     servicehandler.cpp
 
 unix {
