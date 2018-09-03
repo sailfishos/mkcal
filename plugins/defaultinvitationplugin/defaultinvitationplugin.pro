@@ -1,6 +1,6 @@
 TEMPLATE = lib
 TARGET = $$qtLibraryTarget(defaultinvitationplugin)
-CONFIG += plugin kcalcoren
+CONFIG += plugin
 OBJECTS_DIR = .obj
 MOC_DIR = .moc
 INCLUDEPATH +=  . \
@@ -8,29 +8,22 @@ INCLUDEPATH +=  . \
                 ../../src \
 
 QMAKE_LIBDIR += ../../src
-LIBS += -lkcalcoren
 QMAKE_CLEAN += *.so* .obj/* .moc/*
 VER_MAJ = ${VER_MAJ}
 VER_MIN = ${VER_MIN}
 VER_PAT = ${VER_PAT}
 
-DEFINES += MKCAL_FOR_MEEGO
+LIBS += -L../../src/ -lmkcal-qt5
 CONFIG += link_pkgconfig
-PKGCONFIG += qmfclient
+PKGCONFIG += qmfclient5 \
+    libkcalcoren-qt5
 
 QT -= gui
 
-target.path +=  /${DESTDIR}/usr/lib/calendar/mkcalplugins/
+target.path +=  /${DESTDIR}/usr/lib/mkcalplugins/
 
 INSTALLS += target
 
-HEADERS +=  defaultinvitationplugin.h \
+HEADERS +=  defaultinvitationplugin.h
 
-SOURCES +=  defaultinvitationplugin.cpp \
-
-contains (DEFINES, MKCAL_FOR_MEEGO) {
-    LIBS += -lqmfclient
-    HEADERS += transmitemail.h
-    SOURCES += transmitemail.cpp
-    INCLUDEPATH += /usr/include/qmfclient
-}
+SOURCES +=  defaultinvitationplugin.cpp

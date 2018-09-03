@@ -20,13 +20,10 @@
 #include <icalformat.h>
 #include <QTimer>
 
-#ifdef MKCAL_FOR_MEEGO
 #include <qmailaccount.h>
 #include <qmailstore.h>
 #include <qmailaddress.h>
-#include <qmailcodec.h>
-#include "transmitemail.h"
-#endif
+#include <qmailserviceaction.h>
 
 using namespace KCalCore;
 
@@ -53,15 +50,12 @@ public:
       QMailAccountIdList accounts = mStore->queryAccounts(byDefault);
       if (!accounts.count()) {
         qWarning() << "Default account was not found!";
-        //        delete mStore;
-        mStore = 0;
-        mErrorCode = ServiceInterface::ErrorNoAccount;
-        return;
+      } else {
+        if (accounts.count() > 1) {
+            qWarning( "There are more than one default account, using first" );
+        }
+        mDefaultAccount = new QMailAccount( accounts.first() );
       }
-      if (accounts.count() > 1) {
-        qWarning( "There are more than one default account, using first" );
-      }
-      mDefaultAccount =  new QMailAccount( accounts.first() );
       mInit = true;
     }
   }
@@ -69,7 +63,7 @@ public:
   QString defaultAddress() {
 
     if ( mInit ) {
-      return mDefaultAccount->fromAddress().address();
+      return mDefaultAccount ? mDefaultAccount->fromAddress().address() : QString();
     } else {
       return QString();
     }
@@ -77,30 +71,42 @@ public:
 
   void uninit() {
 
-    delete mStore;
     mStore = 0;
     delete mDefaultAccount;
     mDefaultAccount = 0;
     mInit = false;
   }
 
-  bool sendMail( const QStringList &recipients, const QString &subject,
+  bool sendMail( const QString &accountId, const QStringList &recipients, const QString &subject,
                  const QString &body, const QString &attachment ) {
 
+    qDebug() << "DefaultPlugin sendMail for account " << accountId;
     if ( !mInit ) {
       return false;
     }
+    QMailAccount *account = nullptr;
+    if (mDefaultAccount) {
+        account = mDefaultAccount;
+    } else {
+        account = new QMailAccount(QMailAccountId(accountId.toULongLong()));
+        if (!(account->status() & QMailAccount::CanTransmit)) {
+            delete account;
+            qWarning() << "Default plugin: invalid email account and no default email account";
+            return false;
+        }
+    }
+
 
     // Build a message
     QMailMessage message;
     // Setup account which should be used to send a message
-    message.setParentAccountId( mDefaultAccount->id() );
+    message.setParentAccountId( account->id() );
     // Get the outbox folder ID
-    QMailFolderId folderId = mDefaultAccount->standardFolder(QMailFolder::OutboxFolder);
+    QMailFolderId folderId = account->standardFolder(QMailFolder::OutboxFolder);
     if (!folderId.isValid()) {
         folderId = QMailFolder::LocalStorageFolderId;
     }
-    // Put message to standard outbox folder fo that account
+    // Put message to standard outbox folder for that account
     message.setParentFolderId( folderId );
 
     // Setup message status
@@ -109,6 +115,8 @@ public:
     message.setStatus(QMailMessage::ContentAvailable, true);
     message.setStatus(QMailMessage::PartialContentAvailable, true);
     message.setStatus(QMailMessage::Read, true);
+    message.setStatus(QMailMessage::HasAttachments, true);
+    message.setStatus(QMailMessage::CalendarInvitation, true);
     message.setDate(QMailTimeStamp(QDateTime::currentDateTime()));
 
     // Define recipeint's address
@@ -118,29 +126,30 @@ public:
     }
     message.setTo( addresses );
     // Define from address
-    message.setFrom( mDefaultAccount->fromAddress() );
+    message.setFrom( account->fromAddress() );
     // Define subject
     message.setSubject( subject );
     message.setMessageType(QMailMessage::Email);
-    message.setMultipartType(QMailMessagePartContainerFwd::MultipartAlternative);
+    message.setMultipartType(QMailMessagePartContainerFwd::MultipartRelated);
 
     // Create the MIME part representing the message body
     QMailMessagePart bodyPart = QMailMessagePart::fromData(
         body,
         QMailMessageContentDisposition(QMailMessageContentDisposition::None),
-        QMailMessageContentType("text/plain; charset=\"utf-8\""),
-        QMailMessageBody::QuotedPrintable);
+        QMailMessageContentType("text/plain;charset=UTF-8"),
+        QMailMessageBody::NoEncoding);
     bodyPart.removeHeaderField("Content-Disposition");
 
     // Create the calendar MIME part
     QMailMessagePart calendarPart = QMailMessagePart::fromData(
         attachment,
         QMailMessageContentDisposition(QMailMessageContentDisposition::None),
-        QMailMessageContentType("text/calendar; charset=\"utf-8\"; method=REQUEST"),
+        QMailMessageContentType("text/calendar;method=REQUEST;charset=UTF-8"),
         QMailMessageBody::Base64);
     calendarPart.removeHeaderField("Content-Disposition");
     calendarPart.appendHeaderField("Content-Class","urn:content-classes:calendarmessage");
 
+    message.setMultipartType(QMailMessagePartContainer::MultipartRelated);
     message.appendPart(bodyPart);
     message.appendPart(calendarPart);
 
@@ -151,12 +160,15 @@ public:
     // initiate transmission
     QSharedPointer<QMailTransmitAction> action ( new QMailTransmitAction() );
     if ( action ) {
-      action->transmitMessages( mDefaultAccount->id() );
+      action->transmitMessages( account->id() );
     } else {
       qDebug( "No MailTransmistAction" );
       return false;
     }
 
+    if (account != mDefaultAccount) {
+        delete account;
+    }
     return true;
   }
 
@@ -195,7 +207,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
   d->init();
 
   ICalFormat icf;
-  QString ical =  icf.createScheduleMessage( invitation, iTIPPublish ) ;
+  QString ical = icf.createScheduleMessage( invitation, iTIPRequest );
 
   QStringList emails;
   foreach (const Attendee::Ptr &att, attendees) {
@@ -203,9 +215,9 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
   }
 
   const QString &description = invitation->description();
-  const bool res = d->sendMail( emails, invitation->summary(), description, ical );
+  const bool res = d->sendMail( accountId, emails, invitation->summary(), description, ical );
 
-//  d->uninit();
+  d->uninit();
   return res;
 }
 
@@ -240,7 +252,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
   QString ical =  icf.createScheduleMessage( invitation, iTIPReply) ;
   //    QString base64Data = ical;
 
-  bool res = d->sendMail(QStringList( organizer->email() ), invitation->summary(), body, ical);
+  bool res = d->sendMail(accountId, QStringList( organizer->email() ), invitation->summary(), body, ical);
 
 //  d->uninit();
   return res;
@@ -271,10 +283,20 @@ bool DefaultInvitationPlugin::multiCalendar() const
 
 QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook)
 {
-  Q_UNUSED( notebook );
-  d->init();
-  QString email ( d->defaultAddress() );
-//  d->uninit();
+  QString email;
+  if (notebook.isNull()) {
+    qCritical() << "Invalid notebook";
+    return QString();
+  }
+  QMailAccount account(QMailAccountId(notebook->account().toULongLong()));
+  if (account.id().isValid()) {
+      qDebug() << "Using account email address" << account.fromAddress().toString();
+      email = account.fromAddress().toString();
+  } else {
+      qWarning() << "Notebook" << notebook->uid() << "do not have a valid account id";
+      d->init();
+      email = d->defaultAddress();
+  }
   return email;
 }
 
@@ -343,6 +365,3 @@ ServiceInterface::ErrorCode DefaultInvitationPlugin::error() const
 {
   return d->mErrorCode;
 }
-
-
-Q_EXPORT_PLUGIN2(defaultinvitationplugin, DefaultInvitationPlugin);

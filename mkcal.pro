@@ -3,8 +3,8 @@
 TEMPLATE = subdirs
 SUBDIRS = src tests tools
 
-# add to Qt 5 also when qmfclient is ported
-#SUBDIRS += plugins
+SUBDIRS += plugins
+plugins.depends = src
 
 include(doc/doc.pro)
 # make coverage
