@@ -26,14 +26,15 @@ using namespace KCalCore;
  * \brief DefaultInvitationPlugin class.
  *
  *  When no other plugin has been found for a particular notebook, then this plugin
- *  will try to send the invitation using QMF's "default account".
- *  Therefore this plugin, unlike others, will not have to use the accountId.
+ *  will try to send the invitation using QMF's "default account" or using account id
+ *  of the account if it supports an email service.
  */
 class DefaultInvitationPlugin : public QObject, public InvitationHandlerInterface, public ServiceInterface
 {
     Q_OBJECT
     Q_INTERFACES(InvitationHandlerInterface)
     Q_INTERFACES(ServiceInterface)
+    Q_PLUGIN_METADATA(IID "org.qt-project.Qt.mkcal.DefaultInvitationHandlerInterface")
 
 public:
     //! \brief DefaultInvitationPlugin constructor class.

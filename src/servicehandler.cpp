@@ -58,7 +58,7 @@ ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
 
 void ServiceHandlerPrivate::loadPlugins()
 {
-  QDir pluginsDir(QLatin1String("/usr/lib/calendar/mkcalplugins")); //TODO HARDCODED!!
+  QDir pluginsDir(QLatin1String("/usr/lib/mkcalplugins")); //TODO HARDCODED!!
   kDebug() << "LOADING !!!! Plugin directory" << pluginsDir.path();
 
   foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
@@ -97,7 +97,7 @@ bool ServiceHandlerPrivate::executePlugin(const Incidence::Ptr &invitation, cons
     pluginName = storage->notebook(notebookUid)->pluginName();
     accountId  = storage->notebook(notebookUid)->account();
   }
-  if (pluginName.isEmpty())
+  if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
     pluginName = defaultName;
   kDebug() <<  "Using plugin:" << pluginName;
 
