@@ -10,31 +10,31 @@ using namespace mKCal;
 
 class tst_storage: public QObject
 {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  explicit tst_storage(QObject *parent = 0);
+    explicit tst_storage(QObject *parent = 0);
 
 private slots:
-  void initTestCase();
-  void cleanupTestCase();
-  void init();
-  void cleanup();
+    void initTestCase();
+    void cleanupTestCase();
+    void init();
+    void cleanup();
 
-  void tst_timezone();
-  void tst_allday_data();
-  void tst_allday();
-  void tst_alldayUtc();
-  void tst_alldayRecurrence();
-  void tst_origintimes();
-  void tst_rawEvents();
+    void tst_timezone();
+    void tst_allday_data();
+    void tst_allday();
+    void tst_alldayUtc();
+    void tst_alldayRecurrence();
+    void tst_origintimes();
+    void tst_rawEvents();
 
 private:
-  void openDb(bool clear = false);
-  void reloadDb();
+    void openDb(bool clear = false);
+    void reloadDb();
 
-  ExtendedCalendar::Ptr m_calendar;
-  ExtendedStorage::Ptr m_storage;
+    ExtendedCalendar::Ptr m_calendar;
+    ExtendedStorage::Ptr m_storage;
 };
 
 #endif

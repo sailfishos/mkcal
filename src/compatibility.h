@@ -55,7 +55,7 @@ class Compatibility;
 */
 class MKCAL_EXPORT Compatibility
 {
-  public:
+public:
     /**
       A shared pointer to a Compatibility object.
     */
@@ -65,16 +65,16 @@ class MKCAL_EXPORT Compatibility
       Select the type of Compatibility. Importing or Exporting
     */
     enum DirectionType {
-      Import,   /**< Do changes when importing from a broken device*/
-      Export,   /**< Do change to export to a broken device */
+        Import,   /**< Do changes when importing from a broken device*/
+        Export,   /**< Do change to export to a broken device */
     };
 
     /**
       Select the type of Element to Fix.
     */
     enum FixType {
-      FixAlarm,   /**<  Fix the alarms*/
-      FixRecurrence,   /**< Fix the recurrences */
+        FixAlarm,   /**<  Fix the alarms*/
+        FixRecurrence,   /**< Fix the recurrences */
     };
 
     /**
@@ -102,7 +102,8 @@ class MKCAL_EXPORT Compatibility
       @param type if it is to import or to export
       its summary fixed.
     */
-    virtual void fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  );
+    virtual void fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence,
+                             Compatibility::DirectionType type  );
 
     /**
       Standard trick to add virtuals later.
@@ -113,7 +114,7 @@ class MKCAL_EXPORT Compatibility
     */
     virtual void virtual_hook( int id, void *data );
 
-  private:
+private:
     //@cond PRIVATE
     Q_DISABLE_COPY( Compatibility )
     class Private;
@@ -129,7 +130,7 @@ class MKCAL_EXPORT Compatibility
 */
 class MKCAL_EXPORT CompatibilityFactory
 {
-  public:
+public:
     /**
       Creates the appropriate Compat class as determined by the Product ID.
 
@@ -149,11 +150,11 @@ class MKCAL_EXPORT CompatibilityFactory
 */
 class CompatNokiaPhones : public Compatibility
 {
-  public:
+public:
 
-     CompatNokiaPhones();
+    CompatNokiaPhones();
 
-     ~CompatNokiaPhones();
+    ~CompatNokiaPhones();
     /**
       @copydoc
       Compatibility::fixAll()
@@ -164,9 +165,10 @@ class CompatNokiaPhones : public Compatibility
       @copydoc
       Compatibility::fixElement()
     */
-    virtual void fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  );
+    virtual void fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence,
+                             Compatibility::DirectionType type  );
 
-  private:
+private:
     //@cond PRIVATE
     class Private;
     Private *d;

@@ -43,21 +43,21 @@ using namespace mKCal;
 
 Compatibility::Ptr CompatibilityFactory::createCompatibility( const QString &productId )
 {
-  Compatibility::Ptr compat;
+    Compatibility::Ptr compat;
 
-  int symbian = productId.indexOf( "Symbian" );
-  int maemo = productId.indexOf( "N900" ); //So far they suffer the same problems :)
+    int symbian = productId.indexOf( "Symbian" );
+    int maemo = productId.indexOf( "N900" ); //So far they suffer the same problems :)
 
-  if ( symbian >= 0 || maemo >= 0) {
-    kDebug() << "Generating compatibility for old Nokia Phones";
-    compat = Compatibility::Ptr  ( new CompatNokiaPhones );
-  }
+    if ( symbian >= 0 || maemo >= 0) {
+        kDebug() << "Generating compatibility for old Nokia Phones";
+        compat = Compatibility::Ptr  ( new CompatNokiaPhones );
+    }
 
-  if ( !compat ) {
-    compat = Compatibility::Ptr ( new Compatibility );
-  }
+    if ( !compat ) {
+        compat = Compatibility::Ptr ( new Compatibility );
+    }
 
-  return compat;
+    return compat;
 }
 
 Compatibility::Compatibility(): d(0)
@@ -70,77 +70,80 @@ Compatibility::~Compatibility()
 
 void Compatibility::fixAll( const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type )
 {
-  Q_UNUSED( incidence );
-  Q_UNUSED( type );
+    Q_UNUSED( incidence );
+    Q_UNUSED( type );
 }
 
-void Compatibility::fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  )
+void Compatibility::fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence,
+                                Compatibility::DirectionType type  )
 {
-  Q_UNUSED( incidence );
-  Q_UNUSED( type );
-  Q_UNUSED( element );
+    Q_UNUSED( incidence );
+    Q_UNUSED( type );
+    Q_UNUSED( element );
 }
 
 void Compatibility::virtual_hook( int id, void *data )
 {
-  Q_UNUSED( id );
-  Q_UNUSED( data );
-  Q_ASSERT( false );
+    Q_UNUSED( id );
+    Q_UNUSED( data );
+    Q_ASSERT( false );
 }
 
-class CompatNokiaPhones::Private {
+class CompatNokiaPhones::Private
+{
 
 public:
 
-  void fixExportAlarms( const KCalCore::Incidence::Ptr &incidence )
-  {
-    KCalCore::Alarm::List alarms = incidence->alarms();
-    KCalCore::Alarm::List::Iterator it;
-    for ( it = alarms.begin(); it != alarms.end(); ++it ) {
-      (*it)->setType(KCalCore::Alarm::Audio);
+    void fixExportAlarms( const KCalCore::Incidence::Ptr &incidence )
+    {
+        KCalCore::Alarm::List alarms = incidence->alarms();
+        KCalCore::Alarm::List::Iterator it;
+        for ( it = alarms.begin(); it != alarms.end(); ++it ) {
+            (*it)->setType(KCalCore::Alarm::Audio);
+        }
     }
-  }
 
-  void fixImportAlarms( const KCalCore::Incidence::Ptr &incidence )
-  {
-    KCalCore::Alarm::List alarms = incidence->alarms();
-    KCalCore::Alarm::List::Iterator it;
-    for ( it = alarms.begin(); it != alarms.end(); ++it ) {
-      (*it)->setType(KCalCore::Alarm::Display);
+    void fixImportAlarms( const KCalCore::Incidence::Ptr &incidence )
+    {
+        KCalCore::Alarm::List alarms = incidence->alarms();
+        KCalCore::Alarm::List::Iterator it;
+        for ( it = alarms.begin(); it != alarms.end(); ++it ) {
+            (*it)->setType(KCalCore::Alarm::Display);
+        }
     }
-  }
 
 
 };
 
 CompatNokiaPhones::CompatNokiaPhones()
 {
-  d = new CompatNokiaPhones::Private();
+    d = new CompatNokiaPhones::Private();
 }
 
 CompatNokiaPhones::~CompatNokiaPhones()
 {
-  delete d;
+    delete d;
 }
 
 void CompatNokiaPhones::fixAll( const KCalCore::Incidence::Ptr &incidence, DirectionType type )
 {
-  if ( !incidence ) {
-    return;
-  }
+    if ( !incidence ) {
+        return;
+    }
 
-  fixElement( Compatibility::FixAlarm, incidence, type ); //Here the new ones should be added
+    fixElement( Compatibility::FixAlarm, incidence, type ); //Here the new ones should be added
 }
 
-void CompatNokiaPhones::fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence, Compatibility::DirectionType type  )
+void CompatNokiaPhones::fixElement( Compatibility::FixType element, const KCalCore::Incidence::Ptr &incidence,
+                                    Compatibility::DirectionType type  )
 {
-  if ( !incidence ) {
-    return;
-  }
+    if ( !incidence ) {
+        return;
+    }
 
-  if (type == Import) {
-    d->fixImportAlarms( incidence );
-  } else {
-    d->fixExportAlarms( incidence );
-  }
+    if (type == Import) {
+        d->fixImportAlarms( incidence );
+    } else {
+        d->fixExportAlarms( incidence );
+    }
 }

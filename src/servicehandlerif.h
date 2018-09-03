@@ -47,7 +47,8 @@ class QString;
     notify the application how the download is being done.
     */
 
-class ServiceInterface {
+class ServiceInterface
+{
 
 public:
 
@@ -55,12 +56,12 @@ public:
     //Be aware that they are different to the ones in ServiceHandler
     //but they might need to be in sync
     enum ErrorCode {
-      ErrorOk = 0,
-      ErrorNoAccount,
-      ErrorNotSupported,
-      ErrorNoConnectivity,
-      ErrorInvalidParameters,
-      ErrorInternal
+        ErrorOk = 0,
+        ErrorNoAccount,
+        ErrorNotSupported,
+        ErrorNoConnectivity,
+        ErrorInvalidParameters,
+        ErrorInternal
     };
 
     /** \brief returns icon of service.
@@ -81,7 +82,7 @@ public:
     virtual  bool multiCalendar() const = 0;
 
     /** \brief returns the email address that is currently configured in the service,
-	it can be different per account.
+    it can be different per account.
         @param notebook pointer to the notebook that we want to share
         @return email address of service
     */
@@ -109,7 +110,7 @@ public:
         @param notebook pointer to the notebook
         @param uri uri of attachment to be downloaded
         @param path path where attachment to be downloaded to
-	@return True if OK, false otherwise.
+    @return True if OK, false otherwise.
     */
     virtual bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path) = 0;
 
@@ -117,9 +118,10 @@ public:
         @param notebook pointer to the notebook
         @param incidence incidence of attachment to be deleted
         @param uri uri of attachment to be deleted
-	@return True if OK, false otherwise.
+    @return True if OK, false otherwise.
     */
-    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalCore::Incidence::Ptr &incidence, const QString &uri) = 0;
+    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalCore::Incidence::Ptr &incidence,
+                                  const QString &uri) = 0;
 
     /** \brief Share notebook.
         @param notebook pointer to the notebook that we want to share

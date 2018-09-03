@@ -37,12 +37,12 @@ class ServiceHandlerPrivate;
 namespace mKCal {
 
 
-  /** Singleton class to get the exact handler (plugin) of the service
-  */
-  class MKCAL_EXPORT ServiceHandler : QObject
-  {
+/** Singleton class to get the exact handler (plugin) of the service
+*/
+class MKCAL_EXPORT ServiceHandler : QObject
+{
     Q_OBJECT
-  private:
+private:
     /** Constructor, is a singleton so you cannot do anything
       */
     ServiceHandler();
@@ -51,30 +51,30 @@ namespace mKCal {
       */
     ~ServiceHandler();
 
-    ServiceHandlerPrivate* const d;
+    ServiceHandlerPrivate *const d;
 
-  public:
+public:
 
     /** Error Codes that can be returned by the plugins */
     //Right now they are the same as defined in ServiceHandlerIf
     //But semantically it doesn't make sense that they are defined
     //there and at some point they might be different.
     enum ErrorCode {
-      ErrorOk = 0,
-      ErrorNoAccount,
-      ErrorNotSupported,
-      ErrorNoConnectivity,
-      ErrorInvalidParameters,
-      ErrorInternal
+        ErrorOk = 0,
+        ErrorNoAccount,
+        ErrorNotSupported,
+        ErrorNoConnectivity,
+        ErrorInvalidParameters,
+        ErrorInternal
     };
 
     /** Obtain an instance of the ServiceHandler.
       @return The instance that handles all the services
       */
-    static ServiceHandler& instance()
+    static ServiceHandler &instance()
     {
-      static ServiceHandler singleton;
-      return singleton;
+        static ServiceHandler singleton;
+        return singleton;
     }
 
     /** Send the invitation to the list of people stated as attendees.
@@ -86,7 +86,8 @@ namespace mKCal {
       @param storage Pointer to the storage in use
       @return True if OK, false in case of error
       */
-    bool sendInvitation(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+    bool sendInvitation(const KCalCore::Incidence::Ptr &invitation, const QString &body,
+                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
 
     /** Send the updated invitation to the list of people stated as attendees.
       It would load the appropiate plugin to do it, and if there
@@ -97,7 +98,8 @@ namespace mKCal {
       @param storage Pointer to the storage in use
       @return True if OK, false in case of error
       */
-    bool sendUpdate(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+    bool sendUpdate(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
+                    const ExtendedStorage::Ptr &storage);
 
     /** Send the updated invitation to the organiser.
       It would load the appropiate plugin to do it, and if there
@@ -108,7 +110,8 @@ namespace mKCal {
       @param storage Pointer to the storage in use
       @return True if OK, false in case of error
       */
-    bool sendResponse(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+    bool sendResponse(const KCalCore::Incidence::Ptr &invitation, const QString &body,
+                      const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
 
     /** Icon
       It would load the appropiate plugin to do it
@@ -151,7 +154,8 @@ namespace mKCal {
       @return Id of the attachment download. It will be used to notify changes about it. If < 0
       there was an error.
       */
-    int downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri, const QString &path);
+    int downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri,
+                           const QString &path);
 
     /** deleteAttachment
       It would load the appropiate plugin to do it
@@ -161,7 +165,8 @@ namespace mKCal {
       @param uri uri of attachment to be deleted
       @return True if OK, false in case of error
       */
-    bool deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri);
+    bool deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
+                          const ExtendedStorage::Ptr &storage, const QString &uri);
 
     /** Share notebook
       It would load the appropiate plugin to do it
@@ -227,7 +232,7 @@ namespace mKCal {
       */
     QString uiName(QString serviceId);
 
-  signals:
+signals:
 
     /** Monitors the progress of the download. The id is the return value got when download started */
     void downloadProgress(int id, int percentage);
@@ -238,7 +243,7 @@ namespace mKCal {
     /** Informs that the download is finished with errors. The id is the return value got when download started */
     void downloadError(int id, ErrorCode error);
 
-  };
+};
 
 }
 #endif // MKCAL_SERVICEHANDLER_H

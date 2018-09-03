@@ -51,9 +51,9 @@ const int VersionMinor = 0; // Minor version, if different than stored in databa
 */
 class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 {
-  Q_OBJECT
+    Q_OBJECT
 
-  public:
+public:
 
     /**
       A shared pointer to a SqliteStorage
@@ -375,7 +375,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
     */
     KDateTime fromOriginTime( sqlite3_int64 seconds, QString zonename );
 
-  private:
+private:
     /**
       Initialized the database with the predefined contents
 
@@ -383,19 +383,19 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
     */
     bool initializeDatabase();
 
-  protected:
+protected:
     bool loadNotebooks();
     bool reloadNotebooks();
     bool modifyNotebook( const Notebook::Ptr &nb, DBOperation dbop, bool signal = true );
 
-  private:
+private:
     //@cond PRIVATE
     Q_DISABLE_COPY( SqliteStorage )
     class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 
-  public Q_SLOTS:
+public Q_SLOTS:
     void fileChanged( const QString &path );
 
     void queryFinished();
@@ -569,7 +569,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "delete from Invitations where InvitationId=?"
 #define DELETE_COMPONENTS \
 "update Components set DateDeleted=? where ComponentId=?"
-  //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
+//"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
 #define DELETE_RDATES \
 "delete from Rdates where ComponentId=?"
 #define DELETE_CUSTOMPROPERTIES \
@@ -617,7 +617,7 @@ class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
 "select * from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
-#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID	\
+#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
 "select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
 "select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"

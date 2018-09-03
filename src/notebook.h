@@ -46,7 +46,7 @@ namespace mKCal {
 */
 class MKCAL_EXPORT Notebook
 {
-  public:
+public:
     /**
       A shared pointer to a Notebook object.
     */
@@ -446,7 +446,7 @@ class MKCAL_EXPORT Notebook
     */
     bool operator==( const Notebook &notebook ) const;
 
-  private:
+private:
     //@cond PRIVATE
     class Private;
     Private *const d;

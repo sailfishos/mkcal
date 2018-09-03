@@ -45,7 +45,7 @@
 #endif
 
 namespace KCalCore {
-  class Incidence;
+class Incidence;
 }
 
 namespace mKCal {
@@ -54,27 +54,27 @@ namespace mKCal {
   Database operation type.
 */
 enum DBOperation {
-  DBNone,
-  DBInsert,
-  DBUpdate,
-  DBDelete,
-  DBSelect,
-  DBSelectPlain,
-  DBSelectGeo,
-  DBSelectRecurring,
-  DBSelectAttendee
+    DBNone,
+    DBInsert,
+    DBUpdate,
+    DBDelete,
+    DBSelect,
+    DBSelectPlain,
+    DBSelectGeo,
+    DBSelectRecurring,
+    DBSelectAttendee
 };
 
 enum StorageOperation {
-  StorageNone = 0,
-  StorageOpen,
-  StorageLoad,
-  StorageSave,
-  StorageInserted,
-  StorageModified,
-  StorageDeleted,
-  StorageAll,
-  StorageDuplicate
+    StorageNone = 0,
+    StorageOpen,
+    StorageLoad,
+    StorageSave,
+    StorageInserted,
+    StorageModified,
+    StorageDeleted,
+    StorageAll,
+    StorageDuplicate
 };
 
 // Default alarm receiver is the organiser application.
@@ -91,11 +91,11 @@ const char *const DBusName = "alarm";
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
-  : public KCalCore::CalStorage, public KCalCore::Calendar::CalendarObserver
+    : public KCalCore::CalStorage, public KCalCore::Calendar::CalendarObserver
 {
-  Q_OBJECT
+    Q_OBJECT
 
-  public:
+public:
 
     /**
       A shared pointer to a ExtendedStorage
@@ -453,28 +453,28 @@ class MKCAL_EXPORT ExtendedStorage
       Get deletion time of incidence
 
       @param incidence incidence to check
-      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime() 
+      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime()
     */
     virtual KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence ) = 0;
 
     /**
       Get count of events
 
-      @return count of events 
+      @return count of events
     */
     virtual int eventCount() = 0;
 
     /**
       Get count of todos
 
-      @return count of todos 
+      @return count of todos
     */
     virtual int todoCount() = 0;
 
     /**
       Get count of journals
 
-      @return count of journals 
+      @return count of journals
     */
     virtual int journalCount() = 0;
 
@@ -661,7 +661,7 @@ class MKCAL_EXPORT ExtendedStorage
     */
     virtual void virtual_hook( int id, void *data ) = 0;
 
-  protected:
+protected:
     virtual bool loadNotebooks() = 0;
     virtual bool reloadNotebooks() = 0;
     virtual bool modifyNotebook( const Notebook::Ptr &nb, DBOperation dbop,
@@ -710,7 +710,7 @@ class MKCAL_EXPORT ExtendedStorage
 
     void clearLoaded();
 
-  private:
+private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedStorage )
     class MKCAL_HIDE Private;

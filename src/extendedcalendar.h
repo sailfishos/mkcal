@@ -209,20 +209,20 @@ class Notebook;
   This class provides a calendar cached into memory.
 */
 class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
-                                      public ExtendedStorageObserver
+    public ExtendedStorageObserver
 {
-  public:
+public:
     /**
       Incidence sort keys.
       See calendar.h for Event, Todo or Journal specific sorts.
     */
     enum IncidenceSortField {
-      IncidenceSortUnsorted,   /**< Do not sort Incidences */
-      IncidenceSortDate,       /**< Sort Incidence chronologically,
+        IncidenceSortUnsorted,   /**< Do not sort Incidences */
+        IncidenceSortDate,       /**< Sort Incidence chronologically,
                                   Events by start date,
                                   Todos by due date,
                                   Journals by date */
-      IncidenceSortCreated     /* < Sort Incidences based on creation time */
+        IncidenceSortCreated     /* < Sort Incidences based on creation time */
     };
 
     /**
@@ -295,7 +295,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                                          const KDateTime &dateTime,
                                                          const KDateTime::Spec &spec );
 
-  // Event Specific Methods //
+    // Event Specific Methods //
 
     /**
       @copydoc
@@ -341,17 +341,17 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::rawEvents(KCalCore::EventSortField, KCalCore::SortDirection)
     */
     KCalCore::Event::List rawEvents(
-      KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
       Calendar::rawEvents(const QDate &, const QDate &, const KDateTime::Spec &, bool)
     */
     KCalCore::Event::List rawEvents(
-      const QDate &start, const QDate &end,
-      const KDateTime::Spec &timespec = KDateTime::Spec(),
-      bool inclusive = false ) const;
+        const QDate &start, const QDate &end,
+        const KDateTime::Spec &timespec = KDateTime::Spec(),
+        bool inclusive = false ) const;
 
     /**
       @copydoc
@@ -359,9 +359,9 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                  KCalCore::EventSortField, KCalCore::SortDirection)
     */
     KCalCore::Event::List rawEventsForDate(
-      const QDate &date, const KDateTime::Spec &timespec = KDateTime::Spec(),
-      KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        const QDate &date, const KDateTime::Spec &timespec = KDateTime::Spec(),
+        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
@@ -388,8 +388,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::deletedEvents(KCalCore::EventSortField, KCalCore::SortDirection)
     */
     KCalCore::Event::List deletedEvents(
-      KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
@@ -397,25 +397,25 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                KCalCore::EventSortField, KCalCore::SortDirection)
     */
     KCalCore::Event::List eventInstances(
-      const KCalCore::Incidence::Ptr &event,
-      KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        const KCalCore::Incidence::Ptr &event,
+        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
 
     /**
       Returns the earliest date after @a date on which an event occurs, or an invalid date if
       there is no next date.
-     */ 
+     */
     QDate nextEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
 
     /**
       Returns the latest date before @a date on which an event occurs, or an invalid date if
       there is no previous date.
-     */ 
+     */
     QDate previousEventsDate( const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec() );
 
 
-  // To-do Specific Methods //
+    // To-do Specific Methods //
 
     /**
       @copydoc
@@ -460,17 +460,17 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::rawTodos(KCalCore::TodoSortField, KCalCore::SortDirection)
     */
     KCalCore::Todo::List rawTodos(
-      KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
       Calendar::rawTodos(QDate, QDate, KDateTime::Spec, bool)
     */
     KCalCore::Todo::List rawTodos(
-      const QDate &start, const QDate &end,
-      const KDateTime::Spec &timespec = KDateTime::Spec(),
-      bool inclusive = false ) const;
+        const QDate &start, const QDate &end,
+        const KDateTime::Spec &timespec = KDateTime::Spec(),
+        bool inclusive = false ) const;
 
     /**
       @copydoc
@@ -497,8 +497,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::deletedTodos(KCalCore::TodoSortField, KCalCore::SortDirection)
     */
     KCalCore::Todo::List deletedTodos(
-      KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
@@ -506,11 +506,11 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                               KCalCore::TodoSortField, KCalCore::SortDirection)
     */
     KCalCore::Todo::List todoInstances(
-      const KCalCore::Incidence::Ptr &todo,
-      KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        const KCalCore::Incidence::Ptr &todo,
+        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
-  // Journal Specific Methods //
+    // Journal Specific Methods //
 
     /**
       @copydoc
@@ -555,8 +555,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::rawJournals()
     */
     KCalCore::Journal::List rawJournals(
-      KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       Returns an unfiltered list of all Journals occurring within a date range.
@@ -572,9 +572,9 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       date range.
     */
     KCalCore::Journal::List rawJournals(
-      const QDate &start, const QDate &end,
-      const KDateTime::Spec &timespec = KDateTime::Spec(),
-      bool inclusive = false ) const;
+        const QDate &start, const QDate &end,
+        const KDateTime::Spec &timespec = KDateTime::Spec(),
+        bool inclusive = false ) const;
 
     /**
       @copydoc
@@ -601,8 +601,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       Calendar::deletedJournals(KCalCore::JournalSortField, KCalCore::SortDirection)
     */
     KCalCore::Journal::List deletedJournals(
-      KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
     /**
       @copydoc
@@ -610,11 +610,11 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                  KCalCore::JournalSortField, KCalCore::SortDirection)
     */
     KCalCore::Journal::List journalInstances(
-      const KCalCore::Incidence::Ptr &journal,
-      KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
+        const KCalCore::Incidence::Ptr &journal,
+        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending ) const;
 
-  // Alarm Specific Methods //
+    // Alarm Specific Methods //
 
     /**
       @copydoc
@@ -646,7 +646,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
 
     using QObject::event;   // prevent warning about hidden virtual method
 
-  // Incidence Specific Methods, also see Calendar.h for more //
+    // Incidence Specific Methods, also see Calendar.h for more //
 
     /**
       List all attendees currently in the memory.
@@ -691,7 +691,8 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
 
       @return the list of filtered Incidences occurring on the specified date.
     */
-    virtual KCalCore::Incidence::List incidences( const QDate &date, const QList<KCalCore::Incidence::IncidenceType> &types );
+    virtual KCalCore::Incidence::List incidences( const QDate &date,
+                                                  const QList<KCalCore::Incidence::IncidenceType> &types );
 
     /**
       Delete all incidences from the memory cache. They will be deleted from
@@ -718,19 +719,18 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       @return a list of Incidences sorted as specified.
     */
     static KCalCore::Incidence::List sortIncidences(
-      KCalCore::Incidence::List *list,
-      IncidenceSortField sortField = IncidenceSortDate,
-      KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending );
+        KCalCore::Incidence::List *list,
+        IncidenceSortField sortField = IncidenceSortDate,
+        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending );
 
     /**
        Single expanded incidence validity struct.  The first field contains the
        time in local timezone when the (recurrent) incidence starts.
        The second field contains time in local timezone when the (recurrent) incidence ends.
     */
-    typedef struct ExpandedIncidenceValidity
-    {
-      QDateTime dtStart;
-      QDateTime dtEnd;
+    typedef struct ExpandedIncidenceValidity {
+        QDateTime dtStart;
+        QDateTime dtEnd;
     } ExpandedIncidenceValidity;
 
     /**
@@ -739,7 +739,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
        The second field contains a pointer to the actual Incidence
        instance.
     */
-    typedef QPair<ExpandedIncidenceValidity,KCalCore::Incidence::Ptr> ExpandedIncidence;
+    typedef QPair<ExpandedIncidenceValidity, KCalCore::Incidence::Ptr> ExpandedIncidence;
 
     /**
        List of ExpandedIncidences.
@@ -833,9 +833,10 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       to the user which type it is.
       @warning A new storage is created with each call.
     */
-    static QSharedPointer<ExtendedStorage> defaultStorage( const ExtendedCalendar::Ptr &calendar );  //No typedef to avoid cyclic includes
+    static QSharedPointer<ExtendedStorage> defaultStorage( const ExtendedCalendar::Ptr
+                                                           &calendar );  //No typedef to avoid cyclic includes
 
-  // Smart Loading Methods, see ExtendedStorage.h for more //
+    // Smart Loading Methods, see ExtendedStorage.h for more //
 
     /**
       Get all uncompleted todos. Todos may or may not have due date and
@@ -889,7 +890,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
       @see IncidenceBase::setInvitationStatus()
     */
     KCalCore::Incidence::List unreadInvitationIncidences(
-      const KCalCore::Person::Ptr &person = KCalCore::Person::Ptr() );
+        const KCalCore::Person::Ptr &person = KCalCore::Person::Ptr() );
 
     /**
       Get incidences that have read/sent invitation status.
@@ -945,12 +946,12 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
                                              const QString &notebookUid,
                                              bool duplicateRemovalEnabled = true );
 
-/**
-      Return the count of event incidences.
+    /**
+          Return the count of event incidences.
 
-      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
-      @return count of incidences
-    */
+          @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
+          @return count of incidences
+        */
     int eventCount( const QString &notebookUid = QString());
 
     /**
@@ -975,7 +976,7 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
     */
     virtual void virtual_hook( int id, void *data );
 
-  protected:
+protected:
 
     /**
        Implement the storageModified to clear ExtendedCalendar
@@ -984,9 +985,9 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
     virtual void storageModified( ExtendedStorage *storage, const QString &info );
     virtual void storageProgress( ExtendedStorage *storage, const QString &info );
     virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info );
-    
-    
-  private:
+
+
+private:
     //@cond PRIVATE
     Q_DISABLE_COPY( ExtendedCalendar )
     class MKCAL_HIDE Private;

@@ -53,15 +53,15 @@ class SqliteStorage;
 */
 class MKCAL_EXPORT SqliteFormat
 {
-  public:
+public:
     /**
       The different types of rdates.
     */
     enum RDateType {
-      RDate = 1,
-      XDate,
-      RDateTime,
-      XDateTime
+        RDate = 1,
+        XDate,
+        RDateTime,
+        XDateTime
     };
 
     /**
@@ -134,7 +134,7 @@ class MKCAL_EXPORT SqliteFormat
     */
     KCalCore::Person::List selectContacts( sqlite3_stmt *stmt );
 
-  private:
+private:
     //@cond PRIVATE
     Q_DISABLE_COPY( SqliteFormat )
     class MKCAL_HIDE Private;

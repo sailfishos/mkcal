@@ -54,7 +54,8 @@ union semun {
 
 void semaphoreError(const char *msg, const char *id, int error)
 {
-    kError() << QString::fromLatin1("%1 %2: %3 (%4)").arg(msg).arg(id).arg(::strerror(error)).arg(error).toUtf8().constData();
+    kError() << QString::fromLatin1("%1 %2: %3 (%4)").arg(msg).arg(id).arg(::strerror(error)).arg(
+                 error).toUtf8().constData();
 }
 
 int semaphoreInit(const char *id, size_t count, const int *initialValues)
@@ -76,7 +77,7 @@ int semaphoreInit(const char *id, size_t count, const int *initialValues)
             rv = ::semget(key, count, IPC_CREAT | IPC_EXCL | S_IRWXO | S_IRWXG | S_IRWXU);
             if (rv == -1) {
                 if (errno == EEXIST) {
-                    // Someone else won the race to create the semaphore - retry get 
+                    // Someone else won the race to create the semaphore - retry get
                     rv = ::semget(key, count, 0);
                 }
 
