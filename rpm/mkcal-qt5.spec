@@ -19,8 +19,7 @@ BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(uuid)
 BuildRequires:  pkgconfig(libical)
 BuildRequires:  pkgconfig(timed-qt5) >= 2.88
-# QMF
-BuildRequires: pkgconfig(qmfclient5)
+BuildRequires:  pkgconfig(QmfClient)
 
 %description
 Extended KDE kcal calendar library port for Maemo
