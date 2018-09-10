@@ -33,8 +33,8 @@ const QString name("DefaultInvitationPlugin");
 class DefaultInvitationPlugin::Private
 {
 public:
-    Private() : mStore( 0 ), mDefaultAccount( 0 ), mInit ( false ),
-        mErrorCode( ServiceInterface::ErrorOk )
+    Private() : mStore(0), mDefaultAccount(0), mInit(false),
+        mErrorCode(ServiceInterface::ErrorOk)
     {
     }
     ~Private()
@@ -44,18 +44,18 @@ public:
 
     void init()
     {
-        if ( !mInit ) {
+        if (!mInit) {
             mStore = QMailStore::instance();
             Q_ASSERT(mStore);
-            QMailAccountKey byDefault = QMailAccountKey::status( QMailAccount::PreferredSender );
+            QMailAccountKey byDefault = QMailAccountKey::status(QMailAccount::PreferredSender);
             QMailAccountIdList accounts = mStore->queryAccounts(byDefault);
             if (!accounts.count()) {
                 qWarning() << "Default account was not found!";
             } else {
                 if (accounts.count() > 1) {
-                    qWarning( "There are more than one default account, using first" );
+                    qWarning("There are more than one default account, using first");
                 }
-                mDefaultAccount = new QMailAccount( accounts.first() );
+                mDefaultAccount = new QMailAccount(accounts.first());
             }
             mInit = true;
         }
@@ -63,7 +63,7 @@ public:
 
     QString defaultAddress()
     {
-        if ( mInit ) {
+        if (mInit) {
             return mDefaultAccount ? mDefaultAccount->fromAddress().address() : QString();
         } else {
             return QString();
@@ -78,11 +78,11 @@ public:
         mInit = false;
     }
 
-    bool sendMail( const QString &accountId, const QStringList &recipients, const QString &subject,
-                   const QString &body, const QString &attachment )
+    bool sendMail(const QString &accountId, const QStringList &recipients, const QString &subject,
+                  const QString &body, const QString &attachment)
     {
         qDebug() << "DefaultPlugin sendMail for account " << accountId;
-        if ( !mInit ) {
+        if (!mInit) {
             return false;
         }
         QMailAccount *account = nullptr;
@@ -101,14 +101,14 @@ public:
         // Build a message
         QMailMessage message;
         // Setup account which should be used to send a message
-        message.setParentAccountId( account->id() );
+        message.setParentAccountId(account->id());
         // Get the outbox folder ID
         QMailFolderId folderId = account->standardFolder(QMailFolder::OutboxFolder);
         if (!folderId.isValid()) {
             folderId = QMailFolder::LocalStorageFolderId;
         }
         // Put message to standard outbox folder for that account
-        message.setParentFolderId( folderId );
+        message.setParentFolderId(folderId);
 
         // Setup message status
         message.setStatus(QMailMessage::Outbox, true);
@@ -122,14 +122,14 @@ public:
 
         // Define recipeint's address
         QList<QMailAddress> addresses;
-        foreach ( const QString &mail, recipients) {
-            addresses.append( QMailAddress( mail ) );
+        foreach (const QString &mail, recipients) {
+            addresses.append(QMailAddress(mail));
         }
-        message.setTo( addresses );
+        message.setTo(addresses);
         // Define from address
-        message.setFrom( account->fromAddress() );
+        message.setFrom(account->fromAddress());
         // Define subject
-        message.setSubject( subject );
+        message.setSubject(subject);
         message.setMessageType(QMailMessage::Email);
         message.setMultipartType(QMailMessagePartContainerFwd::MultipartRelated);
 
@@ -159,11 +159,11 @@ public:
             return false;
 
         // initiate transmission
-        QSharedPointer<QMailTransmitAction> action ( new QMailTransmitAction() );
-        if ( action ) {
-            action->transmitMessages( account->id() );
+        QSharedPointer<QMailTransmitAction> action(new QMailTransmitAction());
+        if (action) {
+            action->transmitMessages(account->id());
         } else {
-            qDebug( "No MailTransmistAction" );
+            qDebug("No MailTransmistAction");
             return false;
         }
 
@@ -180,7 +180,7 @@ public:
 };
 
 
-DefaultInvitationPlugin::DefaultInvitationPlugin(): d( new Private() )
+DefaultInvitationPlugin::DefaultInvitationPlugin(): d(new Private())
 {
 }
 
@@ -194,14 +194,14 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
                                              const Incidence::Ptr &invitation, const QString &body)
 {
 
-    Q_UNUSED( body );
-    Q_UNUSED( accountId );
-    Q_UNUSED( notebookUid );
+    Q_UNUSED(body);
+    Q_UNUSED(accountId);
+    Q_UNUSED(notebookUid);
 
     d->mErrorCode = ServiceInterface::ErrorOk;
 
     Attendee::List attendees = invitation->attendees();
-    if ( attendees.size() == 0 ) {
+    if (attendees.size() == 0) {
         qDebug("No attendees");
         return false;
     }
@@ -209,15 +209,15 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     d->init();
 
     ICalFormat icf;
-    QString ical = icf.createScheduleMessage( invitation, iTIPRequest );
+    QString ical = icf.createScheduleMessage(invitation, iTIPRequest);
 
     QStringList emails;
     foreach (const Attendee::Ptr &att, attendees) {
-        emails.append( att->email() );
+        emails.append(att->email());
     }
 
     const QString &description = invitation->description();
-    const bool res = d->sendMail( accountId, emails, invitation->summary(), description, ical );
+    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical);
 
     d->uninit();
     return res;
@@ -246,17 +246,17 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     }
 
     // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
-    Attendee::Ptr me = invitation->attendeeByMail( d->defaultAddress() );
+    Attendee::Ptr me = invitation->attendeeByMail(d->defaultAddress());
     if (me == 0 || !me->RSVP()) {
         qWarning() << "sendResponse() called with wrong invitation: we are not invited or no response is expected.";
         return false;
     }
 
     ICalFormat icf;
-    QString ical =  icf.createScheduleMessage( invitation, iTIPReply) ;
+    QString ical =  icf.createScheduleMessage(invitation, iTIPReply) ;
     //    QString base64Data = ical;
 
-    bool res = d->sendMail(accountId, QStringList( organizer->email() ), invitation->summary(), body, ical);
+    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitation->summary(), body, ical);
 
 //  d->uninit();
     return res;
@@ -306,16 +306,16 @@ QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebo
 
 QString DefaultInvitationPlugin::displayName(const mKCal::Notebook::Ptr &notebook) const
 {
-    Q_UNUSED( notebook );
+    Q_UNUSED(notebook);
     return QString();
 }
 
 bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri,
                                                  const QString &path)
 {
-    Q_UNUSED( notebook );
-    Q_UNUSED( uri );
-    Q_UNUSED( path );
+    Q_UNUSED(notebook);
+    Q_UNUSED(uri);
+    Q_UNUSED(path);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return false;
 
@@ -324,9 +324,9 @@ bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &not
 bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence,
                                                const QString &uri)
 {
-    Q_UNUSED( notebook );
-    Q_UNUSED( incidence );
-    Q_UNUSED( uri );
+    Q_UNUSED(notebook);
+    Q_UNUSED(incidence);
+    Q_UNUSED(uri);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return false;
 
@@ -334,15 +334,15 @@ bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &noteb
 
 bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith)
 {
-    Q_UNUSED( notebook );
-    Q_UNUSED( sharedWith );
+    Q_UNUSED(notebook);
+    Q_UNUSED(sharedWith);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return false;
 }
 
 QStringList DefaultInvitationPlugin::sharedWith(const mKCal::Notebook::Ptr &notebook)
 {
-    Q_UNUSED( notebook );
+    Q_UNUSED(notebook);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return QStringList();
 }

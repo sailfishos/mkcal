@@ -39,18 +39,18 @@ using namespace KCalCore;
 
 using namespace mKCal;
 
-static const int FLAG_ALLOW_EVENT = ( 1 << 0 );
-static const int FLAG_ALLOW_JOURNAL = ( 1 << 1 );
-static const int FLAG_ALLOW_TODO = ( 1 << 2 );
-static const int FLAG_IS_SHARED = ( 1 << 3 );
-static const int FLAG_IS_MASTER = ( 1 << 4 );
-static const int FLAG_IS_SYNCED = ( 1 << 5 );
-static const int FLAG_IS_READONLY = ( 1 << 6 );
-static const int FLAG_IS_VISIBLE = ( 1 << 7 );
-static const int FLAG_IS_RUNTIMEONLY = ( 1 << 8 );
-static const int FLAG_IS_DEFAULT = ( 1 << 9 );
-static const int FLAG_IS_SHAREABLE = ( 1 << 10 );
-static const int ALL_FLAGS = ( 1 << 11 ) - 1;
+static const int FLAG_ALLOW_EVENT = (1 << 0);
+static const int FLAG_ALLOW_JOURNAL = (1 << 1);
+static const int FLAG_ALLOW_TODO = (1 << 2);
+static const int FLAG_IS_SHARED = (1 << 3);
+static const int FLAG_IS_MASTER = (1 << 4);
+static const int FLAG_IS_SYNCED = (1 << 5);
+static const int FLAG_IS_READONLY = (1 << 6);
+static const int FLAG_IS_VISIBLE = (1 << 7);
+static const int FLAG_IS_RUNTIMEONLY = (1 << 8);
+static const int FLAG_IS_DEFAULT = (1 << 9);
+static const int FLAG_IS_SHAREABLE = (1 << 10);
+static const int ALL_FLAGS = (1 << 11) - 1;
 
 #define NOTEBOOK_FLAGS_ALLOW_ALL        \
   ( FLAG_ALLOW_EVENT |                  \
@@ -83,31 +83,31 @@ class mKCal::Notebook::Private
 {
 public:
     Private()
-        : mFlags( DEFAULT_NOTEBOOK_FLAGS ),
-          mSyncDate( KDateTime() ),
-          mPluginName( QString() ),
-          mAccount( QString() ),
+        : mFlags(DEFAULT_NOTEBOOK_FLAGS),
+          mSyncDate(KDateTime()),
+          mPluginName(QString()),
+          mAccount(QString()),
           mAttachmentSize(-1),
-          mModifiedDate( KDateTime() ),
-          mSharedWith( QStringList() ),
-          mSyncProfile( QString() ),
-          mCreationDate( KDateTime() )
+          mModifiedDate(KDateTime()),
+          mSharedWith(QStringList()),
+          mSyncProfile(QString()),
+          mCreationDate(KDateTime())
     {}
 
-    Private( const Private &other )
-        : mUid( other.mUid ),
-          mName( other.mName ),
-          mDescription( other.mDescription ),
-          mColor( other.mColor ),
-          mFlags( other.mFlags ),
-          mSyncDate( other.mSyncDate ),
-          mPluginName( other.mPluginName ),
-          mAccount( other.mAccount ),
-          mAttachmentSize( other.mAttachmentSize ),
-          mModifiedDate( other.mModifiedDate ),
-          mSharedWith( other.mSharedWith ),
-          mSyncProfile( other.mSyncProfile ),
-          mCreationDate( other.mCreationDate )
+    Private(const Private &other)
+        : mUid(other.mUid),
+          mName(other.mName),
+          mDescription(other.mDescription),
+          mColor(other.mColor),
+          mFlags(other.mFlags),
+          mSyncDate(other.mSyncDate),
+          mPluginName(other.mPluginName),
+          mAccount(other.mAccount),
+          mAttachmentSize(other.mAttachmentSize),
+          mModifiedDate(other.mModifiedDate),
+          mSharedWith(other.mSharedWith),
+          mSyncProfile(other.mSyncProfile),
+          mCreationDate(other.mCreationDate)
     {}
 
     QString mUid;
@@ -128,57 +128,57 @@ public:
 //@endcond
 
 Notebook::Notebook()
-    : d( new Notebook::Private() )
+    : d(new Notebook::Private())
 {
 }
 
-Notebook::Notebook( const QString &name, const QString &description )
-    : d( new Notebook::Private() )
+Notebook::Notebook(const QString &name, const QString &description)
+    : d(new Notebook::Private())
 {
-    setName( name );
-    setDescription( description );
+    setName(name);
+    setDescription(description);
 }
 
-Notebook::Notebook( const QString &uid, const QString &name,
-                    const QString &description, const QString &color,
-                    bool isShared, bool isMaster, bool isSynced,
-                    bool isReadOnly, bool isVisible )
-    : d( new Notebook::Private() )
+Notebook::Notebook(const QString &uid, const QString &name,
+                   const QString &description, const QString &color,
+                   bool isShared, bool isMaster, bool isSynced,
+                   bool isReadOnly, bool isVisible)
+    : d(new Notebook::Private())
 {
-    setUid( uid );
-    setName( name );
-    setDescription( description );
-    setColor( color );
-    setIsShared( isShared );
-    setIsMaster( isMaster );
-    setIsSynchronized( isSynced );
-    setIsReadOnly( isReadOnly );
-    setIsVisible( isVisible );
+    setUid(uid);
+    setName(name);
+    setDescription(description);
+    setColor(color);
+    setIsShared(isShared);
+    setIsMaster(isMaster);
+    setIsSynchronized(isSynced);
+    setIsReadOnly(isReadOnly);
+    setIsVisible(isVisible);
 }
 
-Notebook::Notebook( const QString &uid, const QString &name,
-                    const QString &description, const QString &color,
-                    bool isShared, bool isMaster, bool isSynced,
-                    bool isReadOnly, bool isVisible, const QString &pluginName,
-                    const QString &account, int attachmentSize )
-    : d( new Notebook::Private() )
+Notebook::Notebook(const QString &uid, const QString &name,
+                   const QString &description, const QString &color,
+                   bool isShared, bool isMaster, bool isSynced,
+                   bool isReadOnly, bool isVisible, const QString &pluginName,
+                   const QString &account, int attachmentSize)
+    : d(new Notebook::Private())
 {
-    setUid( uid );
-    setName( name );
-    setDescription( description );
-    setColor( color );
-    setIsShared( isShared );
-    setIsMaster( isMaster );
-    setIsSynchronized( isSynced );
-    setIsReadOnly( isReadOnly );
-    setIsVisible( isVisible );
-    setPluginName( pluginName );
-    setAccount( account );
-    setAttachmentSize( attachmentSize );
+    setUid(uid);
+    setName(name);
+    setDescription(description);
+    setColor(color);
+    setIsShared(isShared);
+    setIsMaster(isMaster);
+    setIsSynchronized(isSynced);
+    setIsReadOnly(isReadOnly);
+    setIsVisible(isVisible);
+    setPluginName(pluginName);
+    setAccount(account);
+    setAttachmentSize(attachmentSize);
 }
 
-Notebook::Notebook( const Notebook &i )
-    : d( new Notebook::Private( *i.d ) )
+Notebook::Notebook(const Notebook &i)
+    : d(new Notebook::Private(*i.d))
 {
 }
 
@@ -187,17 +187,17 @@ Notebook::~Notebook()
     delete d;
 }
 
-Notebook &Notebook::operator=( const Notebook &other )
+Notebook &Notebook::operator=(const Notebook &other)
 {
     // check for self assignment
-    if ( &other == this ) {
+    if (&other == this) {
         return *this;
     }
     *d = *other.d;
     return *this;
 }
 
-bool Notebook::operator==( const Notebook &i2 ) const
+bool Notebook::operator==(const Notebook &i2) const
 {
     return
         d->mUid == i2.uid() &&
@@ -217,7 +217,7 @@ QString Notebook::uid() const
     return d->mUid;
 }
 
-void Notebook::setUid( const QString &uid )
+void Notebook::setUid(const QString &uid)
 {
     d->mUid = uid;
 }
@@ -227,7 +227,7 @@ QString Notebook::name() const
     return d->mName;
 }
 
-void Notebook::setName( const QString &name )
+void Notebook::setName(const QString &name)
 {
     d->mName = name;
 }
@@ -237,7 +237,7 @@ QString Notebook::description() const
     return d->mDescription;
 }
 
-void Notebook::setDescription( const QString &description )
+void Notebook::setDescription(const QString &description)
 {
     d->mDescription = description;
 }
@@ -247,7 +247,7 @@ QString Notebook::color() const
     return d->mColor;
 }
 
-void Notebook::setColor( const QString &color )
+void Notebook::setColor(const QString &color)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mColor = color;
@@ -258,9 +258,9 @@ bool Notebook::isShared() const
     return d->mFlags & FLAG_IS_SHARED;
 }
 
-void Notebook::setIsShared( bool isShared )
+void Notebook::setIsShared(bool isShared)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_SHARED, isShared );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SHARED, isShared);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -269,9 +269,9 @@ bool Notebook::isMaster() const
     return d->mFlags & FLAG_IS_MASTER;
 }
 
-void Notebook::setIsMaster( bool isMaster )
+void Notebook::setIsMaster(bool isMaster)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_MASTER, isMaster );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_MASTER, isMaster);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -280,9 +280,9 @@ bool Notebook::isSynchronized() const
     return d->mFlags & FLAG_IS_SYNCED;
 }
 
-void Notebook::setIsSynchronized( bool isSynced )
+void Notebook::setIsSynchronized(bool isSynced)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_SYNCED, isSynced );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SYNCED, isSynced);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -291,9 +291,9 @@ bool Notebook::isReadOnly() const
     return d->mFlags & FLAG_IS_READONLY;
 }
 
-void Notebook::setIsReadOnly( bool isReadOnly )
+void Notebook::setIsReadOnly(bool isReadOnly)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_READONLY, isReadOnly );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_READONLY, isReadOnly);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -302,9 +302,9 @@ bool Notebook::isVisible() const
     return d->mFlags & FLAG_IS_VISIBLE;
 }
 
-void Notebook::setIsVisible( bool isVisible )
+void Notebook::setIsVisible(bool isVisible)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_VISIBLE, isVisible );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_VISIBLE, isVisible);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -313,9 +313,9 @@ bool Notebook::isRunTimeOnly() const
     return d->mFlags & FLAG_IS_RUNTIMEONLY;
 }
 
-void Notebook::setRunTimeOnly( bool isRunTime )
+void Notebook::setRunTimeOnly(bool isRunTime)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_RUNTIMEONLY, isRunTime );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_RUNTIMEONLY, isRunTime);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -324,7 +324,7 @@ KDateTime Notebook::syncDate() const
     return d->mSyncDate;
 }
 
-void Notebook::setSyncDate( const KDateTime &syncDate )
+void Notebook::setSyncDate(const KDateTime &syncDate)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mSyncDate = syncDate;
@@ -335,7 +335,7 @@ QString Notebook::pluginName() const
     return d->mPluginName;
 }
 
-void Notebook::setPluginName( const QString &pluginName )
+void Notebook::setPluginName(const QString &pluginName)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mPluginName = pluginName;
@@ -346,7 +346,7 @@ QString Notebook::account() const
     return d->mAccount;
 }
 
-void Notebook::setAccount( const QString &account )
+void Notebook::setAccount(const QString &account)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mAccount = account;
@@ -357,7 +357,7 @@ int Notebook::attachmentSize() const
     return d->mAttachmentSize;
 }
 
-void Notebook::setAttachmentSize( int size )
+void Notebook::setAttachmentSize(int size)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mAttachmentSize = size;
@@ -368,7 +368,7 @@ KDateTime Notebook::modifiedDate() const
     return d->mModifiedDate;
 }
 
-void Notebook::setModifiedDate( const KDateTime &modifiedDate )
+void Notebook::setModifiedDate(const KDateTime &modifiedDate)
 {
     d->mModifiedDate = modifiedDate;
 }
@@ -378,7 +378,7 @@ KDateTime Notebook::creationDate() const
     return d->mCreationDate;
 }
 
-void Notebook::setCreationDate( const KDateTime &date )
+void Notebook::setCreationDate(const KDateTime &date)
 {
     d->mCreationDate = date;
 }
@@ -388,9 +388,9 @@ bool Notebook::isDefault() const
     return d->mFlags & FLAG_IS_DEFAULT;
 }
 
-void Notebook::setIsDefault( bool isDefault )
+void Notebook::setIsDefault(bool isDefault)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_DEFAULT, isDefault );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_DEFAULT, isDefault);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -399,9 +399,9 @@ bool Notebook::isShareable() const
     return d->mFlags & FLAG_IS_SHAREABLE;
 }
 
-void Notebook::setIsShareable( bool isShareable )
+void Notebook::setIsShareable(bool isShareable)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_IS_SHAREABLE, isShareable );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SHAREABLE, isShareable);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -412,28 +412,28 @@ QStringList Notebook::sharedWith() const
 
 QString Notebook::sharedWithStr() const
 {
-    return d->mSharedWith.join( "," );
+    return d->mSharedWith.join(",");
 }
 
-void Notebook::setSharedWith( const QStringList &sharedWith )
+void Notebook::setSharedWith(const QStringList &sharedWith)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mSharedWith = sharedWith;
 }
 
-void Notebook::setSharedWithStr( const QString &sharedWithStr )
+void Notebook::setSharedWithStr(const QString &sharedWithStr)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mSharedWith.clear();
 
-    if ( sharedWithStr.isEmpty() ) {
+    if (sharedWithStr.isEmpty()) {
         return;
     }
 
-    d->mSharedWith = sharedWithStr.split( ',' );
+    d->mSharedWith = sharedWithStr.split(',');
 
     QStringList::Iterator it;
-    for ( it = d->mSharedWith.begin(); it != d->mSharedWith.end(); ++it ) {
+    for (it = d->mSharedWith.begin(); it != d->mSharedWith.end(); ++it) {
         *it = (*it).trimmed();
     }
 }
@@ -443,15 +443,15 @@ QString Notebook::syncProfile() const
     return d->mSyncProfile;
 }
 
-void Notebook::setSyncProfile( const QString &syncProfile )
+void Notebook::setSyncProfile(const QString &syncProfile)
 {
     d->mModifiedDate = KDateTime::currentUtcDateTime();
     d->mSyncProfile = syncProfile;
 }
 
-void Notebook::setEventsAllowed( bool eventsAllowed )
+void Notebook::setEventsAllowed(bool eventsAllowed)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_ALLOW_EVENT, eventsAllowed );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_EVENT, eventsAllowed);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -460,9 +460,9 @@ bool Notebook::eventsAllowed() const
     return d->mFlags & FLAG_ALLOW_EVENT;
 }
 
-void Notebook::setJournalsAllowed( bool journalsAllowed )
+void Notebook::setJournalsAllowed(bool journalsAllowed)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_ALLOW_JOURNAL, journalsAllowed );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_JOURNAL, journalsAllowed);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -471,9 +471,9 @@ bool Notebook::journalsAllowed() const
     return d->mFlags & FLAG_ALLOW_JOURNAL;
 }
 
-void Notebook::setTodosAllowed( bool todosAllowed )
+void Notebook::setTodosAllowed(bool todosAllowed)
 {
-    SET_BIT_OR_RETURN( d->mFlags, FLAG_ALLOW_TODO, todosAllowed );
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_TODO, todosAllowed);
     d->mModifiedDate = KDateTime::currentUtcDateTime();
 }
 
@@ -482,7 +482,7 @@ bool Notebook::todosAllowed() const
     return d->mFlags & FLAG_ALLOW_TODO;
 }
 
-void Notebook::setFlags( int flags )
+void Notebook::setFlags(int flags)
 {
     d->mFlags = flags;
 }
@@ -492,28 +492,28 @@ int Notebook::flags() const
     return d->mFlags;
 }
 
-bool Notebook::incidenceAllowed( Incidence::Ptr incidence ) const
+bool Notebook::incidenceAllowed(Incidence::Ptr incidence) const
 {
     // First off, handle invalid incidence pointers. We're not
     // interested in those.
-    if ( !incidence ) {
+    if (!incidence) {
         return false;
     }
 
     // Then, consider the type of incidence - can it be added to this
     // type of notebook?
-    if ( incidence->type() == Incidence::TypeEvent ) {
-        if ( !eventsAllowed() ) {
+    if (incidence->type() == Incidence::TypeEvent) {
+        if (!eventsAllowed()) {
             kDebug() << "unable add event to this notebook";
             return false;
         }
-    } else if ( incidence->type() == Incidence::TypeTodo ) {
-        if ( !todosAllowed() ) {
+    } else if (incidence->type() == Incidence::TypeTodo) {
+        if (!todosAllowed()) {
             kDebug() << "unable add todo to this notebook";
             return false;
         }
-    } else if ( incidence->type() == Incidence::TypeJournal ) {
-        if ( !journalsAllowed() ) {
+    } else if (incidence->type() == Incidence::TypeJournal) {
+        if (!journalsAllowed()) {
             kDebug() << "unable add journal to this notebook";
             return false;
         }

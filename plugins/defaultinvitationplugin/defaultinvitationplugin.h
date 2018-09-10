@@ -79,7 +79,7 @@ public:
 
 private:
     //@cond PRIVATE
-    Q_DISABLE_COPY( DefaultInvitationPlugin )
+    Q_DISABLE_COPY(DefaultInvitationPlugin)
     class Private;
     Private *const d;
     //@endcond

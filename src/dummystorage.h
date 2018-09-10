@@ -37,8 +37,8 @@ class MKCAL_EXPORT DummyStorage : public mKCal::ExtendedStorage
 public:
     DummyStorage(const mKCal::ExtendedCalendar::Ptr &cal) : mKCal::ExtendedStorage(cal)
     {
-        mKCal::Notebook::Ptr nb = mKCal::Notebook::Ptr( new mKCal::Notebook("dummy-name",
-                                                                            "dummy-desc") );
+        mKCal::Notebook::Ptr nb = mKCal::Notebook::Ptr(new mKCal::Notebook("dummy-name",
+                                                                           "dummy-desc"));
         bool r;
         r = addNotebook(nb);
         Q_ASSERT(r);
@@ -228,7 +228,7 @@ public:
     {
         return true;
     }
-    KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence )
+    KDateTime incidenceDeletedDate(const KCalCore::Incidence::Ptr &incidence)
     {
         return KDateTime();
     }
@@ -244,7 +244,7 @@ public:
     {
         return 0;
     }
-    void virtual_hook( int, void * )
+    void virtual_hook(int, void *)
     {
         return;
     }
