@@ -31,7 +31,7 @@ class MkcalTool
 
 public:
     explicit MkcalTool();
-    
+
     int resetAlarms(const QString &notebookUid, const QString &eventUid);
 };
 

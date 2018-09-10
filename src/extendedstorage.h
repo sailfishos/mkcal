@@ -45,7 +45,7 @@
 #endif
 
 namespace KCalCore {
-  class Incidence;
+class Incidence;
 }
 
 namespace mKCal {
@@ -54,27 +54,27 @@ namespace mKCal {
   Database operation type.
 */
 enum DBOperation {
-  DBNone,
-  DBInsert,
-  DBUpdate,
-  DBDelete,
-  DBSelect,
-  DBSelectPlain,
-  DBSelectGeo,
-  DBSelectRecurring,
-  DBSelectAttendee
+    DBNone,
+    DBInsert,
+    DBUpdate,
+    DBDelete,
+    DBSelect,
+    DBSelectPlain,
+    DBSelectGeo,
+    DBSelectRecurring,
+    DBSelectAttendee
 };
 
 enum StorageOperation {
-  StorageNone = 0,
-  StorageOpen,
-  StorageLoad,
-  StorageSave,
-  StorageInserted,
-  StorageModified,
-  StorageDeleted,
-  StorageAll,
-  StorageDuplicate
+    StorageNone = 0,
+    StorageOpen,
+    StorageLoad,
+    StorageSave,
+    StorageInserted,
+    StorageModified,
+    StorageDeleted,
+    StorageAll,
+    StorageDuplicate
 };
 
 // Default alarm receiver is the organiser application.
@@ -91,11 +91,11 @@ const char *const DBusName = "alarm";
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
-  : public KCalCore::CalStorage, public KCalCore::Calendar::CalendarObserver
+    : public KCalCore::CalStorage, public KCalCore::Calendar::CalendarObserver
 {
-  Q_OBJECT
+    Q_OBJECT
 
-  public:
+public:
 
     /**
       A shared pointer to a ExtendedStorage
@@ -117,7 +117,7 @@ class MKCAL_EXPORT ExtendedStorage
       cannot change. It is possible to do so through the API, but the internal
       hash tables will not be updated and hence the changes will not be tracked.
     */
-    explicit ExtendedStorage( const ExtendedCalendar::Ptr &cal, bool validateNotebooks = false );
+    explicit ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks = false);
 
     /**
       Destructor.
@@ -143,7 +143,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param recurrenceid is recurrenceid of incidence, default null
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load( const QString &uid, const KDateTime &recurrenceId = KDateTime() ) = 0;
+    virtual bool load(const QString &uid, const KDateTime &recurrenceId = KDateTime()) = 0;
 
     /**
       Load incidences at given date into the memory.
@@ -151,7 +151,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param date date
       @return true if the load was successful and specific date wasn't already loaded; false otherwise.
     */
-    virtual bool load( const QDate &date ) = 0;
+    virtual bool load(const QDate &date) = 0;
 
     /**
       Load incidences between given dates into the memory.
@@ -160,7 +160,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param end is the ending date
       @return true if the load was successful and specific dates wasn't already loaded; false otherwise.
     */
-    virtual bool load( const QDate &start, const QDate &end ) = 0;
+    virtual bool load(const QDate &start, const QDate &end) = 0;
 
     /**
       Load incidences of one notebook into the memory.
@@ -168,7 +168,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid is uid of notebook
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadNotebookIncidences( const QString &notebookUid ) = 0;
+    virtual bool loadNotebookIncidences(const QString &notebookUid) = 0;
 
     /**
       Load journal type entries
@@ -205,8 +205,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param diffLongitude maximum longitudinal difference
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadGeoIncidences( float geoLatitude, float geoLongitude,
-                                    float diffLatitude, float diffLongitude ) = 0;
+    virtual bool loadGeoIncidences(float geoLatitude, float geoLongitude,
+                                   float diffLatitude, float diffLongitude) = 0;
 
     /**
       Load incidences that have attendee.
@@ -233,7 +233,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded todo due/creation date in return
       @return number of loaded todos, or -1 on error
     */
-    virtual int loadCompletedTodos( bool hasDate, int limit, KDateTime *last ) = 0;
+    virtual int loadCompletedTodos(bool hasDate, int limit, KDateTime *last) = 0;
 
     /**
       Load incidences based on start/due date or creation date.
@@ -245,7 +245,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadIncidences( bool hasDate, int limit, KDateTime *last ) = 0;
+    virtual int loadIncidences(bool hasDate, int limit, KDateTime *last) = 0;
 
     /**
       Load future incidences based on start/due date.
@@ -258,7 +258,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence start date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadFutureIncidences( int limit, KDateTime *last ) = 0;
+    virtual int loadFutureIncidences(int limit, KDateTime *last) = 0;
 
     /**
       Load incidences that have location information based on parameters.
@@ -270,7 +270,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadGeoIncidences( bool hasDate, int limit, KDateTime *last ) = 0;
+    virtual int loadGeoIncidences(bool hasDate, int limit, KDateTime *last) = 0;
 
     /**
       Load all unread incidences that are related to an invitation.
@@ -288,7 +288,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadOldInvitationIncidences( int limit, KDateTime *last ) = 0;
+    virtual int loadOldInvitationIncidences(int limit, KDateTime *last) = 0;
 
     /**
       Load all contacts in the database. Doesn't put anything into calendar.
@@ -308,8 +308,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadContactIncidences( const KCalCore::Person::Ptr &person,
-                                       int limit, KDateTime *last ) = 0;
+    virtual int loadContactIncidences(const KCalCore::Person::Ptr &person,
+                                      int limit, KDateTime *last) = 0;
 
     /**
       Load journal entries based on parameters. Load direction is
@@ -320,7 +320,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadJournals( int limit, KDateTime *last ) = 0;
+    virtual int loadJournals(int limit, KDateTime *last) = 0;
 
     /**
       @copydoc
@@ -336,7 +336,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param incidence The incidence that has been opened
       @return True if sucessful; false otherwise
     */
-    virtual bool notifyOpened( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual bool notifyOpened(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     /**
       Cancel any ongoing action (load etc.).
@@ -357,31 +357,31 @@ class MKCAL_EXPORT ExtendedStorage
       @copydoc
       Calendar::CalendarObserver::calendarModified()
     */
-    virtual void calendarModified( bool modified, KCalCore::Calendar *calendar ) = 0;
+    virtual void calendarModified(bool modified, KCalCore::Calendar *calendar) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdded()
     */
-    virtual void calendarIncidenceAdded( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual void calendarIncidenceAdded(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceChanged()
     */
-    virtual void calendarIncidenceChanged( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual void calendarIncidenceChanged(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceDeleted()
     */
-    virtual void calendarIncidenceDeleted( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual void calendarIncidenceDeleted(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
     */
-    virtual void calendarIncidenceAdditionCanceled( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     // Synchronization Specific Methods //
 
@@ -397,9 +397,9 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool insertedIncidences( KCalCore::Incidence::List *list,
-                                     const KDateTime &after = KDateTime(),
-                                     const QString &notebookUid = QString() ) = 0;
+    virtual bool insertedIncidences(KCalCore::Incidence::List *list,
+                                    const KDateTime &after = KDateTime(),
+                                    const QString &notebookUid = QString()) = 0;
 
     /**
       Get modified incidences from storage.
@@ -411,9 +411,9 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool modifiedIncidences( KCalCore::Incidence::List *list,
-                                     const KDateTime &after = KDateTime(),
-                                     const QString &notebookUid = QString() ) = 0;
+    virtual bool modifiedIncidences(KCalCore::Incidence::List *list,
+                                    const KDateTime &after = KDateTime(),
+                                    const QString &notebookUid = QString()) = 0;
 
     /**
       Get deleted incidences from storage.
@@ -423,9 +423,9 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool deletedIncidences( KCalCore::Incidence::List *list,
-                                    const KDateTime &after = KDateTime(),
-                                    const QString &notebookUid = QString() ) = 0;
+    virtual bool deletedIncidences(KCalCore::Incidence::List *list,
+                                   const KDateTime &after = KDateTime(),
+                                   const QString &notebookUid = QString()) = 0;
 
     /**
       Get all incidences from storage.
@@ -434,8 +434,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid list incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool allIncidences( KCalCore::Incidence::List *list,
-                                const QString &notebookUid = QString() ) = 0;
+    virtual bool allIncidences(KCalCore::Incidence::List *list,
+                               const QString &notebookUid = QString()) = 0;
 
     /**
       Get possible duplicates for given incidence.
@@ -445,36 +445,36 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid list incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool duplicateIncidences( KCalCore::Incidence::List *list,
-                                      const KCalCore::Incidence::Ptr &incidence,
-                                      const QString &notebookUid = QString() ) = 0;
+    virtual bool duplicateIncidences(KCalCore::Incidence::List *list,
+                                     const KCalCore::Incidence::Ptr &incidence,
+                                     const QString &notebookUid = QString()) = 0;
 
     /**
       Get deletion time of incidence
 
       @param incidence incidence to check
-      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime() 
+      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime()
     */
-    virtual KDateTime incidenceDeletedDate( const KCalCore::Incidence::Ptr &incidence ) = 0;
+    virtual KDateTime incidenceDeletedDate(const KCalCore::Incidence::Ptr &incidence) = 0;
 
     /**
       Get count of events
 
-      @return count of events 
+      @return count of events
     */
     virtual int eventCount() = 0;
 
     /**
       Get count of todos
 
-      @return count of todos 
+      @return count of todos
     */
     virtual int todoCount() = 0;
 
     /**
       Get count of journals
 
-      @return count of journals 
+      @return count of journals
     */
     virtual int journalCount() = 0;
 
@@ -488,7 +488,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @see unregisterObserver()
      */
-    void registerObserver( ExtendedStorageObserver *observer );
+    void registerObserver(ExtendedStorageObserver *observer);
 
     /**
       Unregisters an Observer for this Storage.
@@ -498,7 +498,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @see registerObserver()
      */
-    void unregisterObserver( ExtendedStorageObserver *observer );
+    void unregisterObserver(ExtendedStorageObserver *observer);
 
     // Notebook Methods //
 
@@ -514,7 +514,7 @@ class MKCAL_EXPORT ExtendedStorage
       @note if the Notebook doesn't have a uid that is a valid UUID a new one will
       be generated on insertion.
     */
-    bool addNotebook( const Notebook::Ptr &nb, bool signal = true );
+    bool addNotebook(const Notebook::Ptr &nb, bool signal = true);
 
     /**
       Update notebook parameters.
@@ -523,7 +523,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param nb notebook
       @return true if add was successful; false otherwise.
     */
-    bool updateNotebook( const Notebook::Ptr &nb );
+    bool updateNotebook(const Notebook::Ptr &nb);
 
     /**
       Delete notebook from storage.
@@ -534,7 +534,7 @@ class MKCAL_EXPORT ExtendedStorage
       Default false, true only when notebooks are reloaded from database
       @return true if delete was successful; false otherwise.
     */
-    bool deleteNotebook( const Notebook::Ptr &nb, bool onlyMemory = false );
+    bool deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory = false);
 
     /**
       setDefaultNotebook to the storage.
@@ -542,7 +542,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param nb notebook
       @return true if operation was successful; false otherwise.
     */
-    bool setDefaultNotebook( const Notebook::Ptr &nb );
+    bool setDefaultNotebook(const Notebook::Ptr &nb);
 
     /**
       defaultNotebook.
@@ -557,7 +557,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param uid notebook uid
       @return pointer to notebook
     */
-    Notebook::Ptr notebook( const QString &uid );
+    Notebook::Ptr notebook(const QString &uid);
 
     /**
       Search for notebook in a list.
@@ -566,7 +566,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param uid notebook uid
       @return pointer to notebook
     */
-    Notebook::Ptr notebook( Notebook::List &list, const QString &uid );
+    Notebook::Ptr notebook(Notebook::List &list, const QString &uid);
 
     /**
       List all notebooks.
@@ -582,7 +582,7 @@ class MKCAL_EXPORT ExtendedStorage
 
       @param validate true to validate
     */
-    void setValidateNotebooks( bool validateNotebooks );
+    void setValidateNotebooks(bool validateNotebooks);
 
     /**
       Returns true if notebooks should be validated in saves and loads.
@@ -600,7 +600,7 @@ class MKCAL_EXPORT ExtendedStorage
       @param notebookUid notebook uid
       @return true or false
     */
-    bool isValidNotebook( const QString &notebookUid );
+    bool isValidNotebook(const QString &notebookUid);
 
     // Alarm Methods //
 
@@ -614,8 +614,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param loadAlways set true to load always from storage
       @return the alarmed incidence, or null if there is no active alarm
     */
-    KCalCore::Incidence::Ptr checkAlarm( const QString &uid, const QString &recurrenceId,
-                                         bool loadAlways = false );
+    KCalCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
+                                        bool loadAlways = false);
 
     /**
       Reset alarms for the incidence. This function will be called
@@ -628,18 +628,18 @@ class MKCAL_EXPORT ExtendedStorage
 
       @param incidence incidence
     */
-    void resetAlarms( const KCalCore::Incidence::Ptr &incidence );
+    void resetAlarms(const KCalCore::Incidence::Ptr &incidence);
 
     /**
       Reset alarms for list of incidences.
     */
-    void resetAlarms( const KCalCore::Incidence::List &incidences );
+    void resetAlarms(const KCalCore::Incidence::List &incidences);
 
     /**
       Set alarms for the incidence without removing old alarms. This is the
       same as resetAlarms except that the old alarms are not removed.
     */
-    void setAlarms( const KCalCore::Incidence::Ptr &incidence );
+    void setAlarms(const KCalCore::Incidence::Ptr &incidence);
 
     /**
       Creates and sets a default notebook. Usually called for an empty
@@ -649,8 +649,8 @@ class MKCAL_EXPORT ExtendedStorage
       @param color notebook's color in format "#FF0042", if empty default used
       @return pointer to the created notebook
     */
-    Notebook::Ptr createDefaultNotebook( QString name = QString(),
-                                         QString color = QString());
+    Notebook::Ptr createDefaultNotebook(QString name = QString(),
+                                        QString color = QString());
 
     /**
       Standard trick to add virtuals later.
@@ -659,60 +659,60 @@ class MKCAL_EXPORT ExtendedStorage
              to be called.
       @param data is a pointer to some glob of data, typically a struct.
     */
-    virtual void virtual_hook( int id, void *data ) = 0;
+    virtual void virtual_hook(int id, void *data) = 0;
 
-  protected:
+protected:
     virtual bool loadNotebooks() = 0;
     virtual bool reloadNotebooks() = 0;
-    virtual bool modifyNotebook( const Notebook::Ptr &nb, DBOperation dbop,
-                                 bool signal = true ) = 0;
+    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop,
+                                bool signal = true) = 0;
 
-    bool getLoadDates( const QDate &start, const QDate &end,
-                       KDateTime &loadStart, KDateTime &loadEnd );
+    bool getLoadDates(const QDate &start, const QDate &end,
+                      KDateTime &loadStart, KDateTime &loadEnd);
 
-    void setLoadDates( const QDate &start, const QDate &end );
+    void setLoadDates(const QDate &start, const QDate &end);
 
-    void setModified( const QString &info );
-    void setProgress( const QString &info );
-    void setFinished( bool error, const QString &info );
-    void clearAlarms( const KCalCore::Incidence::Ptr &incidence );
-    void clearAlarms( const KCalCore::Incidence::List &incidences );
-    void clearAlarms( const QString &nname );
+    void setModified(const QString &info);
+    void setProgress(const QString &info);
+    void setFinished(bool error, const QString &info);
+    void clearAlarms(const KCalCore::Incidence::Ptr &incidence);
+    void clearAlarms(const KCalCore::Incidence::List &incidences);
+    void clearAlarms(const QString &nname);
 
     bool isUncompletedTodosLoaded();
-    void setIsUncompletedTodosLoaded( bool loaded );
+    void setIsUncompletedTodosLoaded(bool loaded);
 
     bool isCompletedTodosDateLoaded();
-    void setIsCompletedTodosDateLoaded( bool loaded );
+    void setIsCompletedTodosDateLoaded(bool loaded);
     bool isCompletedTodosCreatedLoaded();
-    void setIsCompletedTodosCreatedLoaded( bool loaded );
+    void setIsCompletedTodosCreatedLoaded(bool loaded);
 
     bool isJournalsLoaded();
-    void setIsJournalsLoaded( bool loaded );
+    void setIsJournalsLoaded(bool loaded);
 
     bool isDateLoaded();
-    void setIsDateLoaded( bool loaded );
+    void setIsDateLoaded(bool loaded);
     bool isCreatedLoaded();
-    void setIsCreatedLoaded( bool loaded );
+    void setIsCreatedLoaded(bool loaded);
     bool isFutureDateLoaded();
-    void setIsFutureDateLoaded( bool loaded );
+    void setIsFutureDateLoaded(bool loaded);
 
     bool isGeoDateLoaded();
-    void setIsGeoDateLoaded( bool loaded );
+    void setIsGeoDateLoaded(bool loaded);
     bool isGeoCreatedLoaded();
-    void setIsGeoCreatedLoaded( bool loaded );
+    void setIsGeoCreatedLoaded(bool loaded);
 
     bool isUnreadIncidencesLoaded();
-    void setIsUnreadIncidencesLoaded( bool loaded );
+    void setIsUnreadIncidencesLoaded(bool loaded);
 
     bool isInvitationIncidencesLoaded();
-    void setIsInvitationIncidencesLoaded( bool loaded );
+    void setIsInvitationIncidencesLoaded(bool loaded);
 
     void clearLoaded();
 
-  private:
+private:
     //@cond PRIVATE
-    Q_DISABLE_COPY( ExtendedStorage )
+    Q_DISABLE_COPY(ExtendedStorage)
     class MKCAL_HIDE Private;
     Private *const d;
     //@endcond

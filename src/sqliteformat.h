@@ -53,21 +53,21 @@ class SqliteStorage;
 */
 class MKCAL_EXPORT SqliteFormat
 {
-  public:
+public:
     /**
       The different types of rdates.
     */
     enum RDateType {
-      RDate = 1,
-      XDate,
-      RDateTime,
-      XDateTime
+        RDate = 1,
+        XDate,
+        RDateTime,
+        XDateTime
     };
 
     /**
       Constructor a new Sqlite Format object.
     */
-    SqliteFormat( SqliteStorage *storage, sqlite3 *database );
+    SqliteFormat(SqliteStorage *storage, sqlite3 *database);
 
     /**
       Destructor.
@@ -82,7 +82,7 @@ class MKCAL_EXPORT SqliteFormat
       @param stmt prepared sqlite statement for components table
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars( const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt );
+    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt);
 
     /**
       Select notebooks from Calendars table.
@@ -90,7 +90,7 @@ class MKCAL_EXPORT SqliteFormat
       @param stmt prepared sqlite statement for calendars table
       @return the queried notebook.
     */
-    Notebook::Ptr selectCalendars( sqlite3_stmt *stmt );
+    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt);
 
     /**
       Update incidence data in Components table.
@@ -104,11 +104,11 @@ class MKCAL_EXPORT SqliteFormat
       @param stmt4 prepared sqlite statement for alarm table
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyComponents( const KCalCore::Incidence::Ptr &incidence, const QString &notebook,
-                           DBOperation dbop, sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
-                           sqlite3_stmt *stmt3, sqlite3_stmt *stmt4, sqlite3_stmt *stmt5,
-                           sqlite3_stmt *stmt6, sqlite3_stmt *stmt7, sqlite3_stmt *stmt8,
-                           sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11 );
+    bool modifyComponents(const KCalCore::Incidence::Ptr &incidence, const QString &notebook,
+                          DBOperation dbop, sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
+                          sqlite3_stmt *stmt3, sqlite3_stmt *stmt4, sqlite3_stmt *stmt5,
+                          sqlite3_stmt *stmt6, sqlite3_stmt *stmt7, sqlite3_stmt *stmt8,
+                          sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11);
 
     /**
       Select incidences from Components  table.
@@ -121,10 +121,10 @@ class MKCAL_EXPORT SqliteFormat
       @param notebook notebook of incidence
       @return the queried incidence.
     */
-    KCalCore::Incidence::Ptr selectComponents( sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
-                                               sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
-                                               sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
-                                               QString &notebook );
+    KCalCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
+                                              sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
+                                              sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
+                                              QString &notebook);
 
     /**
       Select contacts and order them by appearances.
@@ -132,11 +132,11 @@ class MKCAL_EXPORT SqliteFormat
       @param stmt prepared sqlite statement for Attendees table
       @return ordered list of contacts.
     */
-    KCalCore::Person::List selectContacts( sqlite3_stmt *stmt );
+    KCalCore::Person::List selectContacts(sqlite3_stmt *stmt);
 
-  private:
+private:
     //@cond PRIVATE
-    Q_DISABLE_COPY( SqliteFormat )
+    Q_DISABLE_COPY(SqliteFormat)
     class MKCAL_HIDE Private;
     Private *const d;
     //@endcond

@@ -37,14 +37,12 @@ class DefaultInvitationPlugin : public QObject, public InvitationHandlerInterfac
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.mkcal.DefaultInvitationHandlerInterface")
 
 public:
-    //! \brief DefaultInvitationPlugin constructor class.
     DefaultInvitationPlugin();
-
-    //! \brief DefaultInvitationPlugin destructor class.
     ~DefaultInvitationPlugin();
 
     //! \reimp InvitationHandler KCalCore
-    bool sendInvitation(const QString &accountId, const QString &notebookId, const Incidence::Ptr &invitation, const QString &body);
+    bool sendInvitation(const QString &accountId, const QString &notebookId, const Incidence::Ptr &invitation,
+                        const QString &body);
     bool sendUpdate(const QString &accountId, const Incidence::Ptr &invitation, const QString &body);
     bool sendResponse(const QString &accountId, const Incidence::Ptr &invitation, const QString &body);
     QString pluginName() const;
@@ -80,11 +78,11 @@ public:
     //! \reimp_end
 
 private:
-  //@cond PRIVATE
-  Q_DISABLE_COPY( DefaultInvitationPlugin )
-  class Private;
-  Private *const d;
-  //@endcond
+    //@cond PRIVATE
+    Q_DISABLE_COPY(DefaultInvitationPlugin)
+    class Private;
+    Private *const d;
+    //@endcond
 };
 
 #endif

@@ -9,9 +9,6 @@ INCLUDEPATH +=  . \
 
 QMAKE_LIBDIR += ../../src
 QMAKE_CLEAN += *.so* .obj/* .moc/*
-VER_MAJ = ${VER_MAJ}
-VER_MIN = ${VER_MIN}
-VER_PAT = ${VER_PAT}
 
 LIBS += -L../../src/ -lmkcal-qt5
 CONFIG += link_pkgconfig

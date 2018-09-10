@@ -46,7 +46,7 @@ namespace mKCal {
 */
 class MKCAL_EXPORT Notebook
 {
-  public:
+public:
     /**
       A shared pointer to a Notebook object.
     */
@@ -67,24 +67,24 @@ class MKCAL_EXPORT Notebook
     */
     explicit Notebook();
 
-    explicit Notebook( const QString &name, const QString &description );
+    explicit Notebook(const QString &name, const QString &description);
 
-    explicit Notebook( const QString &uid, const QString &name,
-                       const QString &description, const QString &color,
-                       bool isShared, bool isMaster, bool oviSync,
-                       bool isReadOnly, bool isVisible );
+    explicit Notebook(const QString &uid, const QString &name,
+                      const QString &description, const QString &color,
+                      bool isShared, bool isMaster, bool oviSync,
+                      bool isReadOnly, bool isVisible);
 
-    explicit Notebook( const QString &uid, const QString &name,
-                       const QString &description, const QString &color,
-                       bool isShared, bool isMaster, bool isSynchronized,
-                       bool isReadOnly, bool isVisible, const QString &pluginName,
-                       const QString &account, int attachmentSize );
+    explicit Notebook(const QString &uid, const QString &name,
+                      const QString &description, const QString &color,
+                      bool isShared, bool isMaster, bool isSynchronized,
+                      bool isReadOnly, bool isVisible, const QString &pluginName,
+                      const QString &account, int attachmentSize);
 
     /**
       Constructs an Notebook as a copy of another Notebook object.
       @param n is the Notebook to copy.
     */
-    explicit Notebook( const Notebook &n );
+    explicit Notebook(const Notebook &n);
 
     /**
       Destructor.
@@ -102,7 +102,7 @@ class MKCAL_EXPORT Notebook
       Typically called internally by the storage.
       @param uid unique identifier.
     */
-    void setUid( const QString &uid );
+    void setUid(const QString &uid);
 
     /**
       Returns the name of the notebook.
@@ -116,7 +116,7 @@ class MKCAL_EXPORT Notebook
 
       @param name notebook name
     */
-    void setName( const QString &name );
+    void setName(const QString &name);
 
     /**
       Returns the notebook description.
@@ -128,7 +128,7 @@ class MKCAL_EXPORT Notebook
       Set the description of the notebook.
       @param description notebook description.
     */
-    void setDescription( const QString &description );
+    void setDescription(const QString &description);
 
     /**
       Returns the notebook color in the form of #RRGGBB.
@@ -140,7 +140,7 @@ class MKCAL_EXPORT Notebook
       Set notebook color.
       @param color notebook color.
     */
-    void setColor( const QString &color );
+    void setColor(const QString &color);
 
     /**
       Returns true if notebook is shared.
@@ -153,7 +153,7 @@ class MKCAL_EXPORT Notebook
       The actual meaning is storage specific.
       @param isShared true to allow sharing.
     */
-    void setIsShared( bool isShared );
+    void setIsShared(bool isShared);
 
     /**
       Returns true if notebook is a master.
@@ -167,7 +167,7 @@ class MKCAL_EXPORT Notebook
 
       @param isMaster true to set master status
     */
-    void setIsMaster( bool isMaster );
+    void setIsMaster(bool isMaster);
 
     /**
       Returns true if notebook is synchronized to OVI.
@@ -180,7 +180,7 @@ class MKCAL_EXPORT Notebook
       The actual meaning is storage specific.
       @param oviSync true to set OVI sync.
     */
-    void setIsSynchronized( bool oviSync );
+    void setIsSynchronized(bool oviSync);
 
     /**
       Returns true if notebook is read-only.
@@ -195,7 +195,7 @@ class MKCAL_EXPORT Notebook
 
       @param isReadOnly true to set read-only mode
     */
-    void setIsReadOnly( bool isReadOnly );
+    void setIsReadOnly(bool isReadOnly);
 
     /**
       Returns true if notebook is visible.
@@ -209,7 +209,7 @@ class MKCAL_EXPORT Notebook
       into search lists.
       @param isVisible true to set visible mode.
     */
-    void setIsVisible( bool isVisible );
+    void setIsVisible(bool isVisible);
 
     /**
       Returns true if the notebook is never going to be saved; false otherwise.
@@ -222,7 +222,7 @@ class MKCAL_EXPORT Notebook
       any storage.
       @param isRunTime true if the incidence is never going to be saved.
     */
-    void setRunTimeOnly( bool isRunTime );
+    void setRunTimeOnly(bool isRunTime);
 
     /**
       Returns sync date.
@@ -236,7 +236,7 @@ class MKCAL_EXPORT Notebook
       @param syncDate last sync date.
       @see syncDate().
     */
-    void setSyncDate( const KDateTime &syncDate );
+    void setSyncDate(const KDateTime &syncDate);
 
     /**
       Gets the name of the plugin that created the notebook.
@@ -250,7 +250,7 @@ class MKCAL_EXPORT Notebook
       @param pluginName The name of the plugin.
       @see pluginName();
       */
-    void setPluginName( const QString &pluginName );
+    void setPluginName(const QString &pluginName);
 
     /**
       Gets the account associated with the notebook.
@@ -264,7 +264,7 @@ class MKCAL_EXPORT Notebook
       @param account The account
       @see account().
       */
-    void setAccount( const QString &account );
+    void setAccount(const QString &account);
 
     /**
       Gets the maximum size of attachments allowed in the notebook.
@@ -278,7 +278,7 @@ class MKCAL_EXPORT Notebook
       @param size The size in bytes. 0 means no attachments allowed; -1 means unlimited size.
       @see attachmentSize().
       */
-    void setAttachmentSize( int size );
+    void setAttachmentSize(int size);
 
     /**
       Returns modification date, in UTC.
@@ -292,7 +292,7 @@ class MKCAL_EXPORT Notebook
       @param modifiedDate last modification date.
       @see modifiedDate().
     */
-    void setModifiedDate( const KDateTime &modifiedDate );
+    void setModifiedDate(const KDateTime &modifiedDate);
 
     /**
       Returns creation date, in UTC.
@@ -305,7 +305,7 @@ class MKCAL_EXPORT Notebook
       @param date creation date.
       @see creationDate().
     */
-    void setCreationDate( const KDateTime &date );
+    void setCreationDate(const KDateTime &date);
 
     /**
       Returns true if notebook is default notebook.
@@ -317,7 +317,7 @@ class MKCAL_EXPORT Notebook
       Set notebook to default notebook.
       @param isDefault true to set default.
     */
-    void setIsDefault( bool isDefault );
+    void setIsDefault(bool isDefault);
 
     /**
       Returns true if notebook is shareable.
@@ -329,7 +329,7 @@ class MKCAL_EXPORT Notebook
       Set notebook to shareable.
       @param isShareable true to set shareable.
     */
-    void setIsShareable( bool isShareable );
+    void setIsShareable(bool isShareable);
 
     /**
       Gets the people shared with the notebook.
@@ -350,14 +350,14 @@ class MKCAL_EXPORT Notebook
       @param sharedWith The list of people shared with
       @see sharedWith().
     */
-    void setSharedWith( const QStringList &sharedWith );
+    void setSharedWith(const QStringList &sharedWith);
 
     /**
       Sets the people shared with the notebook.
       @param sharedWith The string of people shared with.
       @see sharedWithStr().
     */
-    void setSharedWithStr( const QString &sharedWith );
+    void setSharedWithStr(const QString &sharedWith);
 
     /**
       Gets the sync profile of the notebook.
@@ -381,7 +381,7 @@ class MKCAL_EXPORT Notebook
       Set whether the events are allowed to this notebook or not. By
       default, this is true.
     */
-    void setEventsAllowed( bool eventsAllowed );
+    void setEventsAllowed(bool eventsAllowed);
 
     /**
       Accessor querying whether events are allowed in this notebook.
@@ -392,7 +392,7 @@ class MKCAL_EXPORT Notebook
       Set whether the journals are allowed to this notebook or not.
       By default, this is true.
     */
-    void setJournalsAllowed( bool journalsAllowed );
+    void setJournalsAllowed(bool journalsAllowed);
 
     /**
       Accessor querying whether journals are allowed in this notebook.
@@ -403,7 +403,7 @@ class MKCAL_EXPORT Notebook
       Set whether the todos are allowed to this notebook or not.
       By default, this is true.
     */
-    void setTodosAllowed( bool todosAllowed );
+    void setTodosAllowed(bool todosAllowed);
 
     /**
       Accessor querying whether todos are allowed in this notebook.
@@ -414,7 +414,7 @@ class MKCAL_EXPORT Notebook
       Utility function to find out whether the incidence is allowed
       within this notebook or not.
     */
-    bool incidenceAllowed( KCalCore::Incidence::Ptr incidence ) const;
+    bool incidenceAllowed(KCalCore::Incidence::Ptr incidence) const;
 
     /**
       Set the notebook flags.
@@ -425,7 +425,7 @@ class MKCAL_EXPORT Notebook
 
       @param flags The flags to be set for the notebook.
     */
-    void setFlags( int flags );
+    void setFlags(int flags);
 
     /**
       Get the flags associated with the notebook.
@@ -439,14 +439,14 @@ class MKCAL_EXPORT Notebook
     /**
       Assignment operator.
      */
-    Notebook &operator=( const Notebook &other );
+    Notebook &operator=(const Notebook &other);
 
     /**
       Compare this with notebook for equality.
     */
-    bool operator==( const Notebook &notebook ) const;
+    bool operator==(const Notebook &notebook) const;
 
-  private:
+private:
     //@cond PRIVATE
     class Private;
     Private *const d;

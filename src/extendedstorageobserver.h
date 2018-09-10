@@ -35,51 +35,51 @@
 
 
 namespace mKCal {
-    class ExtendedStorage;
+class ExtendedStorage;
+
+/**
+   @class ExtendedStorageObserver
+
+   The ExtendedStorageObserver class.
+*/
+class MKCAL_EXPORT ExtendedStorageObserver //krazy:exclude=dpointer
+{
+public:
+    /**
+       Destructor.
+    */
+    virtual ~ExtendedStorageObserver() {};
 
     /**
-       @class ExtendedStorageObserver
+       Notify the Observer that a Storage has been modified.
 
-       The ExtendedStorageObserver class.
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+       @param info uids inserted/updated/deleted, modified file etc.
     */
-    class MKCAL_EXPORT ExtendedStorageObserver //krazy:exclude=dpointer
-    {
-    public:
-        /**
-           Destructor.
-        */
-        virtual ~ExtendedStorageObserver() {};
+    virtual void storageModified(ExtendedStorage *storage, const QString &info) = 0;
 
-        /**
-           Notify the Observer that a Storage has been modified.
+    /**
+       Notify the Observer that a Storage is executing an action.
+       This callback is called typically for example every time
+       an incidence has been loaded.
 
-           @param storage is a pointer to the ExtendedStorage object that
-           is being observed.
-           @param info uids inserted/updated/deleted, modified file etc.
-        */
-        virtual void storageModified( ExtendedStorage *storage, const QString &info ) = 0;
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+       @param info textual information
+    */
+    virtual void storageProgress(ExtendedStorage *storage, const QString &info) = 0;
 
-        /**
-           Notify the Observer that a Storage is executing an action.
-           This callback is called typically for example every time
-           an incidence has been loaded.
+    /**
+       Notify the Observer that a Storage has finished an action.
 
-           @param storage is a pointer to the ExtendedStorage object that
-           is being observed.
-           @param info textual information
-        */
-        virtual void storageProgress( ExtendedStorage *storage, const QString &info ) = 0;
-
-        /**
-           Notify the Observer that a Storage has finished an action.
-
-           @param storage is a pointer to the ExtendedStorage object that
-           is being observed.
-           @param error true if action was unsuccessful; false otherwise
-           @param info textual information
-        */
-        virtual void storageFinished( ExtendedStorage *storage, bool error, const QString &info ) = 0;
-    };
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+       @param error true if action was unsuccessful; false otherwise
+       @param info textual information
+    */
+    virtual void storageFinished(ExtendedStorage *storage, bool error, const QString &info) = 0;
+};
 
 };
 #endif /* !MKCAL_STORAGEOBSERVER_H */
