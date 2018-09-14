@@ -12,7 +12,7 @@ QMAKE_CLEAN += *.so* .obj/* .moc/*
 
 LIBS += -L../../src/ -lmkcal-qt5
 CONFIG += link_pkgconfig
-PKGCONFIG += qmfclient5 \
+PKGCONFIG += QmfClient \
     libkcalcoren-qt5
 
 QT -= gui
