@@ -75,7 +75,7 @@ public:
     }
 
     /** Send the invitation to the list of people stated as attendees.
-      It would load the appropiate plugin to do it, and if there
+      It would load the appropriate plugin to do it, and if there
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to send
       @param body The body of the reply if any
@@ -87,7 +87,7 @@ public:
                         const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
 
     /** Send the updated invitation to the list of people stated as attendees.
-      It would load the appropiate plugin to do it, and if there
+      It would load the appropriate plugin to do it, and if there
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
@@ -99,7 +99,7 @@ public:
                     const ExtendedStorage::Ptr &storage);
 
     /** Send the updated invitation to the organiser.
-      It would load the appropiate plugin to do it, and if there
+      It would load the appropriate plugin to do it, and if there
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
@@ -111,7 +111,7 @@ public:
                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
 
     /** Icon
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return Icon
@@ -119,7 +119,7 @@ public:
     QString icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     /** multiCalendar
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return True if multicalendar otherwise false
@@ -127,7 +127,7 @@ public:
     bool multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     /** emailAddress
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return email address
@@ -135,7 +135,7 @@ public:
     QString emailAddress(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     /** displayName
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return display name
@@ -143,7 +143,7 @@ public:
     QString displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     /** downloadAttachment
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @param uri uri of attachment to be downloaded
@@ -155,7 +155,7 @@ public:
                            const QString &path);
 
     /** deleteAttachment
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param incience incidence of attachment to be deleted
       @param notebook notebook
       @param storage Pointer to the storage in use
@@ -166,7 +166,7 @@ public:
                           const ExtendedStorage::Ptr &storage, const QString &uri);
 
     /** Share notebook
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook Shared notebook
       @param sharedWith The list of email addresses or phone numbers of users
       @param storage Pointer to the storage in use
@@ -175,7 +175,7 @@ public:
     bool shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith, const ExtendedStorage::Ptr &storage);
 
     /** sharedWith
-      It would load the appropiate plugin to do it
+      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return list of users to share with

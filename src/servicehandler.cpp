@@ -247,7 +247,7 @@ QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const Extend
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
 
     if (service) {
-        QString res =  service->emailAddress(notebook);
+        QString res = service->emailAddress(notebook);
         if (res.isNull()) {
             d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
         }
