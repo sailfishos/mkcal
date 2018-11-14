@@ -78,6 +78,19 @@ public:
         mInit = false;
     }
 
+    QString accountEmailAddress(const QString &accountId)
+    {
+        if (accountId.isEmpty()) {
+            return QString();
+        }
+        QMailAccount account(QMailAccountId(accountId.toULongLong()));
+        if (!account.id().isValid() || !(account.status() & QMailAccount::CanTransmit)) {
+            qWarning() << "Default plugin: invalid email account" << accountId;
+            return QString();
+        }
+        return account.fromAddress().address();
+    }
+
     bool sendMail(const QString &accountId, const QStringList &recipients, const QString &subject,
                   const QString &body, const QString &attachment)
     {
@@ -96,7 +109,6 @@ public:
                 return false;
             }
         }
-
 
         // Build a message
         QMailMessage message;
@@ -120,14 +132,18 @@ public:
         message.setStatus(QMailMessage::CalendarInvitation, true);
         message.setDate(QMailTimeStamp(QDateTime::currentDateTime()));
 
-        // Define recipeint's address
+        // Define recipient's address
         QList<QMailAddress> addresses;
+        const QMailAddress &fromAddress = account->fromAddress();
+        const QString &accountEmail = fromAddress.address();
         foreach (const QString &mail, recipients) {
-            addresses.append(QMailAddress(mail));
+            if (mail.compare(accountEmail, Qt::CaseInsensitive) != 0) {
+                addresses.append(QMailAddress(mail));
+            }
         }
         message.setTo(addresses);
         // Define from address
-        message.setFrom(account->fromAddress());
+        message.setFrom(fromAddress);
         // Define subject
         message.setSubject(subject);
         message.setMessageType(QMailMessage::Email);
@@ -233,32 +249,36 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Inciden
 bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incidence::Ptr &invitation,
                                            const QString &body)
 {
-    Q_UNUSED(accountId);    // not needed by this plugin: we use the default account
-
     d->mErrorCode = ServiceInterface::ErrorOk;
 
     d->init();
+
     // Is there an organizer?
+    // TODO: Google account do not have an organizer for event created from outlook invitations.
+    // We need to check why it is happening.
     Person::Ptr organizer = invitation->organizer();
-    if (organizer->isEmpty() || organizer->email().isEmpty()) { // we do not have an organizer
+    if (organizer.isNull() || organizer->email().isEmpty()) { // we do not have an organizer
         qWarning() << "sendResponse() called with wrong invitation: there is no organizer!";
         return false;
     }
 
     // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
-    Attendee::Ptr me = invitation->attendeeByMail(d->defaultAddress());
-    if (me == 0 || !me->RSVP()) {
+    const QString &accountEmailAddress = d->accountEmailAddress(accountId);
+    Attendee::Ptr me = invitation->attendeeByMail(accountEmailAddress.isEmpty() ? d->defaultAddress() : accountEmailAddress);
+    //TODO: KCalCore::Attendee::RSVP() returns false even if response was requested for some accounts like Google.
+    // We can use attendee role until the problem is not fixed (probably in Google plugin).
+    // To be updated later when google account support for responses is added or even removed if
+    // separate GoogleInvitationPlugin is created.
+    if (me.isNull() || (!me->RSVP()/* && me->role() == KCalCore::Attendee::Chair*/)) {
         qWarning() << "sendResponse() called with wrong invitation: we are not invited or no response is expected.";
         return false;
     }
 
     ICalFormat icf;
-    QString ical =  icf.createScheduleMessage(invitation, iTIPReply) ;
-    //    QString base64Data = ical;
+    QString ical = icf.createScheduleMessage(invitation, iTIPReply) ;
 
     bool res = d->sendMail(accountId, QStringList(organizer->email()), invitation->summary(), body, ical);
 
-//  d->uninit();
     return res;
 
 }
@@ -292,12 +312,15 @@ QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebo
         qCritical() << "Invalid notebook";
         return QString();
     }
-    QMailAccount account(QMailAccountId(notebook->account().toULongLong()));
-    if (account.id().isValid()) {
-        qDebug() << "Using account email address" << account.fromAddress().toString();
-        email = account.fromAddress().toString();
+    if (notebook->account().isEmpty()) {
+        // just return quietly, it can be a local notebook
+        return QString();
+    }
+    email = d->accountEmailAddress(notebook->account());
+    if (!email.isEmpty()) {
+        qDebug() << "Using account email address" << email;
     } else {
-        qWarning() << "Notebook" << notebook->uid() << "do not have a valid account id";
+        qWarning() << "Notebook" << notebook->uid() << "do not have a valid account email address";
         d->init();
         email = d->defaultAddress();
     }
