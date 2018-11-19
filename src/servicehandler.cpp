@@ -55,10 +55,13 @@ void ServiceHandlerPrivate::loadPlugins()
     kDebug() << "LOADING !!!! Plugin directory" << pluginsDir.path();
 
     foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
-        qDebug() << fileName;
+        qDebug() << "Loading service handler plugin" << fileName;
         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
         QObject *plugin = loader.instance();
-        qDebug() << loader.errorString();
+
+        if (!loader.isLoaded()) {
+            qDebug() << "Failed to load plugin:" << loader.errorString();
+        }
         if (plugin) {
             if (ServiceInterface *interface = qobject_cast<ServiceInterface *>(plugin)) {
                 mServices.insert(interface->serviceName(), interface);
