@@ -152,7 +152,7 @@ ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook::Ptr &n
 
     QString name(notebook->pluginName());
 
-    if (name.isEmpty()) {
+    if (name.isEmpty() || !mServices.contains(name)) {
         name = defaultName;
     }
 
