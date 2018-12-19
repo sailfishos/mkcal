@@ -92,7 +92,7 @@ public:
     }
 
     bool sendMail(const QString &accountId, const QStringList &recipients, const QString &subject,
-                  const QString &body, const QString &attachment)
+                  const QString &body, const QString &attachment, bool cancel)
     {
         qDebug() << "DefaultPlugin sendMail for account " << accountId;
         if (!mInit) {
@@ -147,7 +147,7 @@ public:
         // Define subject
         message.setSubject(subject);
         message.setMessageType(QMailMessage::Email);
-        message.setMultipartType(QMailMessagePartContainerFwd::MultipartRelated);
+        message.setMultipartType(cancel ? QMailMessagePartContainerFwd::MultipartAlternative : QMailMessagePartContainerFwd::MultipartRelated);
 
         // Create the MIME part representing the message body
         QMailMessagePart bodyPart = QMailMessagePart::fromData(
@@ -161,12 +161,12 @@ public:
         QMailMessagePart calendarPart = QMailMessagePart::fromData(
                                             attachment,
                                             QMailMessageContentDisposition(QMailMessageContentDisposition::None),
-                                            QMailMessageContentType("text/calendar;method=REQUEST;charset=UTF-8"),
+                                            QMailMessageContentType(cancel ? "text/calendar;method=CANCEL;charset=UTF-8"
+                                                                           : "text/calendar;method=REQUEST;charset=UTF-8"),
                                             QMailMessageBody::Base64);
         calendarPart.removeHeaderField("Content-Disposition");
         calendarPart.appendHeaderField("Content-Class", "urn:content-classes:calendarmessage");
 
-        message.setMultipartType(QMailMessagePartContainer::MultipartRelated);
         message.appendPart(bodyPart);
         message.appendPart(calendarPart);
 
@@ -211,7 +211,6 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
 {
 
     Q_UNUSED(body);
-    Q_UNUSED(accountId);
     Q_UNUSED(notebookUid);
 
     d->mErrorCode = ServiceInterface::ErrorOk;
@@ -225,7 +224,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     d->init();
 
     ICalFormat icf;
-    QString ical = icf.createScheduleMessage(invitation, iTIPRequest);
+    const QString &ical = icf.createScheduleMessage(invitation, iTIPRequest);
 
     QStringList emails;
     foreach (const Attendee::Ptr &att, attendees) {
@@ -233,7 +232,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     }
 
     const QString &description = invitation->description();
-    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical);
+    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical, false);
 
     d->uninit();
     return res;
@@ -242,8 +241,36 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
 bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Incidence::Ptr &invitation,
                                          const QString &body)
 {
-    //Same as sendResponse
-    return sendResponse(accountId, invitation, body);
+    Q_UNUSED(body);
+    d->mErrorCode = ServiceInterface::ErrorOk;
+
+    Attendee::List attendees = invitation->attendees();
+    if (attendees.size() == 0) {
+        qDebug("No attendees");
+        return false;
+    }
+
+    d->init();
+
+    ICalFormat icf;
+    const QString remoteUidValue(invitation->nonKDECustomProperty("X-SAILFISHOS-REMOTE-UID"));
+    if (!remoteUidValue.isEmpty()) {
+        invitation->setUid(remoteUidValue);
+    }
+    const bool cancelled = invitation->status() == Incidence::StatusCanceled;
+    const QString &ical = icf.createScheduleMessage(invitation, cancelled ? iTIPCancel : iTIPRefresh);
+
+    QStringList emails;
+    foreach (const Attendee::Ptr &att, attendees) {
+        emails.append(att->email());
+    }
+
+    const QString &description = invitation->description();
+    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical, cancelled);
+
+    invitation->resetDirtyFields();
+    d->uninit();
+    return res;
 }
 
 bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incidence::Ptr &invitation,
@@ -254,8 +281,6 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     d->init();
 
     // Is there an organizer?
-    // TODO: Google account do not have an organizer for event created from outlook invitations.
-    // We need to check why it is happening.
     Person::Ptr organizer = invitation->organizer();
     if (organizer.isNull() || organizer->email().isEmpty()) { // we do not have an organizer
         qWarning() << "sendResponse() called with wrong invitation: there is no organizer!";
@@ -265,20 +290,22 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
     const QString &accountEmailAddress = d->accountEmailAddress(accountId);
     Attendee::Ptr me = invitation->attendeeByMail(accountEmailAddress.isEmpty() ? d->defaultAddress() : accountEmailAddress);
-    //TODO: KCalCore::Attendee::RSVP() returns false even if response was requested for some accounts like Google.
-    // We can use attendee role until the problem is not fixed (probably in Google plugin).
-    // To be updated later when google account support for responses is added or even removed if
-    // separate GoogleInvitationPlugin is created.
-    if (me.isNull() || (!me->RSVP()/* && me->role() == KCalCore::Attendee::Chair*/)) {
+    if (me.isNull() || (!me->RSVP())) {
         qWarning() << "sendResponse() called with wrong invitation: we are not invited or no response is expected.";
         return false;
     }
 
     ICalFormat icf;
-    QString ical = icf.createScheduleMessage(invitation, iTIPReply) ;
+    const QString remoteUidValue(invitation->nonKDECustomProperty("X-SAILFISHOS-REMOTE-UID"));
+    if (!remoteUidValue.isEmpty()) {
+        invitation->setUid(remoteUidValue);
+    }
 
-    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitation->summary(), body, ical);
+    const QString &ical = icf.createScheduleMessage(invitation, iTIPReply) ;
 
+    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitation->summary(), body, ical, false);
+
+    invitation->resetDirtyFields();
     return res;
 
 }
