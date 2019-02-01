@@ -13,7 +13,7 @@ INCLUDEPATH += . \
 
 DEFINES += MEEGO UUID TIMED_SUPPORT
 
-CONFIG += link_pkgconfig
+CONFIG += link_pkgconfig create_pc create_prl no_install_prl
 PKGCONFIG += uuid \
     libical \
     sqlite3 \
@@ -28,7 +28,7 @@ headers.path = /usr/include/mkcal-qt5
 headers.files += *.h \
 
 pkgconfig.path = /usr/lib/pkgconfig
-pkgconfig.files = ../libmkcal-qt5.pc
+pkgconfig.files = $$PWD/pkgconfig/mkcal-qt5.pc
 
 INSTALLS += target \
     headers \
@@ -59,3 +59,9 @@ unix {
     SOURCES += \
         semaphore_p.cpp
 }
+
+QMAKE_PKGCONFIG_NAME = $$TARGET
+QMAKE_PKGCONFIG_DESCRIPTION = Maemo mkcal calendar library
+QMAKE_PKGCONFIG_LIBDIR = $$target.path
+QMAKE_PKGCONFIG_INCDIR = $$headers.path
+QMAKE_PKGCONFIG_DESTDIR = pkgconfig
