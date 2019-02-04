@@ -56,7 +56,7 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libmkcal-qt5.so.*
+%{_libdir}/lib%{name}.so.*
 %{_libdir}/mkcalplugins/*.so
 %{_bindir}/mkcaltool
 %{_datadir}/mapplauncherd/privileges.d/*
@@ -64,6 +64,6 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
 
 %files devel
 %defattr(-,root,root,-)
-%{_includedir}/mkcal-qt5/*
-%{_libdir}/libmkcal-qt5.so
+%{_includedir}/%{name}
+%{_libdir}/lib%{name}.so
 %{_libdir}/pkgconfig/*.pc
