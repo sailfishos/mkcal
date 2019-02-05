@@ -7,6 +7,7 @@ Group:      System/Libraries
 License:    LGPLv2+
 URL:        https://github.com/mer-packages/mkcal
 Source0:    %{name}-%{version}.tar.bz2
+Source1:    %{name}.privileges
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(Qt5Core)
@@ -46,19 +47,23 @@ make %{?_smp_mflags}
 rm -rf %{buildroot}
 %qmake5_install
 
+mkdir -p %{buildroot}%{_datadir}/mapplauncherd/privileges.d
+install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
+
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libmkcal-qt5.so.*
+%{_libdir}/lib%{name}.so.*
 %{_libdir}/mkcalplugins/*.so
 %{_bindir}/mkcaltool
+%{_datadir}/mapplauncherd/privileges.d/*
 
 
 %files devel
 %defattr(-,root,root,-)
-%{_includedir}/mkcal-qt5/*
-%{_libdir}/libmkcal-qt5.so
+%{_includedir}/%{name}
+%{_libdir}/lib%{name}.so
 %{_libdir}/pkgconfig/*.pc
