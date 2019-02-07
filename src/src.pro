@@ -28,7 +28,6 @@ headers.path = /usr/include/mkcal-qt5
 headers.files += *.h \
 
 pkgconfig.path = /usr/lib/pkgconfig
-pkgconfig.files = $$PWD/pkgconfig/mkcal-qt5.pc
 
 INSTALLS += target \
     headers \

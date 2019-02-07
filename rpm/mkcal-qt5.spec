@@ -50,6 +50,9 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}%{_datadir}/mapplauncherd/privileges.d
 install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
 
+# Sailfish uses pkconfig(libmkcal-qt5)
+mv %{buildroot}%{_libdir}/pkgconfig/{,lib}%{name}.pc
+
 %post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
