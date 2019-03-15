@@ -263,7 +263,7 @@ QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const Extend
 QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
 {
     if (storage.isNull() || notebook.isNull())
-        return false;
+        return QString();
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
 
