@@ -212,6 +212,59 @@ void tst_storage::tst_rawEvents()
     QCOMPARE(events.size(), 2);
 }
 
+void tst_storage::tst_dateCreated_data()
+{
+    QTest::addColumn<QDateTime>("dateCreated");
+    QTest::addColumn<QDateTime>("dateCreated_update");
+
+    QTest::newRow("insert new event without creation date")
+        << QDateTime()
+        << QDateTime();
+    QTest::newRow("insert new event with creation date")
+        << QDateTime::fromString("2019-04-01T10:21:15+02:00", Qt::ISODate)
+        << QDateTime();
+    QTest::newRow("update new event without creation date")
+        << QDateTime()
+        << QDateTime::fromString("2019-04-01T10:21:15+02:00", Qt::ISODate);
+    QTest::newRow("update new event with creation date")
+        << QDateTime::fromString("2019-04-01T10:21:15+02:00", Qt::ISODate)
+        << QDateTime::fromString("2020-04-01T10:21:15+02:00", Qt::ISODate);
+}
+
+void tst_storage::tst_dateCreated()
+{
+    QFETCH(QDateTime, dateCreated);
+    QFETCH(QDateTime, dateCreated_update);
+
+    // Verify that date craetion date can be tuned on new insertion and on update.
+    auto event = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(KDateTime(QDate(2019, 04, 01), QTime(10, 11),
+                                KDateTime::ClockTime));
+    event->setSummary("Creation date test event");
+    event->setCreated(KDateTime(dateCreated.toUTC(), KDateTime::Spec::UTC()));
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->created().dateTime(),
+             dateCreated.isNull() ? KDateTime::currentUtcDateTime().dateTime() : dateCreated);
+
+    if (!dateCreated_update.isNull()) {
+        fetchEvent->setCreated(KDateTime(dateCreated_update.toUTC(),
+                                         KDateTime::Spec::UTC()));
+        fetchEvent->updated();
+        m_storage->save();
+        reloadDb();
+
+        fetchEvent = m_calendar->event(event->uid());
+        QVERIFY(fetchEvent);
+        QCOMPARE(fetchEvent->created().dateTime(), dateCreated_update);
+    }
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
