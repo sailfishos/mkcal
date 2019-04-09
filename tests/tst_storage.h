@@ -28,6 +28,8 @@ private slots:
     void tst_alldayRecurrence();
     void tst_origintimes();
     void tst_rawEvents();
+    void tst_dateCreated_data();
+    void tst_dateCreated();
 
 private:
     void openDb(bool clear = false);

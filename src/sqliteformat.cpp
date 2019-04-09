@@ -388,7 +388,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
 
-        if (dbop == DBInsert)
+        if (dbop == DBInsert && incidence->created().isNull())
             incidence->setCreated(KDateTime::currentUtcDateTime());
         secs = d->mStorage->toOriginTime(incidence->created());
         sqlite3_bind_int64(stmt1, index, secs);
