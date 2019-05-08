@@ -1565,6 +1565,11 @@ bool SqliteFormat::Private::selectRecursives(Incidence::Ptr incidence, int rowid
             int duration = sqlite3_column_int(stmt, 6);  // count
             if (duration == 0 && !recurrule->endDt().isValid()) {
                 duration = -1; // work around invalid recurrence state: recurring infinitely but having invalid end date
+            } else if (duration > 0) {
+                // Ensure that no endDt is saved if duration is provided.
+                // This guarantees that the operator== returns true for
+                // rRule(withDuration) == savedRRule(withDuration)
+                recurrule->setEndDt(KDateTime());
             }
             recurrule->setDuration(duration);
             // Frequency
