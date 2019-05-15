@@ -1034,7 +1034,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(cons
 
                 for (int ii = 0; ii < times.count(); ++ii) {
                     KDateTime endDateTime = Duration(ev->dtStart(), ev->dtEnd()).end(times.at(ii));
-                    if (endDateTime < ksdt || (endInclusive && endDateTime > kedt))
+                    if (endDateTime < ev->dtStart() || endDateTime < ksdt || (endInclusive && endDateTime > kedt))
                         continue;
                     ExpandedIncidenceValidity eiv = { times.at(ii).toTimeSpec(ts).dateTime(),
                                                       endDateTime.toTimeSpec(ts).dateTime()
