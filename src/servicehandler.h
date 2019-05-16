@@ -36,7 +36,6 @@ class ServiceHandlerPrivate;
 
 namespace mKCal {
 
-
 /** Singleton class to get the exact handler (plugin) of the service
 */
 class MKCAL_EXPORT ServiceHandler : QObject
@@ -212,7 +211,6 @@ public:
        */
     QStringList availableServices();
 
-
     /** \brief Get the Icon of a service based on the id of the plugin
 
       @return Path to the icon
@@ -230,7 +228,6 @@ public:
     QString uiName(QString serviceId);
 
 signals:
-
     /** Monitors the progress of the download. The id is the return value got when download started */
     void downloadProgress(int id, int percentage);
 
@@ -239,7 +236,6 @@ signals:
 
     /** Informs that the download is finished with errors. The id is the return value got when download started */
     void downloadError(int id, ErrorCode error);
-
 };
 
 }

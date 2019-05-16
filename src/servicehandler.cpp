@@ -360,7 +360,6 @@ QString ServiceHandler::defaultNotebook(const QString &productId)
     Q_UNUSED(productId);
 
     return QString(); //Empty implementation so far
-
 }
 
 QStringList ServiceHandler::availableServices()
@@ -374,7 +373,6 @@ QStringList ServiceHandler::availableServices()
     }
 
     return result;
-
 }
 
 QString ServiceHandler::icon(QString serviceId)

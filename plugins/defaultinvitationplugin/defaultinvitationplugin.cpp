@@ -205,11 +205,9 @@ DefaultInvitationPlugin::~DefaultInvitationPlugin()
     delete d;
 }
 
-
 bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QString &notebookUid,
                                              const Incidence::Ptr &invitation, const QString &body)
 {
-
     Q_UNUSED(body);
     Q_UNUSED(notebookUid);
 
@@ -254,21 +252,22 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Inciden
 
     ICalFormat icf;
     const QString remoteUidValue(invitation->nonKDECustomProperty("X-SAILFISHOS-REMOTE-UID"));
-    if (!remoteUidValue.isEmpty()) {
-        invitation->setUid(remoteUidValue);
-    }
     const bool cancelled = invitation->status() == Incidence::StatusCanceled;
-    const QString &ical = icf.createScheduleMessage(invitation, cancelled ? iTIPCancel : iTIPRefresh);
+
+    Incidence::Ptr invitationCopy = Incidence::Ptr(invitation->clone());
+    if (!remoteUidValue.isEmpty()) {
+        invitationCopy->setUid(remoteUidValue);
+    }
+    const QString &ical = icf.createScheduleMessage(invitationCopy, cancelled ? iTIPCancel : iTIPRefresh);
 
     QStringList emails;
     foreach (const Attendee::Ptr &att, attendees) {
         emails.append(att->email());
     }
 
-    const QString &description = invitation->description();
-    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical, cancelled);
+    const QString &description = invitationCopy->description();
+    const bool res = d->sendMail(accountId, emails, invitationCopy->summary(), description, ical, cancelled);
 
-    invitation->resetDirtyFields();
     d->uninit();
     return res;
 }
@@ -297,17 +296,17 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
     ICalFormat icf;
     const QString remoteUidValue(invitation->nonKDECustomProperty("X-SAILFISHOS-REMOTE-UID"));
+
+    Incidence::Ptr invitationCopy = Incidence::Ptr(invitation->clone());
     if (!remoteUidValue.isEmpty()) {
-        invitation->setUid(remoteUidValue);
+        invitationCopy->setUid(remoteUidValue);
     }
 
-    const QString &ical = icf.createScheduleMessage(invitation, iTIPReply) ;
+    const QString &ical = icf.createScheduleMessage(invitationCopy, iTIPReply);
 
-    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitation->summary(), body, ical, false);
+    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitationCopy->summary(), body, ical, false);
 
-    invitation->resetDirtyFields();
     return res;
-
 }
 
 QString DefaultInvitationPlugin::pluginName() const
@@ -334,7 +333,6 @@ bool DefaultInvitationPlugin::multiCalendar() const
 
 QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook)
 {
-    QString email;
     if (notebook.isNull()) {
         qCritical() << "Invalid notebook";
         return QString();
@@ -343,7 +341,7 @@ QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebo
         // just return quietly, it can be a local notebook
         return QString();
     }
-    email = d->accountEmailAddress(notebook->account());
+    QString email = d->accountEmailAddress(notebook->account());
     if (!email.isEmpty()) {
         qDebug() << "Using account email address" << email;
     } else {
@@ -368,7 +366,6 @@ bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &not
     Q_UNUSED(path);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return false;
-
 }
 
 bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence,
@@ -379,7 +376,6 @@ bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &noteb
     Q_UNUSED(uri);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;
     return false;
-
 }
 
 bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith)
