@@ -43,14 +43,16 @@ HEADERS += extendedcalendar.h \
     servicehandlerif.h \
     servicehandler.h \
     dummystorage.h \
-    mkcal_export.h
+    mkcal_export.h \
+    logging_p.h
 
 SOURCES += extendedcalendar.cpp \
     extendedstorage.cpp \
     notebook.cpp \
     sqliteformat.cpp \
     sqlitestorage.cpp \
-    servicehandler.cpp
+    servicehandler.cpp \
+    logging.cpp
 
 unix {
     HEADERS += \

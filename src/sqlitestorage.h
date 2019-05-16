@@ -408,11 +408,11 @@ public Q_SLOTS:
   rv = sqlite3_exec( (db), query, NULL, 0, &errmsg );         \
   if ( rv ) {                                                 \
     if ( rv != SQLITE_CONSTRAINT ) {                          \
-      kError() << "sqlite3_exec error code:" << rv;           \
+      qCWarning(lcMkcal) << "sqlite3_exec error code:" << rv;           \
     }                                                         \
     if ( errmsg ) {                                           \
       if ( rv != SQLITE_CONSTRAINT ) {                        \
-        kError() << errmsg;                                   \
+        qCWarning(lcMkcal) << errmsg;                                   \
       }                                                       \
       sqlite3_free( errmsg );                                 \
       errmsg = NULL;                                          \
@@ -428,8 +428,8 @@ public Q_SLOTS:
  /* kDebug() << "SQL query:" << query;     */                         \
   rv = sqlite3_prepare_v2( (db), (query), (qsize), (stmt), (tail) );  \
   if ( rv ) {                                                         \
-    kError() << "sqlite3_prepare error code:" << rv;                  \
-    kError() << sqlite3_errmsg( (db) );                               \
+    qCWarning(lcMkcal) << "sqlite3_prepare error code:" << rv;                  \
+    qCWarning(lcMkcal) << sqlite3_errmsg( (db) );                               \
     goto error;                                                       \
   }                                                                   \
 }
@@ -438,7 +438,7 @@ public Q_SLOTS:
 {                                                                     \
   rv = sqlite3_bind_text( (stmt), (index), (value), (size), (desc) ); \
   if ( rv ) {                                                         \
-    kError() << "sqlite3_bind_text error:" << rv << "on index and value:" << index << value; \
+    qCWarning(lcMkcal) << "sqlite3_bind_text error:" << rv << "on index and value:" << index << value; \
     goto error;                                                       \
   }                                                                   \
   index++;                                                            \
@@ -448,7 +448,7 @@ public Q_SLOTS:
 {                                                                     \
   rv = sqlite3_bind_int( (stmt), (index), (value) );                  \
   if ( rv ) {                                                         \
-    kError() << "sqlite3_bind_int error:" << rv << "on index and value:" << index << value; \
+    qCWarning(lcMkcal) << "sqlite3_bind_int error:" << rv << "on index and value:" << index << value; \
     goto error;                                                       \
   }                                                                   \
   index++;                                                            \
@@ -458,7 +458,7 @@ public Q_SLOTS:
 {                                                                     \
   rv = sqlite3_bind_int64( (stmt), (index), (value) );                \
   if ( rv ) {                                                         \
-    kError() << "sqlite3_bind_int64 error:" << rv << "on index and value:" << index << value; \
+    qCWarning(lcMkcal) << "sqlite3_bind_int64 error:" << rv << "on index and value:" << index << value; \
     goto error;                                                       \
   }                                                                   \
   index++;                                                            \
@@ -468,7 +468,7 @@ public Q_SLOTS:
 {                                                                     \
   rv = sqlite3_bind_double( (stmt), (index), (value) );               \
   if ( rv ) {                                                         \
-    kError() << "sqlite3_bind_int error:" << rv << "on index and value:" << index << value; \
+    qCWarning(lcMkcal) << "sqlite3_bind_int error:" << rv << "on index and value:" << index << value; \
     goto error;                                                       \
   }                                                                   \
   index++;                                                            \
@@ -479,7 +479,7 @@ public Q_SLOTS:
   rv = sqlite3_step( (stmt) );                          \
   if ( rv && rv != SQLITE_DONE && rv != SQLITE_ROW ) {  \
     if ( rv != SQLITE_CONSTRAINT ) {                    \
-      kError() << "sqlite3_step error:" << rv;          \
+      qCWarning(lcMkcal) << "sqlite3_step error:" << rv;          \
     }                                                   \
     goto error;                                         \
   }                                                     \

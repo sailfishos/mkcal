@@ -36,6 +36,7 @@
 
 #include "extendedcalendar.h"
 #include "sqlitestorage.h"
+#include "logging_p.h"
 
 #include <calfilter.h>
 #include <sorting.h>
@@ -336,7 +337,7 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
     }
 
     if (notebookUid.isEmpty()) {
-        kWarning() << "ExtendedCalendar::addEvent(): NotebookUid empty";
+        qCWarning(lcMkcal) << "ExtendedCalendar::addEvent(): NotebookUid empty";
         return false;
     }
 
@@ -348,7 +349,7 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
             old = event(aEvent->uid(), aEvent->recurrenceId());
         }
         if (old) {
-            kDebug() << "Duplicate found, event was not added";
+            qCDebug(lcMkcal) << "Duplicate found, event was not added";
             return false;
         }
     }
@@ -392,7 +393,7 @@ bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
         event->setLastModified(nowUTC);
         return true;
     } else {
-        kWarning() << "Event not found.";
+        qCWarning(lcMkcal) << "Event not found.";
         return false;
     }
 }
@@ -403,9 +404,9 @@ bool ExtendedCalendar::deleteEventInstances(const Event::Ptr &event)
     QList<Event::Ptr>::const_iterator it;
     for (it = values.constBegin(); it != values.constEnd(); ++it) {
         if ((*it)->hasRecurrenceId()) {
-            kDebug() << "deleting child event" << (*it)->uid()
-                     << (*it)->dtStart() << (*it)->dtEnd()
-                     << "in calendar";
+            qCDebug(lcMkcal) << "deleting child event" << (*it)->uid()
+                             << (*it)->dtStart() << (*it)->dtEnd()
+                             << "in calendar";
             deleteEvent((*it));
         }
     }
@@ -475,7 +476,7 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
     }
 
     if (notebookUid.isEmpty()) {
-        kWarning() << "ExtendedCalendar::addTodo(): NotebookUid empty";
+        qCWarning(lcMkcal) << "ExtendedCalendar::addTodo(): NotebookUid empty";
         return false;
     }
 
@@ -490,7 +491,7 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
             if (aTodo->revision() > old->revision()) {
                 deleteTodo(old);   // move old to deleted
             } else {
-                kDebug() << "Duplicate found, todo was not added";
+                qCDebug(lcMkcal) << "Duplicate found, todo was not added";
                 return false;
             }
         }
@@ -573,7 +574,7 @@ bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
 
         return true;
     } else {
-        kWarning() << "Todo not found.";
+        qCWarning(lcMkcal) << "Todo not found.";
         return false;
     }
 }
@@ -584,7 +585,7 @@ bool ExtendedCalendar::deleteTodoInstances(const Todo::Ptr &todo)
     QList<Todo::Ptr>::const_iterator it;
     for (it = values.constBegin(); it != values.constEnd(); ++it) {
         if ((*it)->hasRecurrenceId()) {
-            kDebug() << "deleting child todo" << (*it)->uid()
+            qCDebug(lcMkcal) << "deleting child todo" << (*it)->uid()
                      << (*it)->dtStart() << (*it)->dtDue()
                      << "in calendar";
             deleteTodo((*it));
@@ -965,7 +966,7 @@ Event::List ExtendedCalendar::rawEventsForDate(const QDate &date,
             if (ev->allDay()) {
                 end.setDateOnly(true);
             }
-            //kDebug() << dateStr << kdt << ev->summary() << ev->dtStart() << end;
+            //qCDebug(lcMkcal) << dateStr << kdt << ev->summary() << ev->dtStart() << end;
             if (end >= kdt) {
                 eventList.append(ev);
             }
@@ -1314,7 +1315,7 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
     }
 
     if (notebookUid.isEmpty()) {
-        kWarning() << "ExtendedCalendar::addJournal(): NotebookUid empty";
+        qCWarning(lcMkcal) << "ExtendedCalendar::addJournal(): NotebookUid empty";
         return false;
     }
 
@@ -1330,7 +1331,7 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
             if (aJournal->revision() > old->revision()) {
                 deleteJournal(old);   // move old to deleted
             } else {
-                kDebug() << "Duplicate found, journal was not added";
+                qCDebug(lcMkcal) << "Duplicate found, journal was not added";
                 return false;
             }
         }
@@ -1394,7 +1395,7 @@ bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
 
         return true;
     } else {
-        kWarning() << "Journal not found.";
+        qCWarning(lcMkcal) << "Journal not found.";
         return false;
     }
 }
@@ -1405,7 +1406,7 @@ bool ExtendedCalendar::deleteJournalInstances(const Journal::Ptr &journal)
     QList<Journal::Ptr>::const_iterator it;
     for (it = values.constBegin(); it != values.constEnd(); ++it) {
         if ((*it)->hasRecurrenceId()) {
-            kDebug() << "deleting child journal" << (*it)->uid()
+            qCDebug(lcMkcal) << "deleting child journal" << (*it)->uid()
                      << (*it)->dtStart()
                      << "in calendar";
             deleteJournal((*it));
@@ -1781,7 +1782,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
     // only once per iteration, it should result in significan net
     // savings
 
-//  kDebug() << "expandRecurrences"
+//  qCDebug(lcMkcal) << "expandRecurrences"
 //           << incidenceList->size()
 //           << dtStart.toString() << dtStart.isValid()
 //           << dtEnd.toString() << dtEnd.isValid();
@@ -1839,13 +1840,13 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
                     || (!brokenEnd && dte > dtStart)
                     || (brokenEnd && dt > brokenDtStart))) {
 #ifdef DEBUG_EXPANSION
-            kDebug() << "---appending" << (*iit)->summary() << dt.toString();
+            qCDebug(lcMkcal) << "---appending" << (*iit)->summary() << dt.toString();
 #endif /* DEBUG_EXPANSION */
             if ((*iit)->recurs()) {
                 if (!(*iit)->dtStart().isDateOnly()) {
                     if (!(*iit)->recursAt((*iit)->dtStart())) {
 #ifdef DEBUG_EXPANSION
-                        kDebug() << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
+                        qCDebug(lcMkcal) << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
                     } else {
                         validity.dtStart = dt.dateTime();
@@ -1856,7 +1857,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
                 } else {
                     if (!(*iit)->recursOn((*iit)->dtStart().date(), ts)) {
 #ifdef DEBUG_EXPANSION
-                        kDebug() << "--not recurring on" << (*iit)->dtStart() << (*iit)->summary();
+                        qCDebug(lcMkcal) << "--not recurring on" << (*iit)->dtStart() << (*iit)->summary();
 #endif /* DEBUG_EXPANSION */
                     } else {
                         validity.dtStart = dt.dateTime();
@@ -1873,7 +1874,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
             }
         } else {
 #ifdef DEBUG_EXPANSION
-            kDebug() << "-- no match" << dt.toString() << dte.toString() << dte.isValid() << brokenEnd;
+            qCDebug(lcMkcal) << "-- no match" << dt.toString() << dte.toString() << dte.isValid() << brokenEnd;
 #endif /* DEBUG_EXPANSION */
         }
 
@@ -1917,7 +1918,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
                 /* If 'next' results in wrong date, give up. We have
                 * to be moving forward. */
                 if (dtr <= dtro) {
-                    kDebug() << "--getNextDateTime broken - " << dtr << (*iit);
+                    qCDebug(lcMkcal) << "--getNextDateTime broken - " << dtr << (*iit);
                     break;
                 }
 
@@ -1925,7 +1926,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
                 // already met as we're still iterating. Have to check [2].
                 if (dtr > dtStartMinusDuration) {
 #ifdef DEBUG_EXPANSION
-                    kDebug() << "---appending(recurrence)"
+                    qCDebug(lcMkcal) << "---appending(recurrence)"
                              << (*iit)->summary() << dtr.toString();
 #endif /* DEBUG_EXPANSION */
                     validity.dtStart = dtr.dateTime();
@@ -1934,18 +1935,18 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
                     appended++;
                 } else {
 #ifdef DEBUG_EXPANSION
-                    kDebug() << "---skipping(recurrence)"
+                    qCDebug(lcMkcal) << "---skipping(recurrence)"
                              << skipped << (*iit)->summary()
                              << duration << dtr.toString();
 #endif /* DEBUG_EXPANSION */
                     if (skipped++ >= 100) {
-                        kDebug() << "--- skip count exceeded, breaking loop";
+                        qCDebug(lcMkcal) << "--- skip count exceeded, breaking loop";
                         break;
                     }
                 }
             }
             if (appended == maxExpand && expandLimitHit) {
-                kDebug() << "!!! HIT LIMIT" << maxExpand;
+                qCDebug(lcMkcal) << "!!! HIT LIMIT" << maxExpand;
                 *expandLimitHit = true;
             }
         }
@@ -1969,7 +1970,7 @@ ExtendedCalendar::expandMultiDay(const ExtendedCalendar::ExpandedIncidenceList &
     if (expandLimitHit)
         *expandLimitHit = false;
 
-    qDebug() << "expandMultiDay" << startDate.toString()
+    qCDebug(lcMkcal) << "expandMultiDay" << startDate.toString()
              << endDate.toString() << maxExpand << merge;
     foreach (const ExtendedCalendar::ExpandedIncidence &ei, list) {
         // If not event, not interested
@@ -2057,7 +2058,7 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage(const ExtendedCalendar::Pt
         }
 
         if (!databaseDir.exists() && !databaseDir.mkpath(QString::fromLatin1("."))) {
-            qWarning() << "Unable to create calendar database directory:" << databaseDir.path();
+            qCWarning(lcMkcal) << "Unable to create calendar database directory:" << databaseDir.path();
         }
 
         dbFile = databaseDir.absoluteFilePath(QLatin1String("db"));

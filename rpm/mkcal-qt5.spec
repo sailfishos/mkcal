@@ -15,9 +15,7 @@ BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(libkcalcoren-qt5)
 BuildRequires:  pkgconfig(sqlite3)
-BuildRequires:  pkgconfig(dbus-1)
 BuildRequires:  pkgconfig(uuid)
-BuildRequires:  pkgconfig(libical)
 BuildRequires:  pkgconfig(timed-qt5) >= 2.88
 BuildRequires:  pkgconfig(QmfClient)
 

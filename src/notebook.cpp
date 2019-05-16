@@ -31,6 +31,7 @@
 */
 
 #include "notebook.h"
+#include "logging_p.h"
 using namespace KCalCore;
 
 #include <kdebug.h>
@@ -504,17 +505,17 @@ bool Notebook::incidenceAllowed(Incidence::Ptr incidence) const
     // type of notebook?
     if (incidence->type() == Incidence::TypeEvent) {
         if (!eventsAllowed()) {
-            kDebug() << "unable add event to this notebook";
+            qCDebug(lcMkcal) << "unable add event to this notebook";
             return false;
         }
     } else if (incidence->type() == Incidence::TypeTodo) {
         if (!todosAllowed()) {
-            kDebug() << "unable add todo to this notebook";
+            qCDebug(lcMkcal) << "unable add todo to this notebook";
             return false;
         }
     } else if (incidence->type() == Incidence::TypeJournal) {
         if (!journalsAllowed()) {
-            kDebug() << "unable add journal to this notebook";
+            qCDebug(lcMkcal) << "unable add journal to this notebook";
             return false;
         }
     }

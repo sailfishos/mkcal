@@ -32,15 +32,19 @@
 */
 #include "sqliteformat.h"
 #include "sqlitestorage.h"
+#include "logging_p.h"
 
 #include <alarm.h>
 #include <attendee.h>
 #include <person.h>
 #include <sorting.h>
-using namespace KCalCore;
 
-#include <KDebug>
-#include <KUrl>
+#include <QUrl>
+
+// kdebug.h is kept here, not for logging, but for the operator<<() on KDateTime.
+#include <kdebug.h>
+
+using namespace KCalCore;
 
 #define FLOATING_DATE "FloatingDate"
 
@@ -206,7 +210,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     if (dbop == DBDelete || dbop == DBUpdate) {
         rowid = d->selectRowId(incidence);
         if (!rowid) {
-            kError() << "failed to select rowid of incidence" << incidence->uid() << incidence->recurrenceId();
+            qCWarning(lcMkcal) << "failed to select rowid of incidence" << incidence->uid() << incidence->recurrenceId();
             goto error;
         }
     }
@@ -407,19 +411,19 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         rowid = sqlite3_last_insert_rowid(d->mDatabase);
 
     if (stmt2 && !d->modifyCustomproperties(incidence, rowid, dbop, stmt2, stmt3))
-        kError() << "failed to modify customproperties for incidence" << incidence->uid();
+        qCWarning(lcMkcal) << "failed to modify customproperties for incidence" << incidence->uid();
 
     if (stmt4 && !d->modifyAttendees(incidence, rowid, dbop, stmt4, stmt5))
-        kError() << "failed to modify attendees for incidence" << incidence->uid();
+        qCWarning(lcMkcal) << "failed to modify attendees for incidence" << incidence->uid();
 
     if (stmt6 && !d->modifyAlarms(incidence, rowid, dbop, stmt6, stmt7))
-        kError() << "failed to modify alarms for incidence" << incidence->uid();
+        qCWarning(lcMkcal) << "failed to modify alarms for incidence" << incidence->uid();
 
     if (stmt8 && !d->modifyRecursives(incidence, rowid, dbop, stmt8, stmt9))
-        kError() << "failed to modify recursives for incidence" << incidence->uid();
+        qCWarning(lcMkcal) << "failed to modify recursives for incidence" << incidence->uid();
 
     if (stmt10 && !d->modifyRdates(incidence, rowid, dbop, stmt10, stmt11))
-        kError() << "failed to modify rdates for incidence" << incidence->uid();
+        qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
 
     return true;
 
@@ -438,7 +442,7 @@ bool SqliteFormat::Private::modifyCustomproperties(Incidence::Ptr incidence, int
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
         if (!modifyCustomproperty(rowid, QByteArray(), QString(), QString(), DBDelete, stmt1)) {
-            kError() << "failed to modify customproperty for incidence" << incidence->uid();
+            qCWarning(lcMkcal) << "failed to modify customproperty for incidence" << incidence->uid();
             success = false;
         }
     }
@@ -449,7 +453,7 @@ bool SqliteFormat::Private::modifyCustomproperties(Incidence::Ptr incidence, int
             if (!modifyCustomproperty(rowid, it.key(), it.value(),
                                       incidence->nonKDECustomPropertyParameters(it.key()),
                                       (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
-                kError() << "failed to modify customproperty for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify customproperty for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -498,7 +502,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
         if (!modifyRdate(rowid, 0, KDateTime(), DBDelete, stmt1)) {
-            kError() << "failed to modify rdates for incidence" << incidence->uid();
+            qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
             success = false;
         }
     }
@@ -510,7 +514,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
             if (!modifyRdate(rowid, type, KDateTime((*dt), QTime(00, 00, 00)).toClockTime(), (dbop == DBUpdate ? DBInsert : dbop),
                              stmt2)) {
-                kError() << "failed to modify rdates for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -520,7 +524,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
             if (!modifyRdate(rowid, type, KDateTime((*dt), QTime(00, 00, 00)).toClockTime(), (dbop == DBUpdate ? DBInsert : dbop),
                              stmt2)) {
-                kError() << "failed to modify xdates for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify xdates for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -530,7 +534,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         DateTimeList::ConstIterator it;
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
             if (!modifyRdate(rowid, type, (*it), (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
-                kError() << "failed to modify rdatetimes for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify rdatetimes for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -539,7 +543,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         dateTimeList = incidence->recurrence()->exDateTimes();
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
             if (!modifyRdate(rowid, type, (*it), (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
-                kError() << "failed to modify xdatetimes for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify xdatetimes for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -581,7 +585,7 @@ bool SqliteFormat::Private::modifyAlarms(Incidence::Ptr incidence, int rowid, DB
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
         if (!modifyAlarm(rowid, Alarm::Ptr(), DBDelete, stmt1)) {
-            kError() << "failed to modify alarm for incidence" << incidence->uid();
+            qCWarning(lcMkcal) << "failed to modify alarm for incidence" << incidence->uid();
             success = false;
         }
     }
@@ -591,7 +595,7 @@ bool SqliteFormat::Private::modifyAlarms(Incidence::Ptr incidence, int rowid, DB
         Alarm::List::ConstIterator it;
         for (it = list.begin(); it != list.end(); ++it) {
             if (!modifyAlarm(rowid, *it, (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
-                kError() << "failed to modify alarm for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify alarm for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -719,7 +723,7 @@ bool SqliteFormat::Private::modifyRecursives(Incidence::Ptr incidence, int rowid
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
         if (!modifyRecursive(rowid, NULL, DBDelete, stmt1, 1)) {
-            kError() << "failed to modify recursive for incidence" << incidence->uid();
+            qCWarning(lcMkcal) << "failed to modify recursive for incidence" << incidence->uid();
             success = false;
         }
     }
@@ -729,14 +733,14 @@ bool SqliteFormat::Private::modifyRecursives(Incidence::Ptr incidence, int rowid
         RecurrenceRule::List::ConstIterator it;
         for (it = listRR.begin(); it != listRR.end(); ++it) {
             if (!modifyRecursive(rowid, *it, (dbop == DBUpdate ? DBInsert : dbop), stmt2, 1)) {
-                kError() << "failed to modify recursive for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify recursive for incidence" << incidence->uid();
                 success = false;
             }
         }
         const RecurrenceRule::List &listER = incidence->recurrence()->exRules();
         for (it = listER.begin(); it != listER.end(); ++it) {
             if (!modifyRecursive(rowid, *it, (dbop == DBUpdate ? DBInsert : dbop), stmt2, 2)) {
-                kError() << "failed to modify recursive for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify recursive for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -847,7 +851,7 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
         if (!modifyAttendee(rowid, Attendee::Ptr(), DBDelete, stmt1, false)) {
-            kError() << "failed to modify attendee for incidence" << incidence->uid();
+            qCWarning(lcMkcal) << "failed to modify attendee for incidence" << incidence->uid();
             success = false;
         }
     }
@@ -862,7 +866,7 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
             Attendee::Ptr organizer = Attendee::Ptr(new Attendee(incidence->organizer()->name(), organizerEmail));
             if (!modifyAttendee(rowid, organizer,
                                 (dbop == DBUpdate ? DBInsert : dbop), stmt2, true)) {
-                kError() << "failed to modify organizer for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify organizer for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -870,13 +874,13 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
         Attendee::List::ConstIterator it;
         for (it = list.begin(); it != list.end(); ++it) {
             if ((*it)->email().isEmpty()) {
-                kWarning() << "Attendee doesn't have an email address";
+                qCWarning(lcMkcal) << "Attendee doesn't have an email address";
                 continue;
             } else if ((*it)->email() == organizerEmail) {
                 continue; // already added above
             }
             if (!modifyAttendee(rowid, *it, (dbop == DBUpdate ? DBInsert : dbop), stmt2, false)) {
-                kError() << "failed to modify attendee for incidence" << incidence->uid();
+                qCWarning(lcMkcal) << "failed to modify attendee for incidence" << incidence->uid();
                 success = false;
             }
         }
@@ -926,7 +930,7 @@ bool SqliteFormat::Private::modifyAttendee(int rowid, Attendee::Ptr attendee, DB
 
 error:
     if (!success) {
-        kWarning() << "Sqlite error:" << sqlite3_errmsg(mDatabase);
+        qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(mDatabase);
     }
     sqlite3_reset(stmt);
 
@@ -1217,19 +1221,19 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
 //    kDebug() << "loaded component for incidence" << incidence->uid() << "notebook" << notebook;
 
         if (stmt2 && !d->selectCustomproperties(incidence, rowid, stmt2)) {
-            kWarning() << "failed to get customproperties for incidence" << incidence->uid() << "notebook" << notebook;
+            qCWarning(lcMkcal) << "failed to get customproperties for incidence" << incidence->uid() << "notebook" << notebook;
         }
         if (stmt3 && !d->selectAttendees(incidence, rowid, stmt3)) {
-            kError() << "failed to get attendees for incidence" << incidence->uid() << "notebook" << notebook;
+            qCWarning(lcMkcal) << "failed to get attendees for incidence" << incidence->uid() << "notebook" << notebook;
         }
         if (stmt4 && !d->selectAlarms(incidence, rowid, stmt4)) {
-            kError() << "failed to get alarms for incidence" << incidence->uid() << "notebook" << notebook;
+            qCWarning(lcMkcal) << "failed to get alarms for incidence" << incidence->uid() << "notebook" << notebook;
         }
         if (stmt5 && !d->selectRecursives(incidence, rowid, stmt5)) {
-            kError() << "failed to get recursive for incidence" << incidence->uid() << "notebook" << notebook;
+            qCWarning(lcMkcal) << "failed to get recursive for incidence" << incidence->uid() << "notebook" << notebook;
         }
         if (stmt6 && !d->selectRdates(incidence, rowid, stmt6)) {
-            kError() << "failed to get rdates for incidence" << incidence->uid() << "notebook" << notebook;
+            qCWarning(lcMkcal) << "failed to get rdates for incidence" << incidence->uid() << "notebook" << notebook;
         }
     }
 
