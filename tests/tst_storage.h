@@ -27,9 +27,17 @@ private slots:
     void tst_alldayUtc();
     void tst_alldayRecurrence();
     void tst_origintimes();
+    void tst_recurrence();
     void tst_rawEvents();
     void tst_dateCreated_data();
     void tst_dateCreated();
+    void tst_dissociateSingleOccurrence_data();
+    void tst_dissociateSingleOccurrence();
+    void tst_deleted();
+    void tst_modified();
+    void tst_inserted();
+    void tst_icalAllDay_data();
+    void tst_icalAllDay();
 
 private:
     void openDb(bool clear = false);
