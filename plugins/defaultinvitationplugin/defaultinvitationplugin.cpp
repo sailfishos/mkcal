@@ -258,7 +258,7 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Inciden
     if (!remoteUidValue.isEmpty()) {
         invitationCopy->setUid(remoteUidValue);
     }
-    const QString &ical = icf.createScheduleMessage(invitationCopy, cancelled ? iTIPCancel : iTIPRefresh);
+    const QString &ical = icf.createScheduleMessage(invitationCopy, cancelled ? iTIPCancel : iTIPRequest);
 
     QStringList emails;
     foreach (const Attendee::Ptr &att, attendees) {
