@@ -3021,7 +3021,7 @@ sqlite3_int64 SqliteStorage::toLocalOriginTime(KDateTime dt)
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds)
 {
     //kDebug() << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
-    return d->mOriginTime.addSecs(seconds).toUtc();
+    return seconds ? d->mOriginTime.addSecs(seconds).toUtc() : KDateTime();
 }
 
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, QString zonename)
@@ -3030,26 +3030,21 @@ KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, QString zonename)
 
     if (seconds != 0) {
         if (!zonename.isEmpty()) {
-            if (zonename == QLatin1String(FLOATING_DATE)) {
-                dt = d->mOriginTime.addSecs(seconds).toClockTime();
-                dt.setDateOnly(true);
+            // First try system zones.
+            KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
+            if (ktimezone.isValid()) {
+                dt =
+                    d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(ktimezone));
             } else {
-                // First try system zones.
-                KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
-                if (ktimezone.isValid()) {
+                // Then try calendar specific zones.
+                ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
+                ICalTimeZone icaltimezone = zones.value(zonename);
+                if (icaltimezone.isValid()) {
                     dt =
-                        d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(ktimezone));
+                        d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(icaltimezone));
                 } else {
-                    // Then try calendar specific zones.
-                    ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
-                    ICalTimeZone icaltimezone = zones.value(zonename);
-                    if (icaltimezone.isValid()) {
-                        dt =
-                            d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(icaltimezone));
-                    } else {
-                        // Invalid zone, fall back to UTC.
-                        dt = d->mOriginTime.addSecs(seconds).toUtc();
-                    }
+                    // Invalid zone, fall back to UTC.
+                    dt = d->mOriginTime.addSecs(seconds).toUtc();
                 }
             }
         } else {
