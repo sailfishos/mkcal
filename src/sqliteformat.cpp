@@ -968,9 +968,13 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
     }
 
     if (success && dbop != DBDelete) {
+        // FIXME: this doesn't fully save and restore attendees as they were set.
+        // e.g. has constraints that every attendee must have email and they need to be unique among the attendees.
+        // also this forces attendee list to include the organizer.
+        QString organizerEmail;
         if (!incidence->organizer()->isEmpty()) {
-            Attendee::Ptr organizer = Attendee::Ptr(new Attendee(incidence->organizer()->name(),
-                                                                 incidence->organizer()->email()));
+            organizerEmail = incidence->organizer()->email();
+            Attendee::Ptr organizer = Attendee::Ptr(new Attendee(incidence->organizer()->name(), organizerEmail));
             if (!modifyAttendee(rowid, organizer,
                                 (dbop == DBUpdate ? DBInsert : dbop), stmt2, true)) {
                 kError() << "failed to modify organizer for incidence" << incidence->uid();
@@ -980,6 +984,12 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
         const Attendee::List &list = incidence->attendees();
         Attendee::List::ConstIterator it;
         for (it = list.begin(); it != list.end(); ++it) {
+            if ((*it)->email().isEmpty()) {
+                kWarning() << "Attendee doesn't have an email address";
+                continue;
+            } else if ((*it)->email() == organizerEmail) {
+                continue; // already added above
+            }
             if (!modifyAttendee(rowid, *it, (dbop == DBUpdate ? DBInsert : dbop), stmt2, false)) {
                 kError() << "failed to modify attendee for incidence" << incidence->uid();
                 success = false;
@@ -1030,6 +1040,9 @@ bool SqliteFormat::Private::modifyAttendee(int rowid, Attendee::Ptr attendee, DB
     success = true;
 
 error:
+    if (!success) {
+        kWarning() << "Sqlite error:" << sqlite3_errmsg(mDatabase);
+    }
     sqlite3_reset(stmt);
 
     return success;
