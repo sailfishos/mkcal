@@ -266,8 +266,8 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
 
     Incidence::Ptr newInc = Incidence::Ptr(incidence->clone());
     KDateTime nowUTC = KDateTime::currentUtcDateTime();
-    incidence->setCreated(nowUTC);
-    incidence->setSchedulingID(QString());
+    newInc->setCreated(nowUTC);
+    newInc->setSchedulingID(QString());
     incidence->setLastModified(nowUTC);
 
     Recurrence *recur = newInc->recurrence();
