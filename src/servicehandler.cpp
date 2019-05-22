@@ -37,7 +37,7 @@ public:
     ServiceHandler::ErrorCode mError;
 
     void loadPlugins();
-    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
+    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
     ServiceInterface *getServicePlugin(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
@@ -79,7 +79,7 @@ void ServiceHandlerPrivate::loadPlugins()
     mLoaded = true;
 }
 
-bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
+bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
                                           const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
 {
     if (!mLoaded)
@@ -93,19 +93,23 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
 
     QString notebookUid = calendar->notebook(invitation);
     if (storage->isValidNotebook(notebookUid)) {
-        pluginName = storage->notebook(notebookUid)->pluginName();
-        accountId  = storage->notebook(notebookUid)->account();
+        Notebook::Ptr notebook = storage->notebook(notebookUid);
+        if (notebook.isNull()) {
+            kWarning() << "Notebook doesn't exist" << notebookUid;
+        } else {
+            pluginName = notebook->pluginName();
+            accountId = notebook->account();
+        }
     }
     if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
         pluginName = defaultName;
     kDebug() <<  "Using plugin:" << pluginName;
 
-    QHash<QString, InvitationHandlerInterface *>::const_iterator i;
-    i = mPlugins.find(pluginName);
+    QHash<QString, InvitationHandlerInterface *>::const_iterator i = mPlugins.find(pluginName);
 
     if (i != mPlugins.end()) {
         // service needed to get possible error, because
-        // invitationhandlerinterface does'n have error-function
+        // invitationhandlerinterface doesn't have error-function
         QHash<QString, ServiceInterface *>::const_iterator is = mServices.find(pluginName);
 
         switch (action) {
