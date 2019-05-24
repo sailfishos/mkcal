@@ -341,10 +341,9 @@ QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebo
         // just return quietly, it can be a local notebook
         return QString();
     }
+
     QString email = d->accountEmailAddress(notebook->account());
-    if (!email.isEmpty()) {
-        qDebug() << "Using account email address" << email;
-    } else {
+    if (email.isEmpty()) {
         qWarning() << "Notebook" << notebook->uid() << "do not have a valid account email address";
         d->init();
         email = d->defaultAddress();
