@@ -153,6 +153,7 @@ void tst_storage::tst_alldayRecurrence()
     KCalCore::Recurrence *recurrence = event->recurrence();
     recurrence->setWeekly(1);
     recurrence->setStartDateTime(event->dtStart());
+    recurrence->setAllDay(true);
 
     m_calendar->addEvent(event, NotebookId);
     m_storage->save();
