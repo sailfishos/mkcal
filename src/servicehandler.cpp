@@ -37,8 +37,9 @@ public:
     ServiceHandler::ErrorCode mError;
 
     void loadPlugins();
-    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
-                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
+                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                       const Notebook::Ptr &notebook);
     ServiceInterface *getServicePlugin(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
 
     ServiceHandlerPrivate();
@@ -79,33 +80,47 @@ void ServiceHandlerPrivate::loadPlugins()
     mLoaded = true;
 }
 
-bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString body,
-                                          const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
+bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
+                                          const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                                          const Notebook::Ptr &notebook)
 {
-    if (!mLoaded)
-        loadPlugins();
-
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
 
-    QString pluginName;
-    QString accountId;
+    if (!mLoaded)
+        loadPlugins();
 
-    QString notebookUid = calendar->notebook(invitation);
-    if (storage->isValidNotebook(notebookUid)) {
-        pluginName = storage->notebook(notebookUid)->pluginName();
-        accountId  = storage->notebook(notebookUid)->account();
+    Notebook::Ptr accountNotebook;
+    QString notebookUid;
+
+    if (!notebook.isNull()) {
+        accountNotebook = notebook;
+        notebookUid = notebook->uid();
+    } else {
+        notebookUid = calendar->notebook(invitation);
+        if (storage->isValidNotebook(notebookUid)) {
+            accountNotebook = storage->notebook(notebookUid);
+        }
     }
+
+    if (accountNotebook.isNull()) {
+        kWarning() << "No notebook available for invitation plugin to use";
+        return false;
+    }
+
+    QString pluginName = accountNotebook->pluginName();
+    QString accountId = accountNotebook->account() ;
+
     if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
         pluginName = defaultName;
+
     kDebug() <<  "Using plugin:" << pluginName;
 
-    QHash<QString, InvitationHandlerInterface *>::const_iterator i;
-    i = mPlugins.find(pluginName);
+    QHash<QString, InvitationHandlerInterface *>::const_iterator i = mPlugins.find(pluginName);
 
     if (i != mPlugins.end()) {
         // service needed to get possible error, because
-        // invitationhandlerinterface does'n have error-function
+        // invitationhandlerinterface doesn't have error-function
         QHash<QString, ServiceInterface *>::const_iterator is = mServices.find(pluginName);
 
         switch (action) {
@@ -162,8 +177,7 @@ ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook::Ptr &n
 
     kDebug() <<  "Using service:" << name;
 
-    QHash<QString, ServiceInterface *>::const_iterator i;
-    i = mServices.find(name);
+    QHash<QString, ServiceInterface *>::const_iterator i = mServices.find(name);
 
     if (i != mServices.end()) {
         return i.value();
@@ -178,32 +192,35 @@ ServiceHandler::ServiceHandler()
 }
 
 bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QString &body,
-                                    const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
+                                    const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                                    const Notebook::Ptr &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
 
-    return d->executePlugin(SendInvitation, invitation, body, calendar, storage);
+    return d->executePlugin(SendInvitation, invitation, body, calendar, storage, notebook);
 }
 
 
 bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString &body,
-                                const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
+                                const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                                const Notebook::Ptr &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
 
-    return d->executePlugin(SendUpdate, invitation, body, calendar, storage);
+    return d->executePlugin(SendUpdate, invitation, body, calendar, storage, notebook);
 }
 
 
 bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QString &body,
-                                  const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage)
+                                  const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                                  const Notebook::Ptr &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
 
-    return d->executePlugin(SendResponse, invitation, body, calendar, storage);
+    return d->executePlugin(SendResponse, invitation, body, calendar, storage, notebook);
 }
 
 QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
@@ -360,7 +377,6 @@ QString ServiceHandler::defaultNotebook(const QString &productId)
     Q_UNUSED(productId);
 
     return QString(); //Empty implementation so far
-
 }
 
 QStringList ServiceHandler::availableServices()
@@ -374,7 +390,6 @@ QStringList ServiceHandler::availableServices()
     }
 
     return result;
-
 }
 
 QString ServiceHandler::icon(QString serviceId)
@@ -382,8 +397,7 @@ QString ServiceHandler::icon(QString serviceId)
     if (!d->mLoaded)
         d->loadPlugins();
 
-    QHash<QString, ServiceInterface *>::const_iterator i;
-    i = d->mServices.find(serviceId);
+    QHash<QString, ServiceInterface *>::const_iterator i = d->mServices.find(serviceId);
 
     if (i != d->mServices.end()) {
         return i.value()->icon();
@@ -397,8 +411,7 @@ QString ServiceHandler::uiName(QString serviceId)
     if (!d->mLoaded)
         d->loadPlugins();
 
-    QHash<QString, ServiceInterface *>::const_iterator i;
-    i = d->mServices.find(serviceId);
+    QHash<QString, ServiceInterface *>::const_iterator i = d->mServices.find(serviceId);
 
     if (i != d->mServices.end()) {
         return i.value()->uiName();

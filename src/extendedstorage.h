@@ -58,23 +58,7 @@ enum DBOperation {
     DBInsert,
     DBUpdate,
     DBDelete,
-    DBSelect,
-    DBSelectPlain,
-    DBSelectGeo,
-    DBSelectRecurring,
-    DBSelectAttendee
-};
-
-enum StorageOperation {
-    StorageNone = 0,
-    StorageOpen,
-    StorageLoad,
-    StorageSave,
-    StorageInserted,
-    StorageModified,
-    StorageDeleted,
-    StorageAll,
-    StorageDuplicate
+    DBSelect
 };
 
 // Default alarm receiver is the organiser application.

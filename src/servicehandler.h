@@ -36,7 +36,6 @@ class ServiceHandlerPrivate;
 
 namespace mKCal {
 
-
 /** Singleton class to get the exact handler (plugin) of the service
 */
 class MKCAL_EXPORT ServiceHandler : QObject
@@ -81,10 +80,12 @@ public:
       @param body The body of the reply if any
       @param calendar Pointer to the calendar in use
       @param storage Pointer to the storage in use
+      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
     bool sendInvitation(const KCalCore::Incidence::Ptr &invitation, const QString &body,
-                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                        const Notebook::Ptr &notebook = Notebook::Ptr());
 
     /** Send the updated invitation to the list of people stated as attendees.
       It would load the appropriate plugin to do it, and if there
@@ -93,10 +94,11 @@ public:
       @param body The body of the reply if any
       @param calendar Pointer to the calendar in use
       @param storage Pointer to the storage in use
+      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
     bool sendUpdate(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
-                    const ExtendedStorage::Ptr &storage);
+                    const ExtendedStorage::Ptr &storage, const Notebook::Ptr &notebook = Notebook::Ptr());
 
     /** Send the updated invitation to the organiser.
       It would load the appropriate plugin to do it, and if there
@@ -105,10 +107,12 @@ public:
       @param body The body of the reply if any
       @param calendar Pointer to the calendar in use
       @param storage Pointer to the storage in use
+      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
     bool sendResponse(const KCalCore::Incidence::Ptr &invitation, const QString &body,
-                      const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage);
+                      const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
+                      const Notebook::Ptr &notebook = Notebook::Ptr());
 
     /** Icon
       It would load the appropriate plugin to do it
@@ -212,7 +216,6 @@ public:
        */
     QStringList availableServices();
 
-
     /** \brief Get the Icon of a service based on the id of the plugin
 
       @return Path to the icon
@@ -230,7 +233,6 @@ public:
     QString uiName(QString serviceId);
 
 signals:
-
     /** Monitors the progress of the download. The id is the return value got when download started */
     void downloadProgress(int id, int percentage);
 
@@ -239,7 +241,6 @@ signals:
 
     /** Informs that the download is finished with errors. The id is the return value got when download started */
     void downloadError(int id, ErrorCode error);
-
 };
 
 }
