@@ -997,8 +997,9 @@ static KDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
         dateTime = storage->fromOriginTime(date);
         dateTime.setTimeSpec(KDateTime::ClockTime);
     } else if (timezone == QStringLiteral(FLOATING_DATE)) {
-        date = sqlite3_column_int64(stmt, index);
-        dateTime = storage->fromOriginTime(date).toClockTime();
+        date = sqlite3_column_int64(stmt, index + 1);
+        dateTime = storage->fromOriginTime(date);
+        dateTime.setTimeSpec(KDateTime::ClockTime);
         dateTime.setDateOnly(true);
     } else {
         date = sqlite3_column_int64(stmt, index);
