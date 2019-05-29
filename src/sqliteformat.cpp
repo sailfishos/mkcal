@@ -143,6 +143,39 @@ error:
     return false;
 }
 
+static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, const KDateTime &dateTime)
+{
+    int rv = 0;
+    sqlite3_int64 secs;
+    QByteArray tz;
+
+    if (dateTime.isValid()) {
+        secs = storage->toOriginTime(dateTime);
+        sqlite3_bind_int64(stmt, index, secs);
+        secs = storage->toLocalOriginTime(dateTime);
+        sqlite3_bind_int64(stmt, index, secs);
+        if (dateTime.isDateOnly() && dateTime.timeSpec().isClockTime()) {
+            tz = FLOATING_DATE;
+        } else {
+            tz = dateTime.timeZone().name().toUtf8();
+        }
+        sqlite3_bind_text(stmt, index, tz.constData(), tz.length(), SQLITE_TRANSIENT);
+    } else {
+        sqlite3_bind_int(stmt, index, 0);
+        sqlite3_bind_int(stmt, index, 0);
+        sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
+    }
+    return true;
+ error:
+    return false;
+}
+
+#define sqlite3_bind_date_time( storage, stmt, index, dt)       \
+    {                                                           \
+        if (!setDateTime(storage, stmt, index, dt))             \
+            goto error;                                         \
+    }
+
 bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QString &nbook,
                                     DBOperation dbop,
                                     sqlite3_stmt *stmt1, sqlite3_stmt *stmt2, sqlite3_stmt *stmt3,
@@ -166,10 +199,6 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     QByteArray relatedtouid;
     QByteArray comments;
     QByteArray resources;
-    QByteArray tzStart;
-    QByteArray tzEnd;
-    QByteArray tzRecur;
-    QByteArray tzComp;
     KDateTime dt;
     sqlite3_int64 secs;
     int rowid = 0;
@@ -218,136 +247,45 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         if ((incidence->type() == Incidence::TypeEvent) ||
                 (incidence->type() == Incidence::TypeJournal)) {
-            if (incidence->dtStart().isValid()) {
-                secs = d->mStorage->toOriginTime(incidence->dtStart());
-                sqlite3_bind_int64(stmt1, index, secs);
-                secs = d->mStorage->toLocalOriginTime(incidence->dtStart());
-                sqlite3_bind_int64(stmt1, index, secs);
-                if (incidence->dtStart().isDateOnly() && incidence->dtStart().timeSpec().isClockTime()) {
-                    tzStart = FLOATING_DATE;
-                } else {
-                    tzStart = incidence->dtStart().timeZone().name().toUtf8();
-                }
-                sqlite3_bind_text(stmt1, index, tzStart.constData(), tzStart.length(), SQLITE_STATIC);
-            } else {
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
-            }
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->dtStart());
 
             // set HasDueDate to false
             sqlite3_bind_int(stmt1, index, 0);
 
+            KDateTime effectiveDtEnd;
             if (incidence->type() == Incidence::TypeEvent) {
                 Event::Ptr event = incidence.staticCast<Event>();
 
                 if (event->hasEndDate()) {
-                    // all day inclusive of end time, add one day here and remove one day when reading
-                    if (event->allDay()) {
-                        dt = event->dtEnd().addDays(1);
-                    } else {
-                        dt = event->dtEnd();
-                    }
-                    secs = d->mStorage->toOriginTime(dt);
-                    sqlite3_bind_int64(stmt1, index, secs);
-                    secs = d->mStorage->toLocalOriginTime(dt);
-                    sqlite3_bind_int64(stmt1, index, secs);
-                    if (dt.isDateOnly() && dt.timeSpec().isClockTime()) {
-                        tzEnd = FLOATING_DATE;
-                    } else {
-                        tzEnd = dt.timeZone().name().toUtf8();
-                    }
-                    sqlite3_bind_text(stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
-                } else {
+                    effectiveDtEnd = event->dtEnd();
+                } else if (incidence->dtStart().isValid()) {
                     // No end date, use start date if possible
-                    if (incidence->dtStart().isValid()) {
-                        KDateTime effectiveDtEnd;
-                        if (incidence->allDay())
-                            effectiveDtEnd = incidence->dtStart().addDays(1);
-                        else
-                            effectiveDtEnd = incidence->dtStart();
-
-                        secs = d->mStorage->toOriginTime(effectiveDtEnd);
-                        sqlite3_bind_int64(stmt1, index, secs);
-
-                        secs = d->mStorage->toLocalOriginTime(effectiveDtEnd);
-                        sqlite3_bind_int64(stmt1, index, secs);
-
-                        if (incidence->dtStart().isDateOnly() && incidence->dtStart().timeSpec().isClockTime()) {
-                            tzEnd = FLOATING_DATE;
-                        } else {
-                            tzEnd = incidence->dtStart().timeZone().name().toUtf8();
-                        }
-                        sqlite3_bind_text(stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
-                    } else {
-                        sqlite3_bind_int(stmt1, index, 0);
-                        sqlite3_bind_int(stmt1, index, 0);
-                        sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
-                    }
+                    effectiveDtEnd = incidence->dtStart();
                 }
-            } else {
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
+                // all day inclusive of end time, add one day here and remove one day when reading
+                if (effectiveDtEnd.isValid() && incidence->allDay()) {
+                    effectiveDtEnd = effectiveDtEnd.addDays(1);
+                }
             }
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd);
         } else if (incidence->type() == Incidence::TypeTodo) {
             Todo::Ptr todo = incidence.staticCast<Todo>();
-            if (todo->hasStartDate()) {
-                KDateTime dtStart = todo->dtStart(true);
-                secs = d->mStorage->toOriginTime(dtStart);
-                sqlite3_bind_int64(stmt1, index, secs);
-                secs = d->mStorage->toLocalOriginTime(dtStart);
-                sqlite3_bind_int64(stmt1, index, secs);
-                if (incidence->dtStart().isDateOnly() && incidence->dtStart().timeSpec().isClockTime()) {
-                    tzStart = FLOATING_DATE;
-                } else {
-                    tzStart = incidence->dtStart().timeZone().name().toUtf8();
-                }
-                sqlite3_bind_text(stmt1, index, tzStart.constData(), tzStart.length(), SQLITE_STATIC);
-            } else {
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);   // timezone
-            }
+            sqlite3_bind_date_time(d->mStorage, stmt1, index,
+                                   todo->hasStartDate() ? todo->dtStart(true) : KDateTime());
 
             sqlite3_bind_int(stmt1, index, (int) todo->hasDueDate());
 
+            KDateTime effectiveDtDue;
             if (todo->hasDueDate()) {
-                KDateTime dtDue = todo->dtDue(true);
-                secs = d->mStorage->toOriginTime(dtDue);
-                sqlite3_bind_int64(stmt1, index, secs);
-                secs = d->mStorage->toLocalOriginTime(dtDue);
-                sqlite3_bind_int64(stmt1, index, secs);
-                if (dtDue.isDateOnly() && dtDue.timeSpec().isClockTime()) {
-                    tzEnd = FLOATING_DATE;
-                } else {
-                    tzEnd = dtDue.timeZone().name().toUtf8();
-                }
-                sqlite3_bind_text(stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
-            } else {
+                effectiveDtDue = todo->dtDue(true);
+            } else if (todo->hasStartDate()) {
                 // No due date, use start date if possible.
-                if (todo->hasStartDate()) {
-                    KDateTime dtStart = todo->dtStart(true);      //TODO Can be optimize, is the same as above
-                    if (incidence->allDay())
-                        secs = d->mStorage->toOriginTime(dtStart.addDays(1));
-                    else
-                        secs = d->mStorage->toOriginTime(dtStart);
-
-                    sqlite3_bind_int64(stmt1, index, secs);
-                    secs = d->mStorage->toLocalOriginTime(dtStart);
-                    sqlite3_bind_int64(stmt1, index, secs);
-                    if (dtStart.isDateOnly() && dtStart.timeSpec().isClockTime()) {
-                        tzEnd = FLOATING_DATE;
-                    } else {
-                        tzEnd = dtStart.timeZone().name().toUtf8();
-                    }
-                    sqlite3_bind_text(stmt1, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
-                } else {
-                    sqlite3_bind_int(stmt1, index, 0);
-                    sqlite3_bind_int(stmt1, index, 0);
-                    sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
-                }
+                if (incidence->allDay())
+                    effectiveDtDue = todo->dtStart(true).addDays(1);
+                else
+                    effectiveDtDue = todo->dtStart(true);
             }
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtDue);
         }
 
         if (incidence->type() != Incidence::TypeJournal) {
@@ -421,18 +359,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         sqlite3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
 
-        if (incidence->hasRecurrenceId()) {
-            secs = d->mStorage->toOriginTime(incidence->recurrenceId());
-            sqlite3_bind_int64(stmt1, index, secs);
-            secs = d->mStorage->toLocalOriginTime(incidence->recurrenceId());
-            sqlite3_bind_int64(stmt1, index, secs);
-            tzRecur = incidence->recurrenceId().timeZone().name().toUtf8();
-            sqlite3_bind_text(stmt1, index, tzRecur.constData(), tzRecur.length(), SQLITE_STATIC);
-        } else {
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
-        }
+        sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->recurrenceId());
 
         relatedtouid = incidence->relatedTo().toUtf8();
         sqlite3_bind_text(stmt1, index, relatedtouid.constData(), relatedtouid.length(), SQLITE_STATIC);
@@ -453,33 +380,22 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         sqlite3_bind_int(stmt1, index, (int) incidence->localOnly());
 
+        int percentComplete = 0;
+        KDateTime effectiveDtCompleted;
         if (incidence->type() == Incidence::TypeTodo) {
             Todo::Ptr todo = incidence.staticCast<Todo>();
-            sqlite3_bind_int(stmt1, index, todo->percentComplete());
+            percentComplete = todo->percentComplete();
             if (todo->isCompleted()) {
                 if (!todo->hasCompletedDate()) {
                     // If the todo was created by KOrganizer<2.2 it does not have
                     // a correct completion date. Set one now.
                     todo->setCompleted(KDateTime::currentUtcDateTime());
                 }
-                KDateTime completed = todo->completed();
-                secs = d->mStorage->toOriginTime(completed);
-                sqlite3_bind_int64(stmt1, index, secs);
-                secs = d->mStorage->toLocalOriginTime(completed);
-                sqlite3_bind_int64(stmt1, index, secs);
-                tzComp =  completed .timeZone().name().toUtf8();
-                sqlite3_bind_text(stmt1, index, tzComp.constData(), tzComp.length(), SQLITE_STATIC);
-            } else {
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_int(stmt1, index, 0);
-                sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
+                effectiveDtCompleted = todo->completed();
             }
-        } else {
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
+        sqlite3_bind_int(stmt1, index, percentComplete);
+        sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted);
 
         if (dbop == DBUpdate)
             sqlite3_bind_int(stmt1, index, rowid);
@@ -638,20 +554,13 @@ bool SqliteFormat::Private::modifyRdate(int rowid, int type, const KDateTime &da
     int rv = 0;
     int index = 1;
     bool success = false;
-    QByteArray tzdate;
-    sqlite3_int64 secs;
 
     if (dbop == DBInsert || dbop == DBDelete)
         sqlite3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
         sqlite3_bind_int(stmt, index, type);
-        secs = mStorage->toOriginTime(date);
-        sqlite3_bind_int64(stmt, index, secs);
-        secs = mStorage->toLocalOriginTime(date);
-        sqlite3_bind_int64(stmt, index, secs);
-        tzdate = date.timeZone().name().toUtf8();
-        sqlite3_bind_text(stmt, index, tzdate.constData(), tzdate.length(), SQLITE_STATIC);
+        sqlite3_bind_date_time(mStorage, stmt, index, date);
     }
 
     sqlite3_step(stmt);
@@ -702,9 +611,7 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
     QByteArray attachment;
     QByteArray addresses;
     QByteArray summary;
-    QByteArray tzTime;
     QByteArray properties;
-    sqlite3_int64 secs;
 
     if (dbop == DBInsert || dbop == DBDelete)
         sqlite3_bind_int(stmt, index, rowid);
@@ -773,18 +680,7 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
         } else {
             sqlite3_bind_int(stmt, index, 0); // offset
             sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC); // relation
-            if (alarm->hasTime()) {
-                secs = mStorage->toOriginTime(alarm->time());
-                sqlite3_bind_int64(stmt, index, secs);
-                secs = mStorage->toLocalOriginTime(alarm->time());
-                sqlite3_bind_int64(stmt, index, secs);
-                tzTime = alarm->time().timeZone().name().toUtf8();
-                sqlite3_bind_text(stmt, index, tzTime.constData(), tzTime.length(), SQLITE_STATIC);
-            } else {
-                sqlite3_bind_int(stmt, index, 0);
-                sqlite3_bind_int(stmt, index, 0);
-                sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
-            }
+            sqlite3_bind_date_time(mStorage, stmt, index, alarm->time());
         }
 
         sqlite3_bind_text(stmt, index, description.constData(), description.length(), SQLITE_STATIC);
@@ -866,8 +762,6 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
     QByteArray byWeekNumbers;
     QByteArray byMonths;
     QByteArray bySetPos;
-    QByteArray tzEnd;
-    sqlite3_int64 secs;
 
     if (dbop == DBInsert || dbop == DBDelete)
         sqlite3_bind_int(stmt, index, rowid);
@@ -877,18 +771,7 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
 
         sqlite3_bind_int(stmt, index, (int)rule->recurrenceType()); // frequency
 
-        if (rule->endDt().isValid()) {
-            secs = mStorage->toOriginTime(rule->endDt());
-            sqlite3_bind_int64(stmt, index, secs);
-            secs = mStorage->toLocalOriginTime(rule->endDt());
-            sqlite3_bind_int64(stmt, index, secs);
-            tzEnd = rule->endDt().timeZone().name().toUtf8();
-            sqlite3_bind_text(stmt, index, tzEnd.constData(), tzEnd.length(), SQLITE_STATIC);
-        } else {
-            sqlite3_bind_int(stmt, index, 0);
-            sqlite3_bind_int(stmt, index, 0);
-            sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
-        }
+        sqlite3_bind_date_time(mStorage, stmt, index, rule->endDt());
 
         sqlite3_bind_int(stmt, index, rule->duration());  // count
 
