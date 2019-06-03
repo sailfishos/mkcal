@@ -96,8 +96,8 @@ public:
                          const int &type);
     bool modifyRdates(Incidence::Ptr incidence, int rowid, DBOperation dbop, sqlite3_stmt *stmt1,
                       sqlite3_stmt *stmt2);
-    bool modifyRdate(int rowid, int type, const KDateTime &rdate, DBOperation dbop,
-                     sqlite3_stmt *stmt);
+    bool modifyRdate(int rowid, int type, const KDateTime &rdate, bool allDay,
+                     DBOperation dbop, sqlite3_stmt *stmt);
     bool modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop);
     bool deleteCalendarProperties(const QByteArray &id);
     bool insertCalendarProperty(const QByteArray &id, const QByteArray &key,
@@ -216,7 +216,7 @@ error:
     return false;
 }
 
-static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, const KDateTime &dateTime)
+static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, const KDateTime &dateTime, bool allDay)
 {
     int rv = 0;
     sqlite3_int64 secs;
@@ -227,7 +227,7 @@ static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, 
         sqlite3_bind_int64(stmt, index, secs);
         secs = storage->toLocalOriginTime(dateTime);
         sqlite3_bind_int64(stmt, index, secs);
-        if (dateTime.isDateOnly() && dateTime.timeSpec().isClockTime()) {
+        if (allDay) {
             tz = FLOATING_DATE;
         } else {
             tz = dateTime.timeZone().name().toUtf8();
@@ -243,10 +243,10 @@ static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, 
     return false;
 }
 
-#define sqlite3_bind_date_time( storage, stmt, index, dt)       \
-    {                                                           \
-        if (!setDateTime(storage, stmt, index, dt))             \
-            goto error;                                         \
+#define sqlite3_bind_date_time( storage, stmt, index, dt, allDay)      \
+    {                                                                  \
+        if (!setDateTime(storage, stmt, index, dt, allDay))            \
+            goto error;                                                \
     }
 
 bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QString &nbook,
@@ -324,7 +324,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         if ((incidence->type() == Incidence::TypeEvent) ||
                 (incidence->type() == Incidence::TypeJournal)) {
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->dtStart());
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->dtStart(), incidence->allDay());
 
             // set HasDueDate to false
             sqlite3_bind_int(stmt1, index, 0);
@@ -341,28 +341,18 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
                 }
                 // all day inclusive of end time, add one day here and remove one day when reading
                 if (effectiveDtEnd.isValid() && incidence->allDay()) {
-                    effectiveDtEnd = effectiveDtEnd.addDays(1);
+                    effectiveDtEnd = event->dtEnd().addDays(1);
                 }
             }
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd);
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd, incidence->allDay());
         } else if (incidence->type() == Incidence::TypeTodo) {
             Todo::Ptr todo = incidence.staticCast<Todo>();
             sqlite3_bind_date_time(d->mStorage, stmt1, index,
-                                   todo->hasStartDate() ? todo->dtStart(true) : KDateTime());
+                                   todo->hasStartDate() ? todo->dtStart(true) : KDateTime(), todo->allDay());
 
             sqlite3_bind_int(stmt1, index, (int) todo->hasDueDate());
 
-            KDateTime effectiveDtDue;
-            if (todo->hasDueDate()) {
-                effectiveDtDue = todo->dtDue(true);
-            } else if (todo->hasStartDate()) {
-                // No due date, use start date if possible.
-                if (incidence->allDay())
-                    effectiveDtDue = todo->dtStart(true).addDays(1);
-                else
-                    effectiveDtDue = todo->dtStart(true);
-            }
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtDue);
+            sqlite3_bind_date_time(d->mStorage, stmt1, index, todo->hasDueDate() ? todo->dtDue(true) : KDateTime(), todo->allDay());
         }
 
         if (incidence->type() != Incidence::TypeJournal) {
@@ -436,7 +426,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         sqlite3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
 
-        sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->recurrenceId());
+        sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->recurrenceId(), incidence->allDay());
 
         relatedtouid = incidence->relatedTo().toUtf8();
         sqlite3_bind_text(stmt1, index, relatedtouid.constData(), relatedtouid.length(), SQLITE_STATIC);
@@ -472,7 +462,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             }
         }
         sqlite3_bind_int(stmt1, index, percentComplete);
-        sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted);
+        sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted, incidence->allDay());
 
         if (dbop == DBUpdate)
             sqlite3_bind_int(stmt1, index, rowid);
@@ -574,7 +564,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
     if (dbop == DBUpdate || dbop == DBDelete) {
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
-        if (!modifyRdate(rowid, 0, KDateTime(), DBDelete, stmt1)) {
+        if (!modifyRdate(rowid, 0, KDateTime(), false, DBDelete, stmt1)) {
             qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
             success = false;
         }
@@ -585,7 +575,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         DateList dateList = incidence->recurrence()->rDates();
         DateList::ConstIterator dt;
         for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
-            if (!modifyRdate(rowid, type, KDateTime((*dt), QTime(00, 00, 00)).toClockTime(), (dbop == DBUpdate ? DBInsert : dbop),
+            if (!modifyRdate(rowid, type, KDateTime((*dt)), true, (dbop == DBUpdate ? DBInsert : dbop),
                              stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
                 success = false;
@@ -595,7 +585,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         type = SqliteFormat::XDate;
         dateList = incidence->recurrence()->exDates();
         for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
-            if (!modifyRdate(rowid, type, KDateTime((*dt), QTime(00, 00, 00)).toClockTime(), (dbop == DBUpdate ? DBInsert : dbop),
+            if (!modifyRdate(rowid, type, KDateTime((*dt)), true, (dbop == DBUpdate ? DBInsert : dbop),
                              stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify xdates for incidence" << incidence->uid();
                 success = false;
@@ -613,10 +603,8 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         DateTimeList dateTimeList = incidence->recurrence()->rDateTimes();
         DateTimeList::ConstIterator it;
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
-            bool allDay(incidence->allDay() && it->isLocalZone() && it->time() == QTime(0,0));
-            if (!modifyRdate(rowid, type,
-                             (allDay) ? KDateTime(it->date(), QTime(0, 0), KDateTime::ClockTime) : (*it),
-                             (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
+            bool allDay(incidence->allDay() && it->isClockTime() && it->time() == QTime(0,0));
+            if (!modifyRdate(rowid, type, *it, allDay, (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify rdatetimes for incidence" << incidence->uid();
                 success = false;
             }
@@ -625,10 +613,8 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         type = SqliteFormat::XDateTime;
         dateTimeList = incidence->recurrence()->exDateTimes();
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
-            bool allDay(incidence->allDay() && it->isLocalZone() && it->time() == QTime(0,0));
-            if (!modifyRdate(rowid, type,
-                             (allDay) ? KDateTime(it->date(), QTime(0, 0), KDateTime::ClockTime) : (*it),
-                             (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
+            bool allDay(incidence->allDay() && it->isClockTime() && it->time() == QTime(0,0));
+            if (!modifyRdate(rowid, type, *it, allDay, (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify xdatetimes for incidence" << incidence->uid();
                 success = false;
             }
@@ -639,7 +625,7 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
 }
 
 bool SqliteFormat::Private::modifyRdate(int rowid, int type, const KDateTime &date,
-                                        DBOperation dbop, sqlite3_stmt *stmt)
+                                        bool allDay, DBOperation dbop, sqlite3_stmt *stmt)
 {
     int rv = 0;
     int index = 1;
@@ -650,7 +636,7 @@ bool SqliteFormat::Private::modifyRdate(int rowid, int type, const KDateTime &da
 
     if (dbop == DBInsert) {
         sqlite3_bind_int(stmt, index, type);
-        sqlite3_bind_date_time(mStorage, stmt, index, date);
+        sqlite3_bind_date_time(mStorage, stmt, index, date, allDay);
     }
 
     sqlite3_step(stmt);
@@ -770,7 +756,7 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
         } else {
             sqlite3_bind_int(stmt, index, 0); // offset
             sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC); // relation
-            sqlite3_bind_date_time(mStorage, stmt, index, alarm->time());
+            sqlite3_bind_date_time(mStorage, stmt, index, alarm->time(), false);
         }
 
         sqlite3_bind_text(stmt, index, description.constData(), description.length(), SQLITE_STATIC);
@@ -861,7 +847,7 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
 
         sqlite3_bind_int(stmt, index, (int)rule->recurrenceType()); // frequency
 
-        sqlite3_bind_date_time(mStorage, stmt, index, rule->endDt());
+        sqlite3_bind_date_time(mStorage, stmt, index, rule->endDt(), rule->allDay());
 
         sqlite3_bind_int(stmt, index, rule->duration());  // count
 

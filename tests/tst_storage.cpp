@@ -344,15 +344,15 @@ void tst_storage::tst_alldayUtc()
 
     auto fetchedEvent = m_calendar->event(uid);
     QVERIFY(fetchedEvent.data());
-    QVERIFY(fetchedEvent->dtStart().isUtc());
+    QVERIFY(fetchedEvent->allDay());
+    QVERIFY(!fetchedEvent->hasEndDate());
+    QVERIFY(fetchedEvent->dtStart().isDateOnly());
+    QCOMPARE(fetchedEvent->dtStart().date(), startDate);
+    QVERIFY(fetchedEvent->dtEnd().isDateOnly());
+    QCOMPARE(fetchedEvent->dtEnd().date(), startDate);
 
-    KDateTime localStart = fetchedEvent->dtStart().toZone(KSystemTimeZones::zone("Europe/Helsinki"));
-    QVERIFY(localStart.time() == QTime(2, 0));
-
-    KDateTime localEnd = fetchedEvent->dtEnd().toZone(KSystemTimeZones::zone("Europe/Helsinki"));
-    QVERIFY(localEnd.time() == QTime(2, 0));
-
-    QCOMPARE(localEnd.date(), localStart.date().addDays(1));
+    QCOMPARE(fetchedEvent->dtStart().timeSpec(), KDateTime::Spec::ClockTime());
+    QCOMPARE(fetchedEvent->dtEnd().timeSpec(), KDateTime::Spec::ClockTime());
 }
 
 // Verify that a recurring all day event is kept by storage
@@ -361,13 +361,14 @@ void tst_storage::tst_alldayRecurrence()
     auto event = KCalCore::Event::Ptr(new KCalCore::Event);
 
     QDate startDate(2013, 12, 1);
-    event->setDtStart(KDateTime(startDate, QTime(), KDateTime::ClockTime));
+    event->setDtStart(KDateTime(startDate));
     event->setAllDay(true);
 
     KCalCore::Recurrence *recurrence = event->recurrence();
     recurrence->setWeekly(1);
     recurrence->setStartDateTime(event->dtStart());
     recurrence->setAllDay(true);
+    recurrence->addRDate(startDate.addDays(2));
 
     m_calendar->addEvent(event, NotebookId);
     m_storage->save();
@@ -379,7 +380,9 @@ void tst_storage::tst_alldayRecurrence()
     KCalCore::Recurrence *fetchRecurrence = fetchEvent->recurrence();
     QVERIFY(fetchRecurrence);
     QCOMPARE(*recurrence, *fetchRecurrence);
-    KDateTime match = recurrence->getNextDateTime(KDateTime(startDate));
+    KDateTime match = fetchRecurrence->getNextDateTime(KDateTime(startDate));
+    QCOMPARE(match, KDateTime(startDate.addDays(2)));
+    match = fetchRecurrence->getNextDateTime(KDateTime(startDate.addDays(3)));
     QCOMPARE(match, KDateTime(startDate.addDays(7), QTime(), KDateTime::ClockTime));
 }
 
@@ -817,7 +820,7 @@ void tst_storage::tst_rawEvents()
             event->setAllDay(true);
         }
     } else {
-        event->setDtStart(KDateTime(date, KDateTime::ClockTime));
+        event->setDtStart(KDateTime(date));
     }
     event->setSummary(QStringLiteral("testing rawExpandedEvents()"));
 
@@ -826,7 +829,7 @@ void tst_storage::tst_rawEvents()
     recurrence->setStartDateTime(event->dtStart());
     recurrence->setDuration(5);
     recurrence->setAllDay(event->allDay());
-    if (event->dtStart().isDateOnly()) {
+    if (event->allDay()) {
         // Save exception as clock time
         recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(1), QTime(0,0), KDateTime::ClockTime));
         // Save exception in exception time zone
@@ -1298,8 +1301,13 @@ void tst_storage::tst_dissociateSingleOccurrence()
     QVERIFY(occurrence);
     QVERIFY(occurrence->hasRecurrenceId());
     QCOMPARE(occurrence->recurrenceId(), recId);
-    QCOMPARE(recurrence->exDateTimes().length(), 1);
-    QCOMPARE(recurrence->exDateTimes()[0], recId);
+    if (event->allDay()) {
+        QCOMPARE(recurrence->exDates().length(), 1);
+        QCOMPARE(recurrence->exDates()[0], recId.date());
+    } else {
+        QCOMPARE(recurrence->exDateTimes().length(), 1);
+        QCOMPARE(recurrence->exDateTimes()[0], recId);
+    }
     QCOMPARE(event->created().dateTime(), createdDate);
     QVERIFY(occurrence->created().secsTo(KDateTime::currentUtcDateTime()) < 2);
 
@@ -1311,10 +1319,16 @@ void tst_storage::tst_dissociateSingleOccurrence()
 
     KCalCore::Event::Ptr fetchEvent = m_calendar->event(event->uid());
     QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->allDay(), event->allDay());
     QVERIFY(fetchEvent->recurs());
     KCalCore::Recurrence *fetchRecurrence = event->recurrence();
-    QCOMPARE(fetchRecurrence->exDateTimes().length(), 1);
-    QCOMPARE(fetchRecurrence->exDateTimes()[0], recId);
+    if (event->allDay()) {
+        QCOMPARE(fetchRecurrence->exDates().length(), 1);
+        QCOMPARE(fetchRecurrence->exDates()[0], recId.date());
+    } else {
+        QCOMPARE(fetchRecurrence->exDateTimes().length(), 1);
+        QCOMPARE(fetchRecurrence->exDateTimes()[0], recId);
+    }
 
     KCalCore::Incidence::List occurences = m_calendar->instances(event);
     QCOMPARE(occurences.length(), 1);

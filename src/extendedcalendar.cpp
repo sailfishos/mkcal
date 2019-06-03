@@ -273,7 +273,7 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
         return Incidence::Ptr();
     }
 
-    if (!dateTime.isDateOnly()) {
+    if (!incidence->allDay()) {
         if (!incidence->recursAt(dateTime)) {
             return Incidence::Ptr();
         }
@@ -333,7 +333,7 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
 
     recur = incidence->recurrence();
     if (recur) {
-        if (dateTime.isDateOnly()) {
+        if (incidence->allDay()) {
             recur->addExDate(dateTime.date());
         } else {
             recur->addExDateTime(dateTime);
@@ -1762,7 +1762,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
             qCDebug(lcMkcal) << "---appending" << (*iit)->summary() << dt.toString();
 #endif /* DEBUG_EXPANSION */
             if ((*iit)->recurs()) {
-                if (!(*iit)->dtStart().isDateOnly()) {
+                if (!(*iit)->allDay()) {
                     if (!(*iit)->recursAt((*iit)->dtStart())) {
 #ifdef DEBUG_EXPANSION
                         qCDebug(lcMkcal) << "--not recurring at" << (*iit)->dtStart() << (*iit)->summary();
