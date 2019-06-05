@@ -30,7 +30,6 @@
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
   @author Pertti Luukko \<ext-pertti.luukko@nokia.com\>
 */
-#include <config-mkcal.h>
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
 #include <memorycalendar.h>
@@ -46,13 +45,10 @@ using namespace KCalCore;
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QUuid>
 
 #include <iostream>
 using namespace std;
-
-#if defined(HAVE_UUID_UUID_H)
-#include <uuid/uuid.h>
-#endif
 
 #ifdef Q_OS_UNIX
 #include "semaphore_p.h"
@@ -2182,20 +2178,9 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
         QString uid = incidence->uid();
 
         if (uid.length() < 7) {   // We force a minimum length of uid to grant uniqness
-#if defined(HAVE_UUID_UUID_H)
-            uuid_t uuid;
-            char suuid[64];
-            uuid_generate_random(uuid);
-            uuid_unparse(uuid, suuid);
+            QByteArray suuid(QUuid::createUuid().toByteArray());
             qCDebug(lcMkcal) << "changing" << uid << "to" << suuid;
-            uid = QString(suuid);
-            incidence->setUid(uid);
-#else
-//KDAB_TODO:
-#ifdef __GNUC__
-#warning no uuid support. what to do now?
-#endif
-#endif
+            incidence->setUid(suuid.mid(1, suuid.length() - 2));
         }
 
         if (d->mUidMappings.contains(uid)) {

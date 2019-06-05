@@ -1,22 +1,13 @@
 # QMake project file for mkcal sources.
 TEMPLATE = lib
 TARGET = mkcal-qt5
-VERSION+= 0.4.0
 
-DEPENDPATH += . \
-    klibport \
-    versit
-INCLUDEPATH += . \
-    .. \
+#DEFINES += MKCAL_FOR_MEEGO TIMED_SUPPORT
 
-#DEFINES += MEEGO UUID MKCAL_FOR_MEEGO TIMED_SUPPORT
-
-DEFINES += MEEGO UUID TIMED_SUPPORT
+DEFINES += TIMED_SUPPORT
 
 CONFIG += link_pkgconfig create_pc create_prl no_install_prl
-PKGCONFIG += uuid \
-    libical \
-    sqlite3 \
+PKGCONFIG += sqlite3 \
     libkcalcoren-qt5 \
     timed-qt5
 

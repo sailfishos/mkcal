@@ -30,7 +30,6 @@
 
   @author Cornelius Schumacher \<schumacher@kde.org\>
 */
-#include <config-mkcal.h>
 #include "extendedstorage.h"
 #include "logging_p.h"
 
@@ -40,9 +39,7 @@ using namespace KCalCore;
 
 #include <kdebug.h>
 
-#if defined(HAVE_UUID_UUID_H)
-#include <uuid/uuid.h>
-#endif
+#include <QtCore/QUuid>
 
 #if defined(MKCAL_FOR_MEEGO)
 # include <mlocale.h>
@@ -363,20 +360,11 @@ void ExtendedStorage::setFinished(bool error, const QString &info)
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb, bool signal)
 {
-#if defined(HAVE_UUID_UUID_H)
-    uuid_t uuid;
-    char suuid[64];
-    if (uuid_parse(nb->uid().toLatin1().data(), uuid)) {
+    if (nb->uid().length() < 7) {
         // Cannot accept this id, create better one.
-        uuid_generate_random(uuid);
-        uuid_unparse(uuid, suuid);
-        nb->setUid(QString(suuid));
+        QByteArray uid(QUuid::createUuid().toByteArray());
+        nb->setUid(uid.mid(1, uid.length() - 2));
     }
-#else
-#ifdef __GNUC__
-#warning no uuid support. It is mandatory :)
-#endif
-#endif
 
     if (!nb || d->mNotebooks.contains(nb->uid())) {
         return false;
