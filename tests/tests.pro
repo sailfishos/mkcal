@@ -1,3 +1,6 @@
+TEMPLATE = app
+TARGET = tst_storage
+
 QT += testlib
 CONFIG += link_pkgconfig c++11
 
@@ -12,3 +15,7 @@ HEADERS += \
 
 SOURCES += \
     tst_storage.cpp
+
+target.path = /opt/tests/mkcal/
+
+INSTALLS += target
