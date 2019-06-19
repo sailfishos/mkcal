@@ -1160,11 +1160,23 @@ static KDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
         date = sqlite3_column_int64(stmt, index + 1);
         dateTime = storage->fromOriginTime(date);
         dateTime.setTimeSpec(KDateTime::ClockTime);
+        if (isDate) {
+            // This is a workaround, for wrongly stored date
+            // as a date and time and not as a floating date.
+            QTime localTime(dateTime.time());
+            *isDate = dateTime.isValid() &&
+                localTime.hour() == 0 &&
+                localTime.minute() == 0 &&
+                localTime.second() == 0;
+        }
     } else if (timezone == QStringLiteral(FLOATING_DATE)) {
         date = sqlite3_column_int64(stmt, index + 1);
         dateTime = storage->fromOriginTime(date);
         dateTime.setTimeSpec(KDateTime::ClockTime);
         dateTime.setDateOnly(true);
+        if (isDate) {
+            *isDate = dateTime.isValid();
+        }
     } else {
         date = sqlite3_column_int64(stmt, index);
         dateTime = storage->fromOriginTime(date, timezone);
@@ -1174,13 +1186,9 @@ static KDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
             date = sqlite3_column_int64(stmt, index + 1);
             dateTime = storage->fromLocalOriginTime(date);
         }
-    }
-    if (isDate) {
-        QTime localTime(dateTime.toLocalZone().time());
-        *isDate = dateTime.isValid() &&
-            localTime.hour() == 0 &&
-            localTime.minute() == 0 &&
-            localTime.second() == 0;
+        if (isDate) {
+            *isDate = false;
+        }
     }
     return dateTime;
 }
