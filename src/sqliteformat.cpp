@@ -1419,7 +1419,7 @@ bool SqliteFormat::Private::selectRecursives(Incidence::Ptr incidence, int rowid
             bool isAllDay;
             KDateTime until = getDateTime(mStorage, stmt, 3, &isAllDay);
             recurrule->setEndDt(until);
-            incidence->recurrence()->setAllDay(isAllDay);
+            incidence->recurrence()->setAllDay(until.isValid() ? isAllDay : incidence->allDay());
 
             int duration = sqlite3_column_int(stmt, 6);  // count
             if (duration == 0 && !recurrule->endDt().isValid()) {
