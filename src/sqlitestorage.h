@@ -691,7 +691,6 @@ public Q_SLOTS:
 #define COMMIT_TRANSACTION \
 "END;"
 
-#define FLOATING_DATE "FloatingDate"
 }
 
 #endif
