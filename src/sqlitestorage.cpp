@@ -30,10 +30,10 @@
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
   @author Pertti Luukko \<ext-pertti.luukko@nokia.com\>
 */
-#include <config-mkcal.h>
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
 #include <memorycalendar.h>
+#include "logging_p.h"
 
 #include <icalformat.h>
 using namespace KCalCore;
@@ -45,13 +45,10 @@ using namespace KCalCore;
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
+#include <QtCore/QUuid>
 
 #include <iostream>
 using namespace std;
-
-#if defined(HAVE_UUID_UUID_H)
-#include <uuid/uuid.h>
-#endif
 
 #ifdef Q_OS_UNIX
 #include "semaphore_p.h"
@@ -149,7 +146,7 @@ SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &da
       d(new Private(cal, this, databaseName))
 {
     d->mOriginTime = KDateTime(QDate(1970, 1, 1), QTime(0, 0, 0), KDateTime::UTC);
-    kDebug() << "time of origin is " << d->mOriginTime << d->mOriginTime.toTime_t();
+    qCDebug(lcMkcal) << "time of origin is " << d->mOriginTime << d->mOriginTime.toTime_t();
     cal->registerObserver(this);
 }
 
@@ -177,7 +174,7 @@ bool SqliteStorage::open()
     }
 
     if (!d->mSem.acquire()) {
-        kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
     }
 
@@ -185,12 +182,12 @@ bool SqliteStorage::open()
 
     rv = sqlite3_open(d->mDatabaseName.toUtf8(), &d->mDatabase);
     if (rv) {
-        kError() << "sqlite3_open error:" << rv << "on database" << d->mDatabaseName;
-        kError() << sqlite3_errmsg(d->mDatabase);
+        qCWarning(lcMkcal) << "sqlite3_open error:" << rv << "on database" << d->mDatabaseName;
+        qCWarning(lcMkcal) << sqlite3_errmsg(d->mDatabase);
         sqlite3_close(d->mDatabase);
         return false;
     }
-    kWarning() << "database" << d->mDatabaseName << "opened";
+    qCDebug(lcMkcal) << "database" << d->mDatabaseName << "opened";
 
     d->mIsOpened = true;
 
@@ -257,7 +254,7 @@ bool SqliteStorage::open()
     sqlite3_exec(d->mDatabase);
 
     if (!d->mChanged.open(QIODevice::Append)) {
-        kError() << "cannot open changed file for" << d->mDatabaseName;
+        qCWarning(lcMkcal) << "cannot open changed file for" << d->mDatabaseName;
         goto error;
     }
     d->mPreWatcherDbTime = QFileInfo(d->mDatabaseName + gChanged).lastModified();
@@ -273,17 +270,17 @@ bool SqliteStorage::open()
     }
 
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         goto error;
     }
 
     if (!d->loadTimezones()) {
-        kError() << "cannot load timezones from calendar";
+        qCWarning(lcMkcal) << "cannot load timezones from calendar";
         goto error;
     }
 
     if (!loadNotebooks()) {
-        kError() << "cannot load notebooks from calendar";
+        qCWarning(lcMkcal) << "cannot load notebooks from calendar";
         goto error;
     }
 
@@ -296,7 +293,7 @@ bool SqliteStorage::open()
 
 error:
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     close();
     return false;
@@ -1653,7 +1650,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     QString notebookUid;
 
     if (!mSem.acquire()) {
-        kError() << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return false;
     }
 
@@ -1671,7 +1668,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 mIncidencesToUpdate.contains(incidence->uid()) ||
                 mIncidencesToDelete.contains(incidence->uid()) ||
                 (mStorage->validateNotebooks() && !hasNotebook)) {
-            kWarning() << "not loading" << incidence->uid() << notebookUid
+            qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
                        << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
         } else {
             if (incidence->type() == Incidence::TypeEvent) {
@@ -1684,7 +1681,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 }
                 if (old) {
                     if (event->revision() > old->revision()) {
-//            kDebug() << "updating event" << event->uid()
+//            qCDebug(lcMkcal) << "updating event" << event->uid()
 //                     << event->dtStart() << event->dtEnd()
 //                     << "in calendar";
                         mCalendar->deleteEvent(old);   // move old to deleted
@@ -1693,7 +1690,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                         event = old;
                     }
                 } else {
-//          kDebug() << "adding event" << event->uid()
+//          qCDebug(lcMkcal) << "adding event" << event->uid()
 //                   << event->dtStart() << event->dtEnd()
 //                   << "in calendar";
                     mCalendar->addEvent(event, notebookUid);
@@ -1720,7 +1717,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 }
                 if (old) {
                     if (todo->revision() > old->revision()) {
-                        kDebug() << "updating todo" << todo->uid()
+                        qCDebug(lcMkcal) << "updating todo" << todo->uid()
                                  << todo->dtDue() << todo->created()
                                  << "in calendar";
                         mCalendar->deleteTodo(old);   // move old to deleted
@@ -1729,7 +1726,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                         todo = old;
                     }
                 } else {
-//          kDebug() << "adding todo" << todo->uid()
+//          qCDebug(lcMkcal) << "adding todo" << todo->uid()
 //                   << todo->dtDue() << todo->created()
 //                   << "in calendar";
                     mCalendar->addTodo(todo, notebookUid);
@@ -1756,7 +1753,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 }
                 if (old) {
                     if (journal->revision() > old->revision()) {
-//            kDebug() << "updating journal" << journal->uid()
+//            qCDebug(lcMkcal) << "updating journal" << journal->uid()
 //                     << journal->dtStart() << journal->created()
 //                     << "in calendar";
                         mCalendar->deleteJournal(old);   // move old to deleted
@@ -1765,7 +1762,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                         journal = old;
                     }
                 } else {
-//          kDebug() << "adding journal" << journal->uid()
+//          qCDebug(lcMkcal) << "adding journal" << journal->uid()
 //                   << journal->dtStart() << journal->created()
 //                   << "in calendar";
                     mCalendar->addJournal(journal, notebookUid);
@@ -1821,7 +1818,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     sqlite3_finalize(stmt6);
 
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     mStorage->setFinished(false, "load completed");
 
@@ -1829,7 +1826,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
 
 error:
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     mStorage->setFinished(true, "error loading incidences");
 
@@ -1846,12 +1843,12 @@ bool SqliteStorage::save()
     }
 
     if (!d->mSem.acquire()) {
-        kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
     }
 
     if (!d->saveTimezones()) {
-        kError() << "saving timezones failed";
+        qCWarning(lcMkcal) << "saving timezones failed";
     }
 
     int errors = 0;
@@ -1969,7 +1966,7 @@ bool SqliteStorage::save()
     }
 
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
 
     if (d->mIsSaved)
@@ -2058,17 +2055,17 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
         QString notebookUid = mCalendar->notebook(*it);
         if (!mStorage->isValidNotebook(notebookUid)) {
-            kDebug() << "invalid notebook - not saving incidence" << (*it)->uid();
+            qCDebug(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
             continue;
         } else {
             validIncidences << *it;
         }
 
         (*it)->setLastModified(KDateTime::currentUtcDateTime());
-        kDebug() << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
+        qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
         if (!mFormat->modifyComponents(*it, notebookUid, dbop, stmt1, stmt2, stmt3, stmt4,
                                        stmt5, stmt6, stmt7, stmt8, stmt9, stmt10, stmt11)) {
-            kError() << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
+            qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
         }
 
@@ -2171,7 +2168,7 @@ bool SqliteStorage::close()
 void SqliteStorage::calendarModified(bool modified, Calendar *calendar)
 {
     Q_UNUSED(calendar);
-    kDebug() << "calendarModified called:" << modified;
+    qCDebug(lcMkcal) << "calendarModified called:" << modified;
 }
 
 void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
@@ -2181,28 +2178,17 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
         QString uid = incidence->uid();
 
         if (uid.length() < 7) {   // We force a minimum length of uid to grant uniqness
-#if defined(HAVE_UUID_UUID_H)
-            uuid_t uuid;
-            char suuid[64];
-            uuid_generate_random(uuid);
-            uuid_unparse(uuid, suuid);
-            kDebug() << "changing" << uid << "to" << suuid;
-            uid = QString(suuid);
-            incidence->setUid(uid);
-#else
-//KDAB_TODO:
-#ifdef __GNUC__
-#warning no uuid support. what to do now?
-#endif
-#endif
+            QByteArray suuid(QUuid::createUuid().toByteArray());
+            qCDebug(lcMkcal) << "changing" << uid << "to" << suuid;
+            incidence->setUid(suuid.mid(1, suuid.length() - 2));
         }
 
         if (d->mUidMappings.contains(uid)) {
             incidence->setUid(d->mUidMappings.value(incidence->uid()));
-            kDebug() << "mapping" << uid << "to" << incidence->uid();
+            qCDebug(lcMkcal) << "mapping" << uid << "to" << incidence->uid();
         }
 
-        kDebug() << "appending incidence" << incidence->uid() << "for database insert";
+        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
         d->mIncidencesToInsert.insert(incidence->uid(), incidence);
 //    if ( !uid.isEmpty() ) {
 //      d->mUidMappings.insert( uid, incidence->uid() );
@@ -2215,7 +2201,7 @@ void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
     if (!d->mIncidencesToUpdate.contains(incidence->uid(), incidence) &&
             !d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
             !d->mIsLoading) {
-        kDebug() << "appending incidence" << incidence->uid() << "for database update";
+        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database update";
         d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
         d->mUidMappings.insert(incidence->uid(), incidence->uid());
     }
@@ -2225,12 +2211,12 @@ void SqliteStorage::calendarIncidenceDeleted(const Incidence::Ptr &incidence)
 {
     if (d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
             !d->mIsLoading) {
-        kDebug() << "removing incidence from inserted" << incidence->uid();
+        qCDebug(lcMkcal) << "removing incidence from inserted" << incidence->uid();
         d->mIncidencesToInsert.remove(incidence->uid(), incidence);
     } else {
         if (!d->mIncidencesToDelete.contains(incidence->uid(), incidence) &&
                 !d->mIsLoading) {
-            kDebug() << "appending incidence" << incidence->uid() << "for database delete";
+            qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database delete";
             d->mIncidencesToDelete.insert(incidence->uid(), incidence);
         }
     }
@@ -2239,7 +2225,7 @@ void SqliteStorage::calendarIncidenceDeleted(const Incidence::Ptr &incidence)
 void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &incidence)
 {
     if (d->mIncidencesToInsert.contains(incidence->uid()) && !d->mIsLoading) {
-        kDebug() << "duplicate - removing incidence from inserted" << incidence->uid();
+        qCDebug(lcMkcal) << "duplicate - removing incidence from inserted" << incidence->uid();
         d->mIncidencesToInsert.remove(incidence->uid(), incidence);
     }
 }
@@ -2276,13 +2262,13 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
     QString nbook;
 
     if (!mSem.acquire()) {
-        kError() << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return false;
     }
 
     sqlite3_prepare_v2(mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    kDebug() << "incidences"
+    qCDebug(lcMkcal) << "incidences"
              << (dbop == DBInsert ? "inserted" :
                  dbop == DBUpdate ? "updated" :
                  dbop == DBDelete ? "deleted" : "")
@@ -2315,13 +2301,13 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             if (dbop == DBSelect) {
                 index = 1;
                 secs = mStorage->toOriginTime(after);
-                qDebug() << "QUERY FROM" << secs;
+                qCDebug(lcMkcal) << "QUERY FROM" << secs;
                 sqlite3_bind_int64(stmt1, index, secs);
                 index = 2;
                 s = summary.toUtf8();
                 sqlite3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
                 if (!notebookUid.isNull()) {
-                    kDebug() << "notebook" << notebookUid.toUtf8().constData();
+                    qCDebug(lcMkcal) << "notebook" << notebookUid.toUtf8().constData();
                     index = 3;
                     n = notebookUid.toUtf8();
                     sqlite3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
@@ -2353,7 +2339,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
 
     while ((incidence =
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, nbook))) {
-        kDebug() << "adding incidence" << incidence->uid() << "into list"
+        qCDebug(lcMkcal) << "adding incidence" << incidence->uid() << "into list"
                  << incidence->created() << incidence->lastModified();
         list->append(incidence);
         if (stmt2) {
@@ -2391,14 +2377,14 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
     }
 
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     mStorage->setFinished(false, "select completed");
     return true;
 
 error:
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     mStorage->setFinished(true, "error selecting incidences");
     return false;
@@ -2655,7 +2641,7 @@ KDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     sqlite3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
 
     if (!d->mSem.acquire()) {
-        kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return deletionDate;
     }
 
@@ -2670,7 +2656,7 @@ error:
     sqlite3_finalize(stmt);
 
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     return deletionDate;
 }
@@ -2684,7 +2670,7 @@ int SqliteStorage::Private::selectCount(const char *query, int qsize)
     const char *tail = NULL;
 
     if (!mSem.acquire()) {
-        kError() << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return count;
     }
 
@@ -2699,7 +2685,7 @@ error:
     sqlite3_finalize(stmt);
 
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     return count;
 }
@@ -2741,7 +2727,7 @@ bool SqliteStorage::loadNotebooks()
     Notebook::Ptr nb;
 
     if (!d->mSem.acquire()) {
-        kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
     }
 
@@ -2750,9 +2736,9 @@ bool SqliteStorage::loadNotebooks()
     sqlite3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
     while ((nb = d->mFormat->selectCalendars(stmt))) {
-        kDebug() << "loaded notebook" << nb->uid() << nb->name() << "from database";
+        qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
         if (!addNotebook(nb)) {
-            kWarning() << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
+            qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
             if (nb) {
                 nb = Notebook::Ptr();
             }
@@ -2766,14 +2752,14 @@ bool SqliteStorage::loadNotebooks()
     sqlite3_finalize(stmt);
 
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     d->mIsLoading = false;
     return true;
 
 error:
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     d->mIsLoading = false;
     return false;
@@ -2820,21 +2806,21 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
         }
 
         if (!d->mSem.acquire()) {
-            kError() << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
             return false;
         }
 
         sqlite3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
         if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt))) {
-            kDebug() << operation << "notebook" << nb->uid() << nb->name() << "in database";
+            qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
         sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
 
         if (!d->mSem.release()) {
-            kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         }
     }
     if (success) {
@@ -2846,7 +2832,7 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
 
 error:
     if (!d->mSem.release()) {
-        kError() << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     return false;
 }
@@ -2881,17 +2867,17 @@ bool SqliteStorage::Private::checkVersion()
         sqlite3_bind_int(stmt, index, major);
         sqlite3_bind_int(stmt, index, minor);
         sqlite3_step(stmt);
-        kDebug() << "inserting version" << major << "." << minor << "in database";
+        qCDebug(lcMkcal) << "inserting version" << major << "." << minor << "in database";
         sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
     }
 
     if (major != VersionMajor) {
-        kError() << "database major version changed, new database has to be created";
+        qCWarning(lcMkcal) << "database major version changed, new database has to be created";
     } else {
         success = true;
         if (minor != VersionMinor) {
-            kWarning() << "database version changed";
+            qCWarning(lcMkcal) << "database version changed";
         }
     }
     return success;
@@ -2925,7 +2911,7 @@ bool SqliteStorage::Private::saveTimezones()
         sqlite3_step(stmt1);
         success = true;
         mIsSaved = true;
-        kDebug() << "updated timezones in database";
+        qCDebug(lcMkcal) << "updated timezones in database";
 
 error:
         sqlite3_reset(stmt1);
@@ -2951,7 +2937,7 @@ bool SqliteStorage::Private::loadTimezones()
     sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
 
     if (!mSem.acquire()) {
-        kError() << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return false;
     }
 
@@ -2962,12 +2948,12 @@ bool SqliteStorage::Private::loadTimezones()
             MemoryCalendar::Ptr temp = MemoryCalendar::Ptr(new MemoryCalendar(mCalendar->timeSpec()));
             ICalFormat ical;
             if (ical.fromString(temp, zoneData)) {
-                kDebug() << "loaded timezones from database";
+                qCDebug(lcMkcal) << "loaded timezones from database";
                 ICalTimeZones *zones = temp->timeZones();
                 ICalTimeZones *copy = new ICalTimeZones(*zones);
                 mCalendar->setTimeZones(copy);
             } else {
-                kWarning() << "failed to load timezones from database";
+                qCWarning(lcMkcal) << "failed to load timezones from database";
             }
         }
     }
@@ -2979,7 +2965,7 @@ error:
     sqlite3_finalize(stmt);
 
     if (!mSem.release()) {
-        kError() << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     return success;
 }
@@ -2988,19 +2974,19 @@ void SqliteStorage::fileChanged(const QString &path)
 {
     if (QFileInfo(d->mDatabaseName + gChanged).lastModified() == d->mPreWatcherDbTime) {
         // Invalidate this; mission done, prevented reload when loading database
-        kDebug() << "prevented spurious database reload";
+        qCDebug(lcMkcal) << "prevented spurious database reload";
         d->mPreWatcherDbTime = QDateTime();
         return;
     }
     clearLoaded();
     if (!d->loadTimezones()) {
-        kError() << "loading timezones failed";
+        qCWarning(lcMkcal) << "loading timezones failed";
     }
     if (!reloadNotebooks()) {
-        kError() << "loading notebooks failed";
+        qCWarning(lcMkcal) << "loading notebooks failed";
     }
     setModified(path);
-    kDebug() << path << "has been modified";
+    qCDebug(lcMkcal) << path << "has been modified";
 }
 
 sqlite3_int64 SqliteStorage::toOriginTime(KDateTime dt)
@@ -3020,7 +3006,7 @@ sqlite3_int64 SqliteStorage::toLocalOriginTime(KDateTime dt)
 
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds)
 {
-    //kDebug() << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
+    //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
     return seconds ? d->mOriginTime.addSecs(seconds).toUtc() : KDateTime();
 }
 
@@ -3052,13 +3038,13 @@ KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, QString zonename)
             dt = d->mOriginTime.addSecs(seconds).toClockTime();
         }
     }
-//  kDebug() << "fromOriginTime" << seconds << zonename << dt;
+//  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
     return dt;
 }
 
 bool SqliteStorage::initializeDatabase()
 {
-    kDebug() << "Storage is empty, initializing";
+    qCDebug(lcMkcal) << "Storage is empty, initializing";
     if (createDefaultNotebook()) {
         return true;
     }

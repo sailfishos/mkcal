@@ -30,6 +30,7 @@
  */
 
 #include "semaphore_p.h"
+#include "logging_p.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -39,8 +40,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
-
-#include <kdebug.h>
 
 namespace {
 
@@ -54,7 +53,7 @@ union semun {
 
 void semaphoreError(const char *msg, const char *id, int error)
 {
-    kError() << QString::fromLatin1("%1 %2: %3 (%4)").arg(msg).arg(id).arg(::strerror(error)).arg(
+    qCWarning(lcMkcal) << QString::fromLatin1("%1 %2: %3 (%4)").arg(msg).arg(id).arg(::strerror(error)).arg(
                  error).toUtf8().constData();
 }
 
@@ -212,15 +211,15 @@ ProcessMutex::ProcessMutex(const QString &path)
     , m_initialProcess(false)
 {
     if (!m_semaphore.isValid()) {
-        kError() << "Unable to create semaphore array!";
+        qCWarning(lcMkcal) << "Unable to create semaphore array!";
     } else {
         if (!m_semaphore.decrement(databaseOwnershipIndex)) {
-            kError() << "Unable to determine database ownership!";
+            qCWarning(lcMkcal) << "Unable to determine database ownership!";
         } else {
             // Only the first process to connect to the semaphore is the owner
             m_initialProcess = (m_semaphore.value(databaseConnectionsIndex) == 0);
             if (!m_semaphore.increment(databaseConnectionsIndex)) {
-                kError() << "Unable to increment database connections!";
+                qCWarning(lcMkcal) << "Unable to increment database connections!";
             }
 
             m_semaphore.increment(databaseOwnershipIndex);

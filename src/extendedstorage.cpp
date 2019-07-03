@@ -30,8 +30,8 @@
 
   @author Cornelius Schumacher \<schumacher@kde.org\>
 */
-#include <config-mkcal.h>
 #include "extendedstorage.h"
+#include "logging_p.h"
 
 #include <exceptions.h>
 #include <calendar.h>
@@ -39,21 +39,18 @@ using namespace KCalCore;
 
 #include <kdebug.h>
 
-#if defined(HAVE_UUID_UUID_H)
-#include <uuid/uuid.h>
-#endif
+#include <QtCore/QUuid>
 
 #if defined(MKCAL_FOR_MEEGO)
-#include <QtCore/QMap>
-#include <QtDBus/QDBusConnection>
-#include <QtDBus/QDBusInterface>
-#include <QtDBus/QDBusReply>
+# include <mlocale.h>
 #endif
 
 #ifdef TIMED_SUPPORT
 # include <timed-qt5/interface.h>
 # include <timed-qt5/event-declarations.h>
 # include <timed-qt5/exception.h>
+# include <QtCore/QMap>
+# include <QtDBus/QDBusReply>
 using namespace Maemo;
 static const QLatin1String RESET_ALARMS_CMD("invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms");
 #endif
@@ -165,7 +162,7 @@ bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
     loadStart.setTimeSpec(calendar()->timeSpec());
     loadEnd.setTimeSpec(calendar()->timeSpec());
 
-    kDebug() << "get load dates" << start << end << loadStart << loadEnd;
+    qCDebug(lcMkcal) << "get load dates" << start << end << loadStart << loadEnd;
 
     return true;
 }
@@ -180,7 +177,7 @@ void ExtendedStorage::setLoadDates(const QDate &start, const QDate &end)
         d->mEnd = end;
     }
 
-    kDebug() << "set load dates" << d->mStart << d->mEnd;
+    qCDebug(lcMkcal) << "set load dates" << d->mStart << d->mEnd;
 }
 
 bool ExtendedStorage::isUncompletedTodosLoaded()
@@ -363,32 +360,25 @@ void ExtendedStorage::setFinished(bool error, const QString &info)
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb, bool signal)
 {
-#if defined(HAVE_UUID_UUID_H)
-    uuid_t uuid;
-    char suuid[64];
-    if (uuid_parse(nb->uid().toLatin1().data(), uuid)) {
+    if (nb->uid().length() < 7) {
         // Cannot accept this id, create better one.
-        uuid_generate_random(uuid);
-        uuid_unparse(uuid, suuid);
-        nb->setUid(QString(suuid));
+        QByteArray uid(QUuid::createUuid().toByteArray());
+        nb->setUid(uid.mid(1, uid.length() - 2));
     }
-#else
-#ifdef __GNUC__
-#warning no uuid support. It is mandatory :)
-#endif
-#endif
 
     if (!nb || d->mNotebooks.contains(nb->uid())) {
         return false;
     }
 
     if (!calendar()->addNotebook(nb->uid(), nb->isVisible())) {
-        kError() << "cannot add notebook" << nb->uid() << "to calendar";
+        qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << "to calendar";
         return false;
     }
 
     if (!modifyNotebook(nb, DBInsert, signal)) {
-        calendar()->deleteNotebook(nb->uid());
+        if (!calendar()->deleteNotebook(nb->uid())) {
+            qCWarning(lcMkcal) << "cannot delete notebook" << nb->uid() << "from calendar";
+        }
         return false;
     }
     d->mNotebooks.insert(nb->uid(), nb);
@@ -404,7 +394,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     }
 
     if (!calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
-        kError() << "cannot update notebook" << nb->uid() << "in calendar";
+        qCWarning(lcMkcal) << "cannot update notebook" << nb->uid() << "in calendar";
         return false;
     }
     if (!modifyNotebook(nb, DBUpdate)) {
@@ -429,7 +419,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory)
         Incidence::List list;
         Incidence::List::Iterator it;
         if (allIncidences(&list, nb->uid())) {
-            kDebug() << "deleting" << list.size() << "notes of notebook" << nb->name();
+            qCDebug(lcMkcal) << "deleting" << list.size() << "notes of notebook" << nb->name();
             for (it = list.begin(); it != list.end(); ++it) {
                 load((*it)->uid(), (*it)->recurrenceId());
             }
@@ -441,13 +431,13 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory)
                 save();
             }
         } else {
-            kError() << "error when loading incidences for notebook" << nb->uid();
+            qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();
             return false;
         }
     }
 
     if (!calendar()->deleteNotebook(nb->uid())) {
-        kError() << "cannot delete notebook" << nb->uid() << "from calendar";
+        qCWarning(lcMkcal) << "cannot delete notebook" << nb->uid() << "from calendar";
         return false;
     }
 
@@ -479,7 +469,9 @@ bool ExtendedStorage::setDefaultNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    calendar()->setDefaultNotebook(nb->uid());
+    if (!calendar()->setDefaultNotebook(nb->uid())) {
+        qCWarning(lcMkcal) << "cannot set notebook" << nb->uid() << "as default in calendar";
+    }
 
     return true;
 }
@@ -522,14 +514,14 @@ bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
     Notebook::Ptr nb = notebook(notebookUid);
     if (!nb.isNull()) {
         if (nb->isRunTimeOnly() || nb->isReadOnly()) {
-            kDebug() << "notebook" << notebookUid << "isRunTimeOnly or isReadOnly";
+            qCDebug(lcMkcal) << "notebook" << notebookUid << "isRunTimeOnly or isReadOnly";
             return false;
         }
     } else if (validateNotebooks()) {
-        kDebug() << "notebook" << notebookUid << "is not valid for this storage";
+        qCDebug(lcMkcal) << "notebook" << notebookUid << "is not valid for this storage";
         return false;
     } else if (calendar()->hasValidNotebook(notebookUid)) {
-        kDebug() << "notebook" << notebookUid << "is saved by another storage";
+        qCDebug(lcMkcal) << "notebook" << notebookUid << "is saved by another storage";
         return false;
     }
     return true;
@@ -560,13 +552,13 @@ void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
             bool ok = true;
             uint cookie = v.toUInt(&ok);
             if (ok && cookie) {
-                kDebug() << "added alarm: " << cookie;
+                qCDebug(lcMkcal) << "added alarm: " << cookie;
             } else {
-                kError() << "failed to add alarm";
+                qCWarning(lcMkcal) << "failed to add alarm";
             }
         }
     } else {
-        kError() << "failed to add alarms: " << reply.error().message();
+        qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
     }
 
 #else
@@ -585,7 +577,7 @@ void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
     int alarmNumer = 0;
 
     if (!timed.isValid()) {
-        kError() << "cannot set alarm for incidence: "
+        qCWarning(lcMkcal) << "cannot set alarm for incidence: "
                  << "alarm interface is not valid" << timed.lastError();
         return;
     }
@@ -713,16 +705,16 @@ void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
                 bool ok = true;
                 uint cookie = v.toUInt(&ok);
                 if (ok && cookie) {
-                    kDebug() << "added alarm: " << cookie;
+                    qCDebug(lcMkcal) << "added alarm: " << cookie;
                 } else {
-                    kError() << "failed to add alarm";
+                    qCWarning(lcMkcal) << "failed to add alarm";
                 }
             }
         } else {
-            kError() << "failed to add alarms: " << reply.error().message();
+            qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
         }
     } else {
-        kDebug() << "No alarms to send";
+        qCDebug(lcMkcal) << "No alarms to send";
     }
 #else
     Q_UNUSED(incidence);
@@ -747,14 +739,14 @@ void ExtendedStorage::clearAlarms(const KCalCore::Incidence::List &incidences)
 
         Timed::Interface timed;
         if (!timed.isValid()) {
-            kError() << "cannot clear alarms for" << incidence->uid()
+            qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
                      << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
                      << "alarm interface is not valid" << timed.lastError();
             return;
         }
         QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
         if (!reply.isValid()) {
-            kError() << "cannot clear alarms for" << incidence->uid()
+            qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
                      << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
                      << timed.lastError();
             return;
@@ -770,11 +762,11 @@ void ExtendedStorage::clearAlarms(const KCalCore::Incidence::List &incidences)
                     continue;
                 }
             }
-            kDebug() << "removing alarm" << cookie << incidence->uid()
+            qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
                      << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-");
             QDBusReply<bool> reply = timed.cancel_sync(cookie);
             if (!reply.isValid() || !reply.value()) {
-                kError() << "cannot remove alarm" << cookie << incidence->uid()
+                qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
                          << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
                          << reply.value() << timed.lastError();
             }
@@ -794,22 +786,22 @@ void ExtendedStorage::clearAlarms(const QString &nb)
 
     Timed::Interface timed;
     if (!timed.isValid()) {
-        kError() << "cannot clear alarms for" << nb
+        qCWarning(lcMkcal) << "cannot clear alarms for" << nb
                  << "alarm interface is not valid" << timed.lastError();
         return;
     }
     QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
     if (!reply.isValid()) {
-        kError() << "cannot clear alarms for" << nb << timed.lastError();
+        qCWarning(lcMkcal) << "cannot clear alarms for" << nb << timed.lastError();
         return;
     }
     const QList<QVariant> &result = reply.value();
     for (int i = 0; i < result.size(); i++) {
         uint32_t cookie = result[i].toUInt();
-        kDebug() << "removing alarm" << cookie << nb;
+        qCDebug(lcMkcal) << "removing alarm" << cookie << nb;
         QDBusReply<bool> reply = timed.cancel_sync(cookie);
         if (!reply.isValid() || !reply.value()) {
-            kError() << "cannot remove alarm" << cookie << nb;
+            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << nb;
         }
     }
 #else

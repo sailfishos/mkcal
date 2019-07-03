@@ -10,11 +10,10 @@
 #include <QtCore/QStringList>
 #include <QtCore/QDir>
 
-#include <kdebug.h>
-
 #include "servicehandler.h"
 #include "servicehandlerif.h"
 #include <invitationhandlerif.h>
+#include "logging_p.h"
 
 using namespace mKCal;
 using namespace KCalCore;
@@ -53,27 +52,27 @@ ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
 void ServiceHandlerPrivate::loadPlugins()
 {
     QDir pluginsDir(QLatin1String("/usr/lib/mkcalplugins")); //TODO HARDCODED!!
-    kDebug() << "LOADING !!!! Plugin directory" << pluginsDir.path();
+    qCDebug(lcMkcal) << "LOADING !!!! Plugin directory" << pluginsDir.path();
 
     foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
-        qDebug() << "Loading service handler plugin" << fileName;
+        qCDebug(lcMkcal) << "Loading service handler plugin" << fileName;
         QPluginLoader loader(pluginsDir.absoluteFilePath(fileName));
         QObject *plugin = loader.instance();
 
         if (!loader.isLoaded()) {
-            qDebug() << "Failed to load plugin:" << loader.errorString();
+            qCDebug(lcMkcal) << "Failed to load plugin:" << loader.errorString();
         }
         if (plugin) {
             if (ServiceInterface *interface = qobject_cast<ServiceInterface *>(plugin)) {
                 mServices.insert(interface->serviceName(), interface);
-                kDebug() << "Loaded service:" << interface->serviceName();
+                qCDebug(lcMkcal) << "Loaded service:" << interface->serviceName();
             }
             if (InvitationHandlerInterface *interface = qobject_cast<InvitationHandlerInterface *>(plugin)) {
                 mPlugins.insert(interface->pluginName(), interface);
-                kDebug() << "Loaded plugin:" << interface->pluginName();
+                qCDebug(lcMkcal) << "Loaded plugin:" << interface->pluginName();
             }
         }  else {
-            qDebug() << fileName << " Not a plugin";
+            qCDebug(lcMkcal) << fileName << " Not a plugin";
         }
     }
 
@@ -104,7 +103,7 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
     }
 
     if (accountNotebook.isNull()) {
-        kWarning() << "No notebook available for invitation plugin to use";
+        qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
         return false;
     }
 
@@ -114,7 +113,7 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
     if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
         pluginName = defaultName;
 
-    kDebug() <<  "Using plugin:" << pluginName;
+    qCDebug(lcMkcal) <<  "Using plugin:" << pluginName;
 
     QHash<QString, InvitationHandlerInterface *>::const_iterator i = mPlugins.find(pluginName);
 
@@ -175,7 +174,7 @@ ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook::Ptr &n
         loadPlugins();
     }
 
-    kDebug() <<  "Using service:" << name;
+    qCDebug(lcMkcal) <<  "Using service:" << name;
 
     QHash<QString, ServiceInterface *>::const_iterator i = mServices.find(name);
 
@@ -339,7 +338,7 @@ bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringL
     if (storage.isNull() || notebook.isNull())
         return false;
 
-    kDebug() <<  "shareNotebook";
+    qCDebug(lcMkcal) <<  "shareNotebook";
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
 
