@@ -8,7 +8,7 @@ INCLUDEPATH +=  ../src
 QMAKE_LIBDIR += ../src
 
 LIBS += -lmkcal-qt5
-PKGCONFIG += libkcalcoren-qt5 libical
+PKGCONFIG += libkcalcoren-qt5
 
 HEADERS += \
     tst_storage.h
