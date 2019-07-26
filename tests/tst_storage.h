@@ -31,6 +31,7 @@ private slots:
     void tst_rawEvents();
     void tst_dateCreated_data();
     void tst_dateCreated();
+    void tst_lastModified();
     void tst_dissociateSingleOccurrence_data();
     void tst_dissociateSingleOccurrence();
     void tst_deleted();
