@@ -217,18 +217,73 @@ void tst_storage::tst_origintimes()
     QCOMPARE(ss->toLocalOriginTime(localTime), ss->toLocalOriginTime(utcTime));
 }
 
+void tst_storage::tst_rawEvents_data()
+{
+    QTest::addColumn<QDate>("date");
+    QTest::addColumn<QTime>("startTime");
+    QTest::addColumn<QTime>("endTime");
+    QTest::addColumn<QString>("timeZone");
+
+    QTest::newRow("non all day event in clock time")
+        << QDate(2010, 01, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString();
+    QTest::newRow("non all day event in Europe/Helsinki")
+        << QDate(2010, 02, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("Europe/Helsinki");
+    QTest::newRow("non all day event in Pacific/Midway")
+        << QDate(2010, 03, 01)
+        << QTime(8, 0) << QTime(9, 0)
+        << QString("Pacific/Midway");
+    QTest::newRow("all day event stored as local clock")
+        << QDate(2010, 04, 01)
+        << QTime(0, 0) << QTime()
+        << QString();
+    QTest::newRow("all day event stored as date only")
+        << QDate(2010, 05, 01)
+        << QTime() << QTime()
+        << QString();
+}
+
 void tst_storage::tst_rawEvents()
 {
-    // TODO: Should split tests if making more cases outside storage
+    QFETCH(QDate, date);
+    QFETCH(QTime, startTime);
+    QFETCH(QTime, endTime);
+    QFETCH(QString, timeZone);
+
+    KDateTime::Spec spec(timeZone.isEmpty() ? KDateTime::Spec(KDateTime::ClockTime)
+                         : KDateTime::Spec(KSystemTimeZones::zone(timeZone)));
     auto event = KCalCore::Event::Ptr(new KCalCore::Event);
-    // NOTE: no other events should be made happening this day
-    QDate startDate(2010, 12, 1);
-    event->setDtStart(KDateTime(startDate, QTime(12, 0), KDateTime::ClockTime));
-    event->setDtEnd(KDateTime(startDate, QTime(13, 0), KDateTime::ClockTime));
+    if (startTime.isValid()) {
+        event->setDtStart(KDateTime(date, startTime, spec));
+        if (endTime.isValid()) {
+            event->setDtEnd(KDateTime(date, endTime, spec));
+        } else if (startTime == QTime(0, 0)) {
+            event->setAllDay(true);
+        }
+    } else {
+        event->setDtStart(KDateTime(date, KDateTime::ClockTime));
+    }
+    event->setSummary(QStringLiteral("testing rawExpandedEvents()"));
 
     KCalCore::Recurrence *recurrence = event->recurrence();
     recurrence->setDaily(1);
     recurrence->setStartDateTime(event->dtStart());
+    recurrence->setDuration(5);
+    recurrence->setAllDay(event->allDay());
+    if (event->dtStart().isDateOnly()) {
+        // Save exception as clock time
+        recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(1), QTime(0,0), KDateTime::ClockTime));
+        // Save exception as a local zone
+        recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(2), QTime(0,0)));
+    } else {
+        // Register an exception in spec of the event
+        recurrence->addExDateTime(event->dtStart().addDays(1));
+        // Register an exception in another time zone
+        recurrence->addExDateTime(event->dtStart().addDays(2).toTimeSpec(KSystemTimeZones::zone("America/Toronto")));
+    }
 
     m_calendar->addEvent(event, NotebookId);
     m_storage->save();
@@ -237,14 +292,20 @@ void tst_storage::tst_rawEvents()
 
     auto fetchEvent = m_calendar->event(uid);
     QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->allDay(), event->allDay());
     KCalCore::Recurrence *fetchRecurrence = fetchEvent->recurrence();
     QVERIFY(fetchRecurrence);
+    QCOMPARE(fetchRecurrence->allDay(), recurrence->allDay());
 
-    // should return occurrence for both days
+    // should return occurrence for both days and omit exceptions
     mKCal::ExtendedCalendar::ExpandedIncidenceList events
-        = m_calendar->rawExpandedEvents(startDate, startDate.addDays(1), false, false, KDateTime::Spec(KDateTime::LocalZone));
+        = m_calendar->rawExpandedEvents(date, date.addDays(3), false, false, KDateTime::Spec(KDateTime::LocalZone));
 
     QCOMPARE(events.size(), 2);
+    QCOMPARE(events[0].first.dtStart, event->dtStart().toLocalZone().dateTime());
+    QCOMPARE(events[0].first.dtEnd, event->dtEnd().toLocalZone().dateTime());
+    QCOMPARE(events[1].first.dtStart, event->dtStart().addDays(3).toLocalZone().dateTime());
+    QCOMPARE(events[1].first.dtEnd, event->dtEnd().addDays(3).toLocalZone().dateTime());
 }
 
 // Check that the creation date can be tuned and restored properly.
@@ -604,6 +665,8 @@ void tst_storage::tst_icalAllDay()
     QCOMPARE(event->dtStart(), fetchEvent->dtStart());
     QCOMPARE(event->dtEnd(), fetchEvent->dtEnd());
 }
+
+
 
 void tst_storage::openDb(bool clear)
 {

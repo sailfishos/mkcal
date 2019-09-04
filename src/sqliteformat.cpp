@@ -529,11 +529,21 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
             }
         }
 
+        // Both for rDateTimes and exDateTimes, there are possible issues
+        // with all day events. KCalCore::Recurrence::timesInInterval()
+        // is returning repeating events in clock time for all day events,
+        // Thus being yyyy-mm-ddT00:00:00 and then "converted" to local
+        // zone, for display (meaning being after yyyy-mm-ddT00:00:00+xxxx).
+        // When saving, we don't want to store this local zone info, otherwise,
+        // the saved date-time won't match when read in another time zone.
         type = SqliteFormat::RDateTime;
         DateTimeList dateTimeList = incidence->recurrence()->rDateTimes();
         DateTimeList::ConstIterator it;
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
-            if (!modifyRdate(rowid, type, (*it), (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
+            bool allDay(incidence->allDay() && it->isLocalZone() && it->time() == QTime(0,0));
+            if (!modifyRdate(rowid, type,
+                             (allDay) ? KDateTime(it->date(), QTime(0, 0), KDateTime::ClockTime) : (*it),
+                             (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify rdatetimes for incidence" << incidence->uid();
                 success = false;
             }
@@ -542,7 +552,10 @@ bool SqliteFormat::Private::modifyRdates(Incidence::Ptr incidence, int rowid, DB
         type = SqliteFormat::XDateTime;
         dateTimeList = incidence->recurrence()->exDateTimes();
         for (it = dateTimeList.constBegin(); it != dateTimeList.constEnd(); ++it) {
-            if (!modifyRdate(rowid, type, (*it), (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
+            bool allDay(incidence->allDay() && it->isLocalZone() && it->time() == QTime(0,0));
+            if (!modifyRdate(rowid, type,
+                             (allDay) ? KDateTime(it->date(), QTime(0, 0), KDateTime::ClockTime) : (*it),
+                             (dbop == DBUpdate ? DBInsert : dbop), stmt2)) {
                 qCWarning(lcMkcal) << "failed to modify xdatetimes for incidence" << incidence->uid();
                 success = false;
             }
