@@ -365,6 +365,29 @@ void tst_storage::tst_dateCreated()
     }
 }
 
+// Check that lastModified field is not modified by storage,
+// but actually updated whenever a modification is done to a stored incidence.
+void tst_storage::tst_lastModified()
+{
+    KDateTime dt(QDate(2019, 07, 26), QTime(11, 41), KDateTime::ClockTime);
+    KCalCore::Event::Ptr event = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(dt.addDays(1));
+    event->setSummary("Modified date test event");
+    event->setLastModified(dt);
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    QCOMPARE(event->lastModified(), dt);
+
+    reloadDb();
+    auto fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->lastModified(), dt);
+
+    fetchEvent->setDtStart(dt.addDays(2));
+    QVERIFY(fetchEvent->lastModified().secsTo(KDateTime::currentUtcDateTime()) <= 1);
+}
+
 // Ensure that dissociateSingleOccurrence() for events
 // given in various time zone or for all day events.
 void tst_storage::tst_dissociateSingleOccurrence_data()
