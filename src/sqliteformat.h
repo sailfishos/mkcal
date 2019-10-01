@@ -79,7 +79,7 @@ public:
 
       @param notebook notebook to update
       @param dbop database operation
-      @param stmt prepared sqlite statement for components table
+      @param stmt prepared sqlite statement for calendars table
       @return true if the operation was successful; false otherwise.
     */
     bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt);

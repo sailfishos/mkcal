@@ -511,6 +511,8 @@ public Q_SLOTS:
   "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, Offset INTEGER, Relation TEXT, DateTrigger INTEGER, DateTriggerLocal INTEGER, triggerTimeZone TEXT, Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
 #define CREATE_ATTENDEE \
 "CREATE TABLE IF NOT EXISTS Attendee(ComponentId INTEGER, Email TEXT, Name TEXT, IsOrganizer INTEGER, Role INTEGER, PartStat INTEGER, Rsvp INTEGER, DelegatedTo TEXT, DelegatedFrom TEXT)"
+#define CREATE_CALENDARPROPERTIES \
+  "CREATE TABLE IF NOT EXISTS Calendarproperties(CalendarId REFERENCES Calendars(CalendarId) ON DELETE CASCADE, Name TEXT NOT NULL, Value TEXT, UNIQUE (CalendarId, Name))"
 
 #define INDEX_CALENDAR \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDAR on Calendars(CalendarId)"
@@ -532,6 +534,8 @@ public Q_SLOTS:
 "CREATE INDEX IF NOT EXISTS IDX_ALARM on Alarm(ComponentId)"
 #define INDEX_ATTENDEE \
 "CREATE UNIQUE INDEX IF NOT EXISTS IDX_ATTENDEE on Attendee(ComponentId, Email)"
+#define INDEX_CALENDARPROPERTIES \
+"CREATE INDEX IF NOT EXISTS IDX_CALENDARPROPERTIES on Calendarproperties(CalendarId)"
 
 #define INSERT_VERSION \
 "insert into Version values (?, ?)"
@@ -545,6 +549,8 @@ public Q_SLOTS:
 "insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '', '', 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
+#define INSERT_CALENDARPROPERTIES \
+"insert into Calendarproperties values (?, ?, ?)"
 #define INSERT_RDATES \
 "insert into Rdates values (?, ?, ?, ?, ?)"
 #define INSERT_RECURSIVE \
@@ -574,6 +580,8 @@ public Q_SLOTS:
 "delete from Rdates where ComponentId=?"
 #define DELETE_CUSTOMPROPERTIES \
 "delete from Customproperties where ComponentId=?"
+#define DELETE_CALENDARPROPERTIES \
+"delete from Calendarproperties where CalendarId=?"
 #define DELETE_RECURSIVE \
 "delete from Recursive where ComponentId=?"
 #define DELETE_ALARM \
@@ -659,6 +667,8 @@ public Q_SLOTS:
 "select * from Alarm where ComponentId=?"
 #define SELECT_ATTENDEE_BY_ID \
 "select * from Attendee where ComponentId=?"
+#define SELECT_CALENDARPROPERTIES_BY_ID \
+"select * from Calendarproperties where CalendarId=?"
 #define SELECT_COMPONENTS_BY_DUPLICATE \
 "select * from Components where DateStart=? and Summary=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK \

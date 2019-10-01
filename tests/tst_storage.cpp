@@ -717,6 +717,81 @@ void tst_storage::tst_deleteAllEvents()
     QVERIFY(cal->rawEventsForDate(ev->dtStart().date()).isEmpty());
 }
 
+void tst_storage::tst_calendarProperties()
+{
+    Notebook::Ptr notebook = Notebook::Ptr(new Notebook(QStringLiteral("Notebook"), QString()));
+
+    QCOMPARE(notebook->customPropertyKeys().count(), 0);
+    const QByteArray propKey("a key");
+    const QString propValue = QStringLiteral("a value");
+    notebook->setCustomProperty(propKey, propValue);
+    QCOMPARE(notebook->customPropertyKeys().count(), 1);
+    QCOMPARE(notebook->customProperty(propKey), propValue);
+
+    QVERIFY(m_storage->addNotebook(notebook));
+    QString uid = notebook->uid();
+
+    reloadDb();
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    QCOMPARE(notebook->customPropertyKeys().count(), 1);
+    QCOMPARE(notebook->customProperty(propKey), propValue);
+
+    const QByteArray propKey2("a second key");
+    const QString propValue2 = QStringLiteral("another value");
+    notebook->setCustomProperty(propKey2, propValue2);
+    QCOMPARE(notebook->customPropertyKeys().count(), 2);
+    QCOMPARE(notebook->customProperty(propKey2), propValue2);
+
+    QVERIFY(m_storage->updateNotebook(notebook));
+
+    reloadDb();
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    QCOMPARE(notebook->customPropertyKeys().count(), 2);
+    QCOMPARE(notebook->customProperty(propKey), propValue);
+    QCOMPARE(notebook->customProperty(propKey2), propValue2);
+
+    notebook->setCustomProperty(propKey2, QString());
+    QCOMPARE(notebook->customPropertyKeys().count(), 1);
+    QCOMPARE(notebook->customProperty(propKey), propValue);
+    QCOMPARE(notebook->customProperty(propKey2), QString());
+    QString defaultValue = QStringLiteral("default value");
+    QCOMPARE(notebook->customProperty(propKey2, defaultValue), defaultValue);
+
+    QVERIFY(m_storage->updateNotebook(notebook));
+
+    reloadDb();
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    QCOMPARE(notebook->customPropertyKeys().count(), 1);
+    QCOMPARE(notebook->customProperty(propKey), propValue);
+    QCOMPARE(notebook->customProperty(propKey2), QString());
+
+    m_storage->deleteNotebook(notebook);
+
+    // Need to check by hand that property entries have been deleted.
+    int rv;
+    sqlite3 *database;
+    rv = sqlite3_open(m_storage.staticCast<SqliteStorage>()->databaseName().toUtf8(), &database);
+    QCOMPARE(rv, 0);
+    const char *query = SELECT_CALENDARPROPERTIES_BY_ID;
+    int qsize = sizeof(SELECT_CALENDARPROPERTIES_BY_ID);
+    sqlite3_stmt *stmt = NULL;
+#undef sqlite3_prepare_v2
+    rv = sqlite3_prepare_v2(database, query, qsize, &stmt, NULL);
+    QCOMPARE(rv, 0);
+    const QByteArray id(uid.toUtf8());
+#undef sqlite3_bind_text
+    rv = sqlite3_bind_text(stmt, 1, id.constData(), id.length(), SQLITE_STATIC);
+    QCOMPARE(rv, 0);
+#undef sqlite3_step
+    rv = sqlite3_step(stmt);
+    QCOMPARE(rv, SQLITE_DONE);
+    sqlite3_close(database);
+}
+
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
@@ -756,6 +831,5 @@ void tst_storage::reloadDb()
     m_calendar.clear();
     openDb();
 }
-
 
 QTEST_GUILESS_MAIN(tst_storage)

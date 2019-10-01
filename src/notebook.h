@@ -437,6 +437,27 @@ public:
     int flags() const;
 
     /**
+       Set a key/value property. Setting the value to the empty string
+       will remove the property.
+       @param key The name of the property.
+       @param value The value of the property.
+    */
+    void setCustomProperty(const QByteArray &key, const QString &value);
+
+    /**
+       A getter function for a custom property, see
+       setCustomProperty().
+       @param key The name of the property.
+       @param default A default value if the property does not exists.
+    */
+    QString customProperty(const QByteArray &key, const QString &defaultValue = QString()) const;
+
+    /**
+       List the keys of all stored custom properties.
+    */
+    QList<QByteArray> customPropertyKeys() const;
+
+    /**
       Assignment operator.
      */
     Notebook &operator=(const Notebook &other);
