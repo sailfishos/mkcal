@@ -689,7 +689,33 @@ void tst_storage::tst_icalAllDay()
     QCOMPARE(event->dtEnd(), fetchEvent->dtEnd());
 }
 
+void tst_storage::tst_deleteAllEvents()
+{
+    ExtendedCalendar::Ptr cal = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    QVERIFY(cal->addNotebook(QStringLiteral("notebook"), true));
+    QVERIFY(cal->setDefaultNotebook(QStringLiteral("notebook")));
 
+    KCalCore::Event::Ptr ev = KCalCore::Event::Ptr(new KCalCore::Event);
+    ev->setLastModified(KDateTime::currentUtcDateTime().addSecs(-42));
+    ev->setHasGeo(true);
+    ev->setGeoLatitude(42.);
+    ev->setGeoLongitude(42.);
+    ev->setDtStart(KDateTime(QDate(2019, 10, 10)));
+    KCalCore::Attendee::Ptr bob = KCalCore::Attendee::Ptr(new KCalCore::Attendee(QStringLiteral("Bob"), QStringLiteral("bob@example.org")));
+    ev->addAttendee(bob);
+
+    QVERIFY(cal->addIncidence(ev));
+    QCOMPARE(cal->incidences().count(), 1);
+    QCOMPARE(cal->geoIncidences().count(), 1);
+    QCOMPARE(cal->attendees().count(), 1);
+    QCOMPARE(cal->rawEventsForDate(ev->dtStart().date()).count(), 1);
+
+    cal->deleteAllEvents();
+    QVERIFY(cal->incidences().isEmpty());
+    QVERIFY(cal->geoIncidences().isEmpty());
+    QVERIFY(cal->attendees().isEmpty());
+    QVERIFY(cal->rawEventsForDate(ev->dtStart().date()).isEmpty());
+}
 
 void tst_storage::openDb(bool clear)
 {

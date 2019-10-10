@@ -40,6 +40,7 @@ private slots:
     void tst_inserted();
     void tst_icalAllDay_data();
     void tst_icalAllDay();
+    void tst_deleteAllEvents();
 
 private:
     void openDb(bool clear = false);
