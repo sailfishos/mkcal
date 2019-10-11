@@ -122,11 +122,8 @@ public:
 
     QMultiHash<QString, Incidence::Ptr>mAttendeeIncidences; // lists of incidences for attendees
 
-    void insertEvent(const Event::Ptr &event, const KDateTime::Spec &timeSpec);
-    void insertTodo(const Todo::Ptr &todo, const KDateTime::Spec &timeSpec);
-    void insertJournal(const Journal::Ptr &journal, const KDateTime::Spec &timeSpec);
-    void addIncidenceToAttendees(const Incidence::Ptr &incidence);
-    void removeIncidenceFromAttendees(const Incidence::Ptr &incidence);
+    void addIncidenceToLists(const Incidence::Ptr &incidence, const KDateTime::Spec &timeSpec);
+    void removeIncidenceFromLists(const Incidence::Ptr &incidence, const KDateTime::Spec &timeSpec);
 
     /**
      * Figure when particular recurrence of an incidence starts.
@@ -357,7 +354,8 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
     }
 
     notifyIncidenceAdded(aEvent);
-    d->insertEvent(aEvent, timeSpec());
+    d->mEvents.insert(aEvent->uid(), aEvent);
+    d->addIncidenceToLists(aEvent, timeSpec());
     aEvent->registerObserver(this);
 
     setModified(true);
@@ -374,16 +372,9 @@ bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
         notifyIncidenceDeleted(event);
         d->mDeletedEvents.insert(uid, event);
 
-        if (event->hasGeo()) {
-            removeAll(d->mGeoIncidences, event.staticCast<Incidence>());
-        }
+        d->removeIncidenceFromLists(event, timeSpec());
 
-        d->mEventsForDate.remove(event->dtStart().toTimeSpec(timeSpec()).date().toString(), event);
-
-        d->removeIncidenceFromAttendees(event);
-
-        KDateTime nowUTC = KDateTime::currentUtcDateTime();
-        event->setLastModified(nowUTC);
+        event->setLastModified(KDateTime::currentUtcDateTime());
         return true;
     } else {
         qCWarning(lcMkcal) << "Event not found.";
@@ -492,7 +483,8 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
 
 
     notifyIncidenceAdded(aTodo);
-    d->insertTodo(aTodo, timeSpec());
+    d->mTodos.insert(aTodo->uid(), aTodo);
+    d->addIncidenceToLists(aTodo, timeSpec());
     aTodo->registerObserver(this);
 
     // Set up sub-to-do relations
@@ -504,7 +496,8 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
 }
 
 //@cond PRIVATE
-void ExtendedCalendar::Private::addIncidenceToAttendees(const Incidence::Ptr &incidence)
+void ExtendedCalendar::Private::addIncidenceToLists(const Incidence::Ptr &incidence,
+                                                    const KDateTime::Spec &timeSpec)
 {
     const Person::Ptr organizer = incidence->organizer();
     if (organizer && !organizer->isEmpty()) {
@@ -515,9 +508,36 @@ void ExtendedCalendar::Private::addIncidenceToAttendees(const Incidence::Ptr &in
     for (it = list.begin(); it != list.end(); ++it) {
         mAttendeeIncidences.insert((*it)->email(), incidence);
     }
+    if (incidence->hasGeo()) {
+        mGeoIncidences.append(incidence);
+    }
+
+    if (incidence->type() == Incidence::TypeEvent) {
+        Event::Ptr event = incidence.staticCast<Event>();
+        if (!event->recurs() && !event->isMultiDay()) {
+            mEventsForDate.insert(
+                event->dtStart().toTimeSpec(timeSpec).date().toString(), event);
+        }
+    } else if (incidence->type() == Incidence::TypeTodo) {
+        Todo::Ptr todo = incidence.staticCast<Todo>();
+        if (todo->hasDueDate()) {
+            mTodosForDate.insert(
+                todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
+        } else if (todo->hasStartDate()) {
+            mTodosForDate.insert(
+                todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
+        }
+    } else if (incidence->type() == Incidence::TypeJournal) {
+        Journal::Ptr journal = incidence.staticCast<Journal>();
+        mJournalsForDate.insert(
+            journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal);
+    } else {
+        Q_ASSERT(false);
+    }
 }
 
-void ExtendedCalendar::Private::removeIncidenceFromAttendees(const Incidence::Ptr &incidence)
+void ExtendedCalendar::Private::removeIncidenceFromLists(const Incidence::Ptr &incidence,
+                                                         const KDateTime::Spec &timeSpec)
 {
     const Person::Ptr organizer = incidence->organizer();
     if (organizer && !organizer->isEmpty()) {
@@ -528,23 +548,30 @@ void ExtendedCalendar::Private::removeIncidenceFromAttendees(const Incidence::Pt
     for (it = list.begin(); it != list.end(); ++it) {
         mAttendeeIncidences.remove((*it)->email(), incidence);
     }
-}
-//@endcond
-
-//@cond PRIVATE
-void ExtendedCalendar::Private::insertTodo(const Todo::Ptr &todo, const KDateTime::Spec &timeSpec)
-{
-    QString uid = todo->uid();
-    mTodos.insert(uid, todo);
-    if (todo->hasDueDate()) {
-        mTodosForDate.insert(todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
-    } else if (todo->hasStartDate()) {
-        mTodosForDate.insert(todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
+    if (incidence->hasGeo()) {
+        mGeoIncidences.removeAll(incidence);
     }
 
-    addIncidenceToAttendees(todo);
-    if (todo->hasGeo()) {
-        mGeoIncidences.append(todo);
+    if (incidence->type() == Incidence::TypeEvent) {
+        Event::Ptr event = incidence.staticCast<Event>();
+        if (!event->dtStart().isNull()) {   // Not mandatory to have dtStart
+            mEventsForDate.remove(
+                event->dtStart().toTimeSpec(timeSpec).date().toString(), event);
+        }
+    } else if (incidence->type() == Incidence::TypeTodo) {
+        Todo::Ptr todo = incidence.staticCast<Todo>();
+        if (todo->hasDueDate()) {
+            mTodosForDate.remove(todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
+        } else if (todo->hasStartDate()) {
+            mTodosForDate.remove(
+                todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
+        }
+    } else if (incidence->type() == Incidence::TypeJournal) {
+        Journal::Ptr journal = incidence.staticCast<Journal>();
+        mJournalsForDate.remove(
+            journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal);
+    } else {
+        Q_ASSERT(false);
     }
 }
 //@endcond
@@ -560,20 +587,9 @@ bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
         notifyIncidenceDeleted(todo);
         d->mDeletedTodos.insert(todo->uid(), todo);
 
-        if (todo->hasGeo()) {
-            removeAll(d->mGeoIncidences, todo.staticCast<Incidence>());
-        }
+        d->removeIncidenceFromLists(todo, timeSpec());
 
-        if (todo->hasDueDate()) {
-            d->mTodosForDate.remove(todo->dtDue().toTimeSpec(timeSpec()).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            d->mTodosForDate.remove(todo->dtStart().toTimeSpec(timeSpec()).date().toString(), todo);
-        }
-
-        d->removeIncidenceFromAttendees(todo);
-
-        KDateTime nowUTC = KDateTime::currentUtcDateTime();
-        todo->setLastModified(nowUTC);
+        todo->setLastModified(KDateTime::currentUtcDateTime());
 
         return true;
     } else {
@@ -813,24 +829,6 @@ Alarm::List ExtendedCalendar::alarms(const KDateTime &from, const KDateTime &to)
     return alarmList;
 }
 
-//@cond PRIVATE
-void ExtendedCalendar::Private::insertEvent(const Event::Ptr &event,
-                                            const KDateTime::Spec &timeSpec)
-{
-    QString uid = event->uid();
-
-    mEvents.insert(uid, event);
-    if (!event->recurs() && !event->isMultiDay()) {
-        mEventsForDate.insert(event->dtStart().toTimeSpec(timeSpec).date().toString(), event);
-    }
-
-    addIncidenceToAttendees(event);
-    if (event->hasGeo()) {
-        mGeoIncidences.append(event);
-    }
-}
-//@endcond
-
 void ExtendedCalendar::incidenceUpdate(const QString &uid, const KDateTime &recurrenceId)
 {
     // The static_cast is ok as the ExtendedCalendar only observes Incidence objects
@@ -840,35 +838,7 @@ void ExtendedCalendar::incidenceUpdate(const QString &uid, const KDateTime &recu
         return;
     }
 
-    d->removeIncidenceFromAttendees(incidence);
-
-    if (incidence->type() == Incidence::TypeEvent) {
-        Event::Ptr event = incidence.staticCast<Event>();
-        if (!event->dtStart().isNull()) {   // Not mandatory to have dtStart
-            d->mEventsForDate.remove(
-                event->dtStart().toTimeSpec(timeSpec()).date().toString(), event);
-        }
-        if (event->hasGeo()) {
-            removeAll(d->mGeoIncidences, event.staticCast<Incidence>());
-        }
-    } else if (incidence->type() == Incidence::TypeTodo) {
-        Todo::Ptr todo = incidence.staticCast<Todo>();
-        if (todo->hasDueDate()) {
-            d->mTodosForDate.remove(todo->dtDue().toTimeSpec(timeSpec()).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            d->mTodosForDate.remove(
-                todo->dtStart().toTimeSpec(timeSpec()).date().toString(), todo);
-        }
-        if (todo->hasGeo()) {
-            removeAll(d->mGeoIncidences, todo.staticCast<Incidence>());
-        }
-    } else if (incidence->type() == Incidence::TypeJournal) {
-        Journal::Ptr journal = incidence.staticCast<Journal>();
-        d->mJournalsForDate.remove(
-            journal->dtStart().toTimeSpec(timeSpec()).date().toString(), journal);
-    } else {
-        Q_ASSERT(false);
-    }
+    d->removeIncidenceFromLists(incidence, timeSpec());
 }
 
 void ExtendedCalendar::incidenceUpdated(const QString &uid, const KDateTime &recurrenceId)
@@ -879,42 +849,12 @@ void ExtendedCalendar::incidenceUpdated(const QString &uid, const KDateTime &rec
         return;
     }
 
-    KDateTime nowUTC = KDateTime::currentUtcDateTime();
-    incidence->setLastModified(nowUTC);
+    incidence->setLastModified(KDateTime::currentUtcDateTime());
     // we should probably update the revision number here,
     // or internally in the Event itself when certain things change.
     // need to verify with ical documentation.
 
-    d->addIncidenceToAttendees(incidence);
-
-    if (incidence->type() == Incidence::TypeEvent) {
-        Event::Ptr event = incidence.staticCast<Event>();
-        if (!event->recurs() && !event->isMultiDay()) {
-            d->mEventsForDate.insert(
-                event->dtStart().toTimeSpec(timeSpec()).date().toString(), event);
-        }
-        if (event->hasGeo()) {
-            d->mGeoIncidences.append(event);
-        }
-    } else if (incidence->type() == Incidence::TypeTodo) {
-        Todo::Ptr todo = incidence.staticCast<Todo>();
-        if (todo->hasDueDate()) {
-            d->mTodosForDate.insert(
-                todo->dtDue().toTimeSpec(timeSpec()).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            d->mTodosForDate.insert(
-                todo->dtStart().toTimeSpec(timeSpec()).date().toString(), todo);
-        }
-        if (todo->hasGeo()) {
-            d->mGeoIncidences.append(todo);
-        }
-    } else if (incidence->type() == Incidence::TypeJournal) {
-        Journal::Ptr journal = incidence.staticCast<Journal>();
-        d->mJournalsForDate.insert(
-            journal->dtStart().toTimeSpec(timeSpec()).date().toString(), journal);
-    } else {
-        Q_ASSERT(false);
-    }
+    d->addIncidenceToLists(incidence, timeSpec());
 
     notifyIncidenceChanged(incidence);
 
@@ -1314,26 +1254,14 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
     }
 
     notifyIncidenceAdded(aJournal);
-    d->insertJournal(aJournal, timeSpec());
+    d->mJournals.insert(aJournal->uid(), aJournal);
+    d->addIncidenceToLists(aJournal, timeSpec());
     aJournal->registerObserver(this);
 
     setModified(true);
 
     return setNotebook(aJournal, notebookUid);;
 }
-
-//@cond PRIVATE
-void ExtendedCalendar::Private::insertJournal(const Journal::Ptr &journal,
-                                              const KDateTime::Spec &timeSpec)
-{
-    QString uid = journal->uid();
-
-    mJournals.insert(uid, journal);
-    mJournalsForDate.insert(journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal);
-
-    addIncidenceToAttendees(journal);
-}
-//@endcond
 
 bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
 {
@@ -1343,13 +1271,9 @@ bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
         notifyIncidenceDeleted(journal);
         d->mDeletedJournals.insert(journal->uid(), journal);
 
-        d->mJournalsForDate.remove(
-            journal->dtStart().toTimeSpec(timeSpec()).date().toString(), journal);
+        d->removeIncidenceFromLists(journal, timeSpec());
 
-        d->removeIncidenceFromAttendees(journal);
-
-        KDateTime nowUTC = KDateTime::currentUtcDateTime();
-        journal->setLastModified(nowUTC);
+        journal->setLastModified(KDateTime::currentUtcDateTime());
 
         return true;
     } else {
