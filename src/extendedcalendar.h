@@ -195,7 +195,7 @@
 
 #include "mkcal_export.h"
 
-#include <calendar.h>
+#include <memorycalendar.h>
 #include <icaltimezones.h>
 #include <extendedstorageobserver.h>
 
@@ -208,7 +208,7 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::Calendar,
+class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar,
     public ExtendedStorageObserver
 {
 public:
@@ -244,12 +244,6 @@ public:
 
     /**
       @copydoc
-      Calendar::~Calendar()
-    */
-    virtual ~ExtendedCalendar();
-
-    /**
-      @copydoc
       Calendar::reload()
     */
     bool reload();
@@ -261,11 +255,12 @@ public:
     bool save();
 
     /**
-      Clears out the current calendar, freeing all used memory etc. etc.
+      @copydoc
+      Calendar::close()
     */
     void close();
 
-    /**
+     /**
       Creates an ICalTimeZone instance and adds it to calendar's ICalTimeZones
       collection or returns an existing instance for the MSTimeZone component.
 
@@ -274,12 +269,6 @@ public:
       @see ICalTimeZoneSource::parse( MSTimeZone *, ICalTimeZones & )
     */
     KCalCore::ICalTimeZone parseZone(KCalCore::MSTimeZone *tz);
-
-    /**
-      @copydoc
-      Calendar::doSetTimeSpec()
-    */
-    void doSetTimeSpec(const KDateTime::Spec &timeSpec);
 
     /**
       Dissociate only one single Incidence from a recurring Incidence.
@@ -294,6 +283,9 @@ public:
     KCalCore::Incidence::Ptr dissociateSingleOccurrence(const KCalCore::Incidence::Ptr &incidence,
                                                         const KDateTime &dateTime,
                                                         const KDateTime::Spec &spec);
+
+    bool addIncidence(const KCalCore::Incidence::Ptr &incidence);
+    bool deleteIncidence(const KCalCore::Incidence::Ptr &incidence);
 
     // Event Specific Methods //
 
@@ -316,12 +308,6 @@ public:
 
     /**
       @copydoc
-      Calendar::deleteEventInstances()
-    */
-    bool deleteEventInstances(const KCalCore::Event::Ptr &event);
-
-    /**
-      @copydoc
       Calendar::deleteEvent()
 
       @warning This call deletes based on the pointer given, and it is using QSharedPointer
@@ -329,12 +315,6 @@ public:
       both. The deleting in the second one will fail.
     */
     bool deleteEvent(const KCalCore::Event::Ptr &event);
-
-    /**
-      @copydoc
-      Calendar::deleteAllEvents()
-    */
-    void deleteAllEvents();
 
     /**
       @copydoc
@@ -346,58 +326,11 @@ public:
 
     /**
       @copydoc
-      Calendar::rawEvents(const QDate &, const QDate &, const KDateTime::Spec &, bool)
-    */
-    KCalCore::Event::List rawEvents(
-        const QDate &start, const QDate &end,
-        const KDateTime::Spec &timespec = KDateTime::Spec(),
-        bool inclusive = false) const;
-
-    /**
-      @copydoc
       Calendar::rawEventsForDate(const QDate &, const KDateTime::Spec &,
                                  KCalCore::EventSortField, KCalCore::SortDirection)
     */
     KCalCore::Event::List rawEventsForDate(
         const QDate &date, const KDateTime::Spec &timespec = KDateTime::Spec(),
-        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::rawEventsForDate(const KDateTime &)
-    */
-    KCalCore::Event::List rawEventsForDate(const KDateTime &dt) const;
-
-    /**
-      @copydoc
-      Calendar::event()
-    */
-    KCalCore::Event::Ptr event(const QString &uid,
-                               const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedEvent()
-    */
-    KCalCore::Event::Ptr deletedEvent(const QString &uid,
-                                      const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedEvents(KCalCore::EventSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Event::List deletedEvents(
-        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::eventInstances(const KCalCore::Incidence::Ptr &,
-                               KCalCore::EventSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Event::List eventInstances(
-        const KCalCore::Incidence::Ptr &event,
         KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
         KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
 
@@ -445,18 +378,6 @@ public:
 
     /**
       @copydoc
-      Calendar::deleteTodoInstances()
-    */
-    bool deleteTodoInstances(const KCalCore::Todo::Ptr &todo);
-
-    /**
-      @copydoc
-      Calendar::deleteAllTodos()
-    */
-    void deleteAllTodos();
-
-    /**
-      @copydoc
       Calendar::rawTodos(KCalCore::TodoSortField, KCalCore::SortDirection)
     */
     KCalCore::Todo::List rawTodos(
@@ -465,50 +386,9 @@ public:
 
     /**
       @copydoc
-      Calendar::rawTodos(QDate, QDate, KDateTime::Spec, bool)
-    */
-    KCalCore::Todo::List rawTodos(
-        const QDate &start, const QDate &end,
-        const KDateTime::Spec &timespec = KDateTime::Spec(),
-        bool inclusive = false) const;
-
-    /**
-      @copydoc
       Calendar::rawTodosForDate()
     */
     KCalCore::Todo::List rawTodosForDate(const QDate &date) const;
-
-    /**
-      @copydoc
-      Calendar::todo()
-    */
-    KCalCore::Todo::Ptr todo(const QString &uid,
-                             const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedTodo()
-    */
-    KCalCore::Todo::Ptr deletedTodo(const QString &uid,
-                                    const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedTodos(KCalCore::TodoSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Todo::List deletedTodos(
-        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::todoInstances(const KCalCore::Todo::Ptr &,
-                              KCalCore::TodoSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Todo::List todoInstances(
-        const KCalCore::Incidence::Ptr &todo,
-        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
 
     // Journal Specific Methods //
 
@@ -537,18 +417,6 @@ public:
       both. The deleting in the second one will fail.
     */
     bool deleteJournal(const KCalCore::Journal::Ptr &journal);
-
-    /**
-      @copydoc
-      Calendar::deleteJournalInstances()
-    */
-    bool deleteJournalInstances(const KCalCore::Journal::Ptr &journal);
-
-    /**
-      @copydoc
-      Calendar::deleteAllJournals()
-    */
-    void deleteAllJournals();
 
     /**
       @copydoc
@@ -583,54 +451,6 @@ public:
     KCalCore::Journal::List rawJournalsForDate(const QDate &date) const;
 
     /**
-      @copydoc
-      Calendar::journal()
-    */
-    KCalCore::Journal::Ptr journal(const QString &uid,
-                                   const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedJournal()
-    */
-    KCalCore::Journal::Ptr deletedJournal(const QString &uid,
-                                          const KDateTime &recurrenceId = KDateTime()) const;
-
-    /**
-      @copydoc
-      Calendar::deletedJournals(KCalCore::JournalSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Journal::List deletedJournals(
-        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::journalInstances(const KCalCore::Journal::Ptr &,
-                                 KCalCore::JournalSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Journal::List journalInstances(
-        const KCalCore::Incidence::Ptr &journal,
-        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    // Alarm Specific Methods //
-
-    /**
-      @copydoc
-      Calendar::alarms()
-    */
-    KCalCore::Alarm::List alarms(const KDateTime &from, const KDateTime &to) const;
-
-    /**
-      Return a list of Alarms that occur before the specified timestamp.
-
-      @param to is the ending timestamp.
-      @return the list of Alarms occurring before the specified KDateTime.
-    */
-    KCalCore::Alarm::List alarmsTo(const KDateTime &to) const;
-
-    /**
       Notify the IncidenceBase::Observer that the incidence will be updated.
 
       @param uid to the Incidence to be updated.
@@ -643,8 +463,6 @@ public:
       @param uid to the Incidence just updated.
     */
     void incidenceUpdated(const QString &uid, const KDateTime &recurrenceId);
-
-    using QObject::event;   // prevent warning about hidden virtual method
 
     // Incidence Specific Methods, also see Calendar.h for more //
 
@@ -699,15 +517,6 @@ public:
       database when save is called.
     */
     void deleteAllIncidences();
-
-    /**
-       @copydoc
-       Calendar::deleteIncidenceInstances
-
-       Dummy function, does not do anything in ExtendedCalendar
-
-    */
-    bool deleteIncidenceInstances(const KCalCore::Incidence::Ptr &incidence);
 
     /**
       Sort a list of Incidences.
@@ -927,11 +736,6 @@ public:
     KCalCore::Journal::List journals(const QDate &start, const QDate &end);
 
     /**
-      @see Calendar::journals()
-    */
-    KCalCore::Journal::List journals(const QDate &date) const;
-
-    /**
       Add incidences into calendar from a list of Incidences.
 
       @param list is a pointer to a list of Incidences.
@@ -969,12 +773,6 @@ public:
       @return count of incidences
     */
     int journalCount(const QString &notebookUid = QString());
-
-    /**
-      @copydoc
-      ExtendedStorage::virtual_hook()
-    */
-    virtual void virtual_hook(int id, void *data);
 
 protected:
 
