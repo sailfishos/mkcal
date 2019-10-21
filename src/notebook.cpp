@@ -37,6 +37,7 @@ using namespace KCalCore;
 #include <kdebug.h>
 
 #include <QtCore/QStringList>
+#include <QtCore/QHash>
 
 using namespace mKCal;
 
@@ -124,7 +125,7 @@ public:
     QStringList mSharedWith;
     QString mSyncProfile;
     KDateTime mCreationDate;
-
+    QHash<QByteArray, QString> mCustomProperties;
 };
 //@endcond
 
@@ -522,4 +523,24 @@ bool Notebook::incidenceAllowed(Incidence::Ptr incidence) const
 
     // Default accept
     return true;
+}
+
+void Notebook::setCustomProperty(const QByteArray &key, const QString &value)
+{
+    d->mModifiedDate = KDateTime::currentUtcDateTime();
+    if (value.isEmpty()) {
+        d->mCustomProperties.remove(key);
+    } else {
+        d->mCustomProperties.insert(key, value);
+    }
+}
+
+QString Notebook::customProperty(const QByteArray &key, const QString &defaultValue) const
+{
+    return d->mCustomProperties.value(key, defaultValue);
+}
+
+QList<QByteArray> Notebook::customPropertyKeys() const
+{
+    return d->mCustomProperties.uniqueKeys();
 }

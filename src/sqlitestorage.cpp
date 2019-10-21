@@ -225,6 +225,9 @@ bool SqliteStorage::open()
     query = CREATE_ATTENDEE;
     sqlite3_exec(d->mDatabase);
 
+    query = CREATE_CALENDARPROPERTIES;
+    sqlite3_exec(d->mDatabase);
+
     /* Create index on frequently used columns */
     query = INDEX_CALENDAR;
     sqlite3_exec(d->mDatabase);
@@ -251,6 +254,12 @@ bool SqliteStorage::open()
     sqlite3_exec(d->mDatabase);
 
     query = INDEX_ATTENDEE;
+    sqlite3_exec(d->mDatabase);
+
+    query = INDEX_CALENDARPROPERTIES;
+    sqlite3_exec(d->mDatabase);
+
+    query = "PRAGMA foreign_keys = ON";
     sqlite3_exec(d->mDatabase);
 
     if (!d->mChanged.open(QIODevice::Append)) {

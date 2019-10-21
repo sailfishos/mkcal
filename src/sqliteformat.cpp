@@ -54,12 +54,22 @@ class mKCal::SqliteFormat::Private
 public:
     Private(SqliteStorage *storage, sqlite3 *database)
         : mStorage(storage), mDatabase(database), mTimeSpec(KDateTime::UTC)
+        , mSelectCalProps(nullptr)
+        , mInsertCalProps(nullptr)
     {
     }
-    ~Private() { }
+    ~Private()
+    {
+        sqlite3_finalize(mSelectCalProps);
+        sqlite3_finalize(mInsertCalProps);
+    }
     SqliteStorage *mStorage;
     sqlite3 *mDatabase;
     KDateTime::Spec mTimeSpec;
+
+    // Cache for various queries.
+    sqlite3_stmt *mSelectCalProps;
+    sqlite3_stmt *mInsertCalProps;
 
     bool selectCustomproperties(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     int selectRowId(Incidence::Ptr incidence);
@@ -67,6 +77,7 @@ public:
     bool selectAlarms(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     bool selectAttendees(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     bool selectRdates(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
+    bool selectCalendarProperties(Notebook::Ptr notebook);
     bool modifyCustomproperties(Incidence::Ptr incidence, int rowid, DBOperation dbop,
                                 sqlite3_stmt *stmt1, sqlite3_stmt *stmt2);
     bool modifyCustomproperty(int rowid, const QByteArray &key, const QString &value,
@@ -86,6 +97,10 @@ public:
                       sqlite3_stmt *stmt2);
     bool modifyRdate(int rowid, int type, const KDateTime &rdate, DBOperation dbop,
                      sqlite3_stmt *stmt);
+    bool modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop);
+    bool deleteCalendarProperties(const QByteArray &id);
+    bool insertCalendarProperty(const QByteArray &id, const QByteArray &key,
+                                const QByteArray &value);
 };
 //@endcond
 
@@ -140,6 +155,10 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
     }
 
     sqlite3_step(stmt);
+
+    if (!d->modifyCalendarProperties(notebook, dbop)) {
+        qCWarning(lcMkcal) << "failed to modify calendarproperties for notebook" << uid;
+    }
 
     return true;
 
@@ -949,6 +968,76 @@ error:
 
     return success;
 }
+
+bool SqliteFormat::Private::modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop)
+{
+    QByteArray id(notebook->uid().toUtf8());
+    // In Update always delete all first then insert all
+    if (dbop == DBUpdate && !deleteCalendarProperties(id)) {
+        qCWarning(lcMkcal) << "failed to delete calendarproperties for notebook" << id;
+        return false;
+    }
+
+    bool success = true;
+    if (dbop == DBInsert || dbop == DBUpdate) {
+        QList<QByteArray> properties = notebook->customPropertyKeys();
+        for (QList<QByteArray>::ConstIterator it = properties.constBegin();
+             it != properties.constEnd(); ++it) {
+            if (!insertCalendarProperty(id, *it, notebook->customProperty(*it).toUtf8())) {
+                qCWarning(lcMkcal) << "failed to insert calendarproperty" << *it << "in notebook" << id;
+                success = false;
+            }
+        }
+    }
+    return success;
+}
+
+bool SqliteFormat::Private::deleteCalendarProperties(const QByteArray &id)
+{
+    int rv = 0;
+    int index = 1;
+    bool success = false;
+
+    const char *query = DELETE_CALENDARPROPERTIES;
+    int qsize = sizeof(DELETE_CALENDARPROPERTIES);
+    sqlite3_stmt *stmt = NULL;
+
+    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
+    sqlite3_bind_text(stmt, index, id.constData(), id.length(), SQLITE_STATIC);
+    sqlite3_step(stmt);
+    success = true;
+
+error:
+    sqlite3_finalize(stmt);
+
+    return success;
+}
+
+bool SqliteFormat::Private::insertCalendarProperty(const QByteArray &id,
+                                                   const QByteArray &key,
+                                                   const QByteArray &value)
+{
+    int rv = 0;
+    int index = 1;
+    bool success = false;
+
+    if (!mInsertCalProps) {
+        const char *query = INSERT_CALENDARPROPERTIES;
+        int qsize = sizeof(INSERT_CALENDARPROPERTIES);
+        sqlite3_prepare_v2(mDatabase, query, qsize, &mInsertCalProps, NULL);
+    }
+
+    sqlite3_bind_text(mInsertCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
+    sqlite3_bind_text(mInsertCalProps, index, key.constData(), key.length(), SQLITE_STATIC);
+    sqlite3_bind_text(mInsertCalProps, index, value.constData(), value.length(), SQLITE_STATIC);
+    sqlite3_step(mInsertCalProps);
+    success = true;
+
+error:
+    sqlite3_reset(mInsertCalProps);
+
+    return success;
+}
 //@endcond
 
 Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
@@ -991,6 +1080,10 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
         notebook->setSharedWithStr(sharedWith);
         notebook->setSyncProfile(syncProfile);
         notebook->setCreationDate(creationDate);
+
+        if (!d->selectCalendarProperties(notebook)) {
+            qCWarning(lcMkcal) << "failed to get calendarproperties for notebook" << id;
+        }
 
         // This has to be called last! Otherwise the last modified date
         // will be roughly now, and not whenever notebook was really last
@@ -1706,4 +1799,34 @@ Person::List SqliteFormat::selectContacts(sqlite3_stmt *stmt)
 
 error:
     return list;
+}
+
+bool SqliteFormat::Private::selectCalendarProperties(Notebook::Ptr notebook)
+{
+    int rv = 0;
+    int index = 1;
+    const QByteArray id(notebook->uid().toUtf8());
+    bool success = false;
+
+    if (!mSelectCalProps) {
+        const char *query = SELECT_CALENDARPROPERTIES_BY_ID;
+        int qsize = sizeof(SELECT_CALENDARPROPERTIES_BY_ID);
+        sqlite3_prepare_v2(mDatabase, query, qsize, &mSelectCalProps, NULL);
+    }
+
+    sqlite3_bind_text(mSelectCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
+    do {
+        sqlite3_step(mSelectCalProps);
+        if (rv == SQLITE_ROW) {
+            const QByteArray name = (const char *)sqlite3_column_text(mSelectCalProps, 1);
+            const QString value = QString::fromUtf8((const char *)sqlite3_column_text(mSelectCalProps, 2));
+            notebook->setCustomProperty(name, value);
+        }
+    } while (rv != SQLITE_DONE);
+    success = true;
+
+error:
+    sqlite3_reset(mSelectCalProps);
+
+    return success;
 }
