@@ -332,16 +332,8 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             KDateTime effectiveDtEnd;
             if (incidence->type() == Incidence::TypeEvent) {
                 Event::Ptr event = incidence.staticCast<Event>();
-
                 if (event->hasEndDate()) {
                     effectiveDtEnd = event->dtEnd();
-                } else if (incidence->dtStart().isValid()) {
-                    // No end date, use start date if possible
-                    effectiveDtEnd = incidence->dtStart();
-                }
-                // all day inclusive of end time, add one day here and remove one day when reading
-                if (effectiveDtEnd.isValid() && incidence->allDay()) {
-                    effectiveDtEnd = event->dtEnd().addDays(1);
                 }
             }
             sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd, incidence->allDay());
@@ -1208,15 +1200,9 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
             bool endIsDate;
             KDateTime end = getDateTime(d->mStorage, stmt1, 9, &endIsDate);
             if (startIsDate && (!end.isValid() || endIsDate)) {
-                // all day events saved with one extra day due to KCalCore::Event::dtEnd() being inclusive of end time
-                if (end.isValid()) {
-                    KDateTime dtEnd = end.addDays(-1);
-                    if (dtEnd > start) {
-                        event->setDtEnd(dtEnd);
-                    }
-                }
                 event->setAllDay(true);
-            } else {
+            }
+            if (end.isValid()) {
                 event->setDtEnd(end);
             }
             incidence = event;
