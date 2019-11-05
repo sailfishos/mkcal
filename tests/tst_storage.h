@@ -28,8 +28,12 @@ private slots:
     void tst_alldayRecurrence();
     void tst_origintimes();
     void tst_recurrence();
+    void tst_recurrenceExpansion_data();
+    void tst_recurrenceExpansion();
     void tst_rawEvents_data();
     void tst_rawEvents();
+    void tst_rawEvents_nonRecur_data();
+    void tst_rawEvents_nonRecur();
     void tst_dateCreated_data();
     void tst_dateCreated();
     void tst_lastModified();

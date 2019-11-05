@@ -11,6 +11,24 @@
 // random
 const char *const NotebookId("12345678-9876-1111-2222-222222222222");
 
+namespace {
+    // KDateTime::toClockTime() has the semantic that the input is first
+    // converted to the local system timezone, before having its timezone
+    // information stripped.
+    // In many cases in mkcal, we use clock-time to mean "floating"
+    // i.e. irrespective of timezone, and thus when converting to or from
+    // clock time, we don't want any conversion to the local system timezone
+    // to occur as part of that operation.
+    KDateTime kdatetimeAsTimeSpec(const KDateTime &input, const KDateTime::Spec &spec) {
+        if (spec.type() == KDateTime::ClockTime) {
+            return KDateTime(input.date(), input.time(), KDateTime::ClockTime);
+        } else if (input.isClockTime()) {
+            return KDateTime(input.date(), input.time(), spec);
+        } else {
+            return input.toTimeSpec(spec);
+        }
+    }
+}
 
 tst_storage::tst_storage(QObject *parent)
     : QObject(parent)
@@ -34,6 +52,8 @@ void tst_storage::init()
 
 void tst_storage::cleanup()
 {
+    mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
+    m_storage->deleteNotebook(notebook);
 }
 
 void tst_storage::tst_timezone()
@@ -200,6 +220,173 @@ void tst_storage::tst_recurrence()
     QCOMPARE(match, event->dtStart().addDays(1));
 }
 
+void tst_storage::tst_recurrenceExpansion_data()
+{
+    QTest::addColumn<QString>("eventTimeZone");
+    QTest::addColumn<QString>("expansionTimeZone");
+    QTest::addColumn<QString>("intervalEnd");
+    QTest::addColumn<QStringList>("expectedEvents");
+
+    QTest::newRow("created in Brisbane, expanded in ClockTime")
+        << QString("Australia/Brisbane")
+        << QString() // ClockTime
+        << QString("2019-11-18T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00+10:00")
+                          << QStringLiteral("2019-11-11T02:00:00+10:00")
+                          << QStringLiteral("2019-11-12T02:00:00+10:00")
+                          << QStringLiteral("2019-11-13T02:00:00+10:00")
+                          << QStringLiteral("2019-11-14T02:00:00+10:00")
+                          << QStringLiteral("2019-11-15T02:00:00+10:00")
+                          << QStringLiteral("2019-11-18T02:00:00+10:00"));
+
+    QTest::newRow("created in ClockTime, expanded in Brisbane")
+        << QString() // ClockTime
+        << QString("Australia/Brisbane")
+        << QString("2019-11-19T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00")
+                          << QStringLiteral("2019-11-11T02:00:00")
+                          << QStringLiteral("2019-11-12T02:00:00")
+                          << QStringLiteral("2019-11-13T02:00:00")
+                          << QStringLiteral("2019-11-14T02:00:00")
+                          << QStringLiteral("2019-11-15T02:00:00")
+                          << QStringLiteral("2019-11-18T02:00:00"));
+
+    QTest::newRow("created in Brisbane, expanded in Brisbane")
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << QString("2019-11-18T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00+10:00")
+                          << QStringLiteral("2019-11-11T02:00:00+10:00")
+                          << QStringLiteral("2019-11-12T02:00:00+10:00")
+                          << QStringLiteral("2019-11-13T02:00:00+10:00")
+                          << QStringLiteral("2019-11-14T02:00:00+10:00")
+                          << QStringLiteral("2019-11-15T02:00:00+10:00")
+                          << QStringLiteral("2019-11-18T02:00:00+10:00"));
+
+    QTest::newRow("created in Brisbane, expanded in Paris")
+        << QString("Australia/Brisbane")
+        << QString("Europe/Paris") // up to the end of the 18th in Paris time includes the morning of the 19th in Brisbane time
+        << QString("2019-11-19T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00+10:00")
+                          << QStringLiteral("2019-11-11T02:00:00+10:00")
+                          << QStringLiteral("2019-11-12T02:00:00+10:00")
+                          << QStringLiteral("2019-11-13T02:00:00+10:00")
+                          << QStringLiteral("2019-11-14T02:00:00+10:00")
+                          << QStringLiteral("2019-11-15T02:00:00+10:00")
+                          << QStringLiteral("2019-11-18T02:00:00+10:00")
+                          << QStringLiteral("2019-11-19T02:00:00+10:00"));
+
+    QTest::newRow("created in Paris, expanded in Paris")
+        << QString("Europe/Paris")
+        << QString("Europe/Paris")
+        << QString("2019-11-19T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00+01:00")
+                          << QStringLiteral("2019-11-11T02:00:00+01:00")
+                          << QStringLiteral("2019-11-12T02:00:00+01:00")
+                          << QStringLiteral("2019-11-13T02:00:00+01:00")
+                          << QStringLiteral("2019-11-14T02:00:00+01:00")
+                          << QStringLiteral("2019-11-15T02:00:00+01:00")
+                          << QStringLiteral("2019-11-18T02:00:00+01:00"));
+
+    QTest::newRow("created in Paris, expanded in Brisbane")
+        << QString("Europe/Paris")
+        << QString("Australia/Brisbane")
+        << QString("2019-11-19T00:00:00Z")
+        << (QStringList() << QStringLiteral("2019-11-08T02:00:00+01:00")
+                          << QStringLiteral("2019-11-11T02:00:00+01:00")
+                          << QStringLiteral("2019-11-12T02:00:00+01:00")
+                          << QStringLiteral("2019-11-13T02:00:00+01:00")
+                          << QStringLiteral("2019-11-14T02:00:00+01:00")
+                          << QStringLiteral("2019-11-15T02:00:00+01:00")
+                          << QStringLiteral("2019-11-18T02:00:00+01:00"));
+
+}
+
+// Verify that expansion of recurring event takes timezone into account
+void tst_storage::tst_recurrenceExpansion()
+{
+    QFETCH(QString, eventTimeZone);
+    QFETCH(QString, expansionTimeZone);
+    QFETCH(QString, intervalEnd);
+    QFETCH(QStringList, expectedEvents);
+
+    const KDateTime::Spec eventTimeSpec = eventTimeZone.isEmpty()
+                                        ? KDateTime::ClockTime
+                                        : KDateTime::Spec(KSystemTimeZones::zone(eventTimeZone));
+    const KDateTime::Spec expTimeSpec = expansionTimeZone.isEmpty()
+                                      ? KDateTime::ClockTime
+                                      : KDateTime::Spec(KSystemTimeZones::zone(expansionTimeZone));
+
+    // Create an event which occurs every weekday of every week,
+    // starting from Friday the 8th of November, from 2 am until 3 am.
+    KCalCore::Event::Ptr event = KCalCore::Event::Ptr(new KCalCore::Event());
+    event->startUpdates();
+    event->setUid(QStringLiteral("tst_recurrenceExpansion:%1:%2:%3").arg(eventTimeZone, expansionTimeZone, intervalEnd));
+    event->setLocation(QStringLiteral("Test location"));
+    event->setAllDay(false);
+    event->setDescription(QStringLiteral("Test description"));
+    event->setDtStart(KDateTime(QDate(2019,11,8),
+                                QTime(02,00,00),
+                                eventTimeSpec));
+    event->setDtEnd(KDateTime(QDate(2019,11,8),
+                              QTime(03,00,00),
+                              eventTimeSpec));
+    event->setSummary(QStringLiteral("Test event summary"));
+    event->setCategories(QStringList() << QStringLiteral("Category One"));
+
+    KCalCore::RecurrenceRule * const rule = new KCalCore::RecurrenceRule();
+    rule->setRecurrenceType(KCalCore::RecurrenceRule::rWeekly);
+    rule->setStartDt(event->dtStart());
+    rule->setFrequency(1);
+    rule->setByDays(QList<KCalCore::RecurrenceRule::WDayPos>()
+            << KCalCore::RecurrenceRule::WDayPos(0, 1)   // monday
+            << KCalCore::RecurrenceRule::WDayPos(0, 2)   // tuesday
+            << KCalCore::RecurrenceRule::WDayPos(0, 3)   // wednesday
+            << KCalCore::RecurrenceRule::WDayPos(0, 4)   // thursday
+            << KCalCore::RecurrenceRule::WDayPos(0, 5)); // friday
+
+    event->recurrence()->addRRule(rule);
+    event->endUpdates();
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    const QString uid = event->uid();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(uid);
+    QVERIFY(fetchEvent);
+    KDateTime match = fetchEvent->recurrence()->getNextDateTime(event->dtStart());
+    QCOMPARE(match, event->dtStart().addDays(3)); // skip the weekend
+
+    mKCal::ExtendedCalendar::ExpandedIncidenceList expandedEvents
+        = m_calendar->rawExpandedEvents(
+            QDate(2019, 11, 05), QDate(2019, 11, 18), // i.e. until the end of the 18th
+            false, false, expTimeSpec);
+
+    const KCalCore::DateTimeList timesInInterval = event->recurrence()->timesInInterval(
+            KDateTime::fromString(QStringLiteral("2019-11-05T00:00:00Z")),
+            KDateTime::fromString(intervalEnd));
+
+    QCOMPARE(expandedEvents.size(), expectedEvents.size());
+    if (!eventTimeZone.isEmpty()) {
+        // timesInInterval() doesn't expand the way we'd like it to,
+        // if the event is specified in clock-time, as it performs
+        // some conversion to local time via offset addition/subtraction
+        // which can result in one extra result being returned.
+        QCOMPARE(timesInInterval.size(), expectedEvents.size());
+    }
+    for (int i = 0; i < expectedEvents.size(); ++i) {
+        // We define the expectedEvents in the event time spec,
+        // to make it simpler to define the expected values.
+        // Thus, we need to convert the actual values into
+        // the event time spec prior to comparison.
+        const KDateTime tsExpEvent = kdatetimeAsTimeSpec(KDateTime(expandedEvents.at(i).first.dtStart, expTimeSpec), eventTimeSpec);
+        const KDateTime tsTimeInInterval = kdatetimeAsTimeSpec(timesInInterval.at(i), eventTimeSpec);
+        QCOMPARE(tsExpEvent.toString(), expectedEvents.at(i));
+        QCOMPARE(tsTimeInInterval.toString(), expectedEvents.at(i));
+    }
+}
+
 void tst_storage::tst_origintimes()
 {
     SqliteStorage *ss = dynamic_cast<SqliteStorage *>(m_storage.data());
@@ -223,27 +410,230 @@ void tst_storage::tst_rawEvents_data()
     QTest::addColumn<QTime>("startTime");
     QTest::addColumn<QTime>("endTime");
     QTest::addColumn<QString>("timeZone");
+    QTest::addColumn<QString>("exceptionTimeZone");
+    QTest::addColumn<QString>("expansionTimeZone");
+    QTest::addColumn<bool>("secondExceptionApplies");
+    QTest::addColumn<bool>("rangeCutsOffLast");
 
-    QTest::newRow("non all day event in clock time")
+    QTest::newRow("non all day event in clock time with exception in Europe/Helsinki expanded in Europe/Helsinki")
         << QDate(2010, 01, 01)
         << QTime(12, 0) << QTime(13, 0)
-        << QString();
-    QTest::newRow("non all day event in Europe/Helsinki")
+        << QString()
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << true
+        << false;
+
+    QTest::newRow("non all day event in clock time with exception in America/Toronto expanded in Europe/Helsinki")
+        << QDate(2010, 01, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString()
+        << QString("America/Toronto")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in Europe/Helsinki with exception in Europe/Helsinki expanded in Europe/Helsinki")
         << QDate(2010, 02, 01)
         << QTime(12, 0) << QTime(13, 0)
-        << QString("Europe/Helsinki");
-    QTest::newRow("non all day event in Pacific/Midway")
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << true
+        << false;
+
+    QTest::newRow("non all day event in Europe/Helsinki with exception in America/Toronto expanded in Europe/Helsinki")
+        << QDate(2010, 02, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("Europe/Helsinki")
+        << QString("America/Toronto")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in Pacific/Midway with exception in Europe/Helsinki expanded in Europe/Helsinki")
         << QDate(2010, 03, 01)
         << QTime(8, 0) << QTime(9, 0)
-        << QString("Pacific/Midway");
-    QTest::newRow("all day event stored as local clock")
+        << QString("Pacific/Midway")
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in Pacific/Midway with exception in America/Toronto expanded in Europe/Helsinki")
+        << QDate(2010, 03, 01)
+        << QTime(8, 0) << QTime(9, 0)
+        << QString("Pacific/Midway")
+        << QString("America/Toronto")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("all day event stored as local clock with exception in Europe/Helsinki expanded in Europe/Helsinki")
         << QDate(2010, 04, 01)
         << QTime(0, 0) << QTime()
-        << QString();
-    QTest::newRow("all day event stored as date only")
+        << QString()
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << true
+        << false;
+
+    QTest::newRow("all day event stored as local clock with exception in America/Toronto expanded in Europe/Helsinki")
+        << QDate(2010, 04, 01)
+        << QTime(0, 0) << QTime()
+        << QString()
+        << QString("America/Toronto")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("all day event stored as date only with exception in Europe/Helsinki expanded in Europe/Helsinki")
         << QDate(2010, 05, 01)
         << QTime() << QTime()
-        << QString();
+        << QString()
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << true
+        << false;
+
+    QTest::newRow("all day event stored as date only with exception in America/Toronto expanded in Europe/Helsinki")
+        << QDate(2010, 05, 01)
+        << QTime() << QTime()
+        << QString()
+        << QString("America/Toronto")
+        << QString("Europe/Helsinki")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in clock time with exception in Europe/Helsinki expanded in Australia/Brisbane")
+        << QDate(2011, 01, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString()
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in clock time with exception in America/Toronto expanded in Australia/Brisbane")
+        << QDate(2011, 01, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString()
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in clock time with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 01, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString()
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << true
+        << false;
+
+    QTest::newRow("non all day event in Europe/Helsinki with exception in Europe/Helsinki expanded in Australia/Brisbane")
+        << QDate(2011, 02, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("Europe/Helsinki")
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << true
+        << false;
+
+    QTest::newRow("non all day event in Europe/Helsinki with exception in America/Toronto expanded in Australia/Brisbane")
+        << QDate(2011, 02, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("Europe/Helsinki")
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in Europe/Helsinki with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 02, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("non all day event in Pacific/Midway with exception in Europe/Helsinki expanded in Australia/Brisbane")
+        << QDate(2011, 03, 01)
+        << QTime(8, 0) << QTime(9, 0)
+        << QString("Pacific/Midway")
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << false
+        << true; // "2011-03-04T08:00:00-11:00" (1299265200) is not in range:
+                 // "2011-03-01T00:00:00+10:00" (1298901600) ->
+                 // "2011-03-04T23:59:59+10:00" (1299247199).
+
+    QTest::newRow("non all day event in Pacific/Midway with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 03, 01)
+        << QTime(8, 0) << QTime(9, 0)
+        << QString("Pacific/Midway")
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << false
+        << true; // "2011-03-04T08:00:00-11:00" (1299265200) is not in range:
+                 // "2011-03-01T00:00:00+10:00" (1298901600) ->
+                 // "2011-03-04T23:59:59+10:00" (1299247199).
+
+    QTest::newRow("all day event stored as local clock with exception in America/Toronto expanded in Australia/Brisbane")
+        << QDate(2011, 04, 01)
+        << QTime(0, 0) << QTime()
+        << QString()
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("all day event stored as local clock with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 04, 01)
+        << QTime(0, 0) << QTime()
+        << QString()
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << true
+        << false;
+
+    QTest::newRow("all day event stored as date only with exception in America/Toronto expanded in Australia/Brisbane")
+        << QDate(2011, 05, 01)
+        << QTime() << QTime()
+        << QString()
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << false
+        << false;
+
+    QTest::newRow("all day event stored as date only with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 05, 01)
+        << QTime() << QTime()
+        << QString()
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << true
+        << false;
+
+    QTest::newRow("non all day event in America/Toronto with exception in Australia/Brisbane expanded in Australia/Brisbane")
+        << QDate(2011, 06, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << QString("Australia/Brisbane")
+        << false
+        << true;
+
+    QTest::newRow("non all day event in America/Toronto with exception in America/Toronto expanded in Australia/Brisbane")
+        << QDate(2011, 06, 01)
+        << QTime(12, 0) << QTime(13, 0)
+        << QString("America/Toronto")
+        << QString("America/Toronto")
+        << QString("Australia/Brisbane")
+        << true
+        << true;
 }
 
 void tst_storage::tst_rawEvents()
@@ -252,9 +642,16 @@ void tst_storage::tst_rawEvents()
     QFETCH(QTime, startTime);
     QFETCH(QTime, endTime);
     QFETCH(QString, timeZone);
+    QFETCH(QString, exceptionTimeZone);
+    QFETCH(QString, expansionTimeZone);
+    QFETCH(bool, secondExceptionApplies);
+    QFETCH(bool, rangeCutsOffLast);
 
     KDateTime::Spec spec(timeZone.isEmpty() ? KDateTime::Spec(KDateTime::ClockTime)
                          : KDateTime::Spec(KSystemTimeZones::zone(timeZone)));
+    KDateTime::Spec expansionSpec(KSystemTimeZones::zone(expansionTimeZone));
+    KDateTime::Spec exceptionSpec(KSystemTimeZones::zone(exceptionTimeZone));
+
     auto event = KCalCore::Event::Ptr(new KCalCore::Event);
     if (startTime.isValid()) {
         event->setDtStart(KDateTime(date, startTime, spec));
@@ -276,13 +673,13 @@ void tst_storage::tst_rawEvents()
     if (event->dtStart().isDateOnly()) {
         // Save exception as clock time
         recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(1), QTime(0,0), KDateTime::ClockTime));
-        // Save exception as a local zone
-        recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(2), QTime(0,0)));
+        // Save exception in exception time zone
+        recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(2), QTime(0,0), exceptionSpec));
     } else {
         // Register an exception in spec of the event
         recurrence->addExDateTime(event->dtStart().addDays(1));
-        // Register an exception in another time zone
-        recurrence->addExDateTime(event->dtStart().addDays(2).toTimeSpec(KSystemTimeZones::zone("America/Toronto")));
+        // Register an exception in exception time zone
+        recurrence->addExDateTime(KDateTime(event->dtStart().date().addDays(2), event->dtStart().time(), exceptionSpec));
     }
 
     m_calendar->addEvent(event, NotebookId);
@@ -297,15 +694,300 @@ void tst_storage::tst_rawEvents()
     QVERIFY(fetchRecurrence);
     QCOMPARE(fetchRecurrence->allDay(), recurrence->allDay());
 
-    // should return occurrence for both days and omit exceptions
+    // should return occurrence for expected days and omit exceptions
     mKCal::ExtendedCalendar::ExpandedIncidenceList events
-        = m_calendar->rawExpandedEvents(date, date.addDays(3), false, false, KDateTime::Spec(KDateTime::LocalZone));
+        = m_calendar->rawExpandedEvents(date, date.addDays(3), false, false, expansionSpec);
 
-    QCOMPARE(events.size(), 2);
-    QCOMPARE(events[0].first.dtStart, event->dtStart().toLocalZone().dateTime());
-    QCOMPARE(events[0].first.dtEnd, event->dtEnd().toLocalZone().dateTime());
-    QCOMPARE(events[1].first.dtStart, event->dtStart().addDays(3).toLocalZone().dateTime());
-    QCOMPARE(events[1].first.dtEnd, event->dtEnd().addDays(3).toLocalZone().dateTime());
+    QCOMPARE(events.size(), secondExceptionApplies && rangeCutsOffLast ? 1 : ((secondExceptionApplies || rangeCutsOffLast) ? 2 : 3));
+
+    int currIndex = 0;
+    QCOMPARE(events[currIndex].first.dtStart, kdatetimeAsTimeSpec(event->dtStart(), expansionSpec).dateTime());
+    QCOMPARE(events[currIndex].first.dtEnd, kdatetimeAsTimeSpec(event->dtEnd(), expansionSpec).dateTime());
+
+    if (!secondExceptionApplies) {
+        currIndex++;
+        QCOMPARE(events[currIndex].first.dtStart, kdatetimeAsTimeSpec(event->dtStart().addDays(2), expansionSpec).dateTime());
+        QCOMPARE(events[currIndex].first.dtEnd, kdatetimeAsTimeSpec(event->dtEnd().addDays(2), expansionSpec).dateTime());
+    }
+
+    if (!rangeCutsOffLast) {
+        currIndex++;
+        QCOMPARE(events[currIndex].first.dtStart, kdatetimeAsTimeSpec(event->dtStart().addDays(3), expansionSpec).dateTime());
+        QCOMPARE(events[currIndex].first.dtEnd, kdatetimeAsTimeSpec(event->dtEnd().addDays(3), expansionSpec).dateTime());
+    }
+}
+
+void tst_storage::tst_rawEvents_nonRecur_data()
+{
+    QTest::addColumn<QDate>("startDate");
+    QTest::addColumn<QTime>("startTime");
+    QTest::addColumn<QDate>("endDate");
+    QTest::addColumn<QTime>("endTime");
+    QTest::addColumn<QString>("timeZone");
+    QTest::addColumn<QString>("expansionTimeZone");
+    QTest::addColumn<QDate>("rangeStartDate");
+    QTest::addColumn<QDate>("rangeEndDate");
+    QTest::addColumn<bool>("expectFound");
+
+    QTest::newRow("single day event in clock time expanded in Europe/Helsinki, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString()
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 02)
+        << QDate(2019, 07, 03)
+        << false;
+
+    QTest::newRow("single day event in clock time expanded in Europe/Helsinki, found")
+        << QDate(2019, 07, 01)
+        << QTime(12, 0)
+        << QDate(2019, 07, 01)
+        << QTime(20, 0)
+        << QString()
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 03)
+        << true;
+
+    QTest::newRow("single day event in Europe/Helsinki expanded in clock time, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString()
+        << QDate(2019, 07, 02)
+        << QDate(2019, 07, 03)
+        << false;
+
+    QTest::newRow("single day event in Europe/Helsinki expanded in clock time, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString()
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 03)
+        << true;
+
+    QTest::newRow("single day event in Australia/Brisbane expanded in Europe/Helsinki, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 02)
+        << QDate(2019, 07, 03)
+        << false;
+
+    QTest::newRow("single day event in Australia/Brisbane expanded in Europe/Helsinki, not found 2")
+        << QDate(2019, 07, 01)
+        << QTime(5, 0)
+        << QDate(2019, 07, 01)
+        << QTime(6, 0)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 03)
+        << false; // (dtEnd 2019-07-01T06:00:00+10:00 == 1561924800) < (rangeStart 2019-07-01T00:00:00+02:00 == 1561932000)
+
+    QTest::newRow("single day event in Australia/Brisbane expanded in Europe/Helsinki, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 03)
+        << true;
+
+    QTest::newRow("single day event in Europe/Helsinki expanded in Australia/Brisbane, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << QDate(2019, 07, 02)
+        << QDate(2019, 07, 03)
+        << false;
+
+    QTest::newRow("single day event in Europe/Helsinki expanded in Australia/Brisbane, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 01)
+        << QTime(20, 30)
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 03)
+        << true;
+
+    QTest::newRow("multi day event in clock time expanded in Europe/Helsinki, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString()
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 04)
+        << QDate(2019, 07, 05)
+        << false;
+
+    QTest::newRow("multi day event in clock time expanded in Europe/Helsinki, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString()
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 03)
+        << QDate(2019, 07, 05)
+        << true;
+
+    QTest::newRow("multi day event in Europe/Helsinki expanded in clock time, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString()
+        << QDate(2019, 07, 04)
+        << QDate(2019, 07, 05)
+        << false;
+
+    QTest::newRow("multi day event in Europe/Helsinki expanded in clock time, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString()
+        << QDate(2019, 07, 03)
+        << QDate(2019, 07, 05)
+        << true;
+
+    QTest::newRow("multi day event in Australia/Brisbane expanded in Europe/Helsinki, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 04)
+        << QDate(2019, 07, 05)
+        << false;
+
+    QTest::newRow("multi day event in Australia/Brisbane expanded in Europe/Helsinki, not found 2")
+        << QDate(2019, 07, 03)
+        << QTime(9, 0)
+        << QDate(2019, 07, 05)
+        << QTime(23, 0)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 02)
+        << false;
+
+    QTest::newRow("multi day event in Australia/Brisbane expanded in Europe/Helsinki, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 03)
+        << QDate(2019, 07, 05)
+        << true;
+
+    QTest::newRow("multi day event in Australia/Brisbane expanded in Europe/Helsinki, found 2")
+        << QDate(2019, 07, 03)
+        << QTime(6, 0) // 2019-07-03T06:00:00+10:00 --> 2019-07-02T22:00:00+02:00, so in range (and 23:00 in DST)
+        << QDate(2019, 07, 05)
+        << QTime(23, 0)
+        << QString("Australia/Brisbane")
+        << QString("Europe/Helsinki")
+        << QDate(2019, 07, 01)
+        << QDate(2019, 07, 02)
+        << true;
+
+    QTest::newRow("multi day event in Europe/Helsinki expanded in Australia/Brisbane, not found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << QDate(2019, 07, 04)
+        << QDate(2019, 07, 05)
+        << false;
+
+    QTest::newRow("multi day event in Europe/Helsinki expanded in Australia/Brisbane, found")
+        << QDate(2019, 07, 01)
+        << QTime(15, 0)
+        << QDate(2019, 07, 03)
+        << QTime(16, 30)
+        << QString("Europe/Helsinki")
+        << QString("Australia/Brisbane")
+        << QDate(2019, 07, 03)
+        << QDate(2019, 07, 04)
+        << true;
+}
+
+void tst_storage::tst_rawEvents_nonRecur()
+{
+    QFETCH(QDate, startDate);
+    QFETCH(QTime, startTime);
+    QFETCH(QDate, endDate);
+    QFETCH(QTime, endTime);
+    QFETCH(QString, timeZone);
+    QFETCH(QString, expansionTimeZone);
+    QFETCH(QDate, rangeStartDate);
+    QFETCH(QDate, rangeEndDate);
+    QFETCH(bool, expectFound);
+
+    static int count = 0;
+    const QString eventUid = QStringLiteral("tst_rawEvents_nonRecur:%1in%2=%3-%5")
+                                       .arg(timeZone.isEmpty() ? QStringLiteral("clocktime") : timeZone)
+                                       .arg(expansionTimeZone.isEmpty() ? QStringLiteral("clocktime") : expansionTimeZone)
+                                       .arg(expectFound)
+                                       .arg(++count);
+
+    KDateTime::Spec spec(timeZone.isEmpty() ? KDateTime::Spec(KDateTime::ClockTime)
+                         : KDateTime::Spec(KSystemTimeZones::zone(timeZone)));
+    KDateTime::Spec rangeSpec(expansionTimeZone.isEmpty() ? KDateTime::Spec(KDateTime::ClockTime)
+                              : KDateTime::Spec(KSystemTimeZones::zone(expansionTimeZone)));
+
+    auto event = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(KDateTime(startDate, startTime, spec));
+    event->setDtEnd(KDateTime(endDate, endTime, spec));
+    event->setSummary(QStringLiteral("testing rawExpandedEvents, non-recurring: %2").arg(eventUid));
+    event->setUid(eventUid);
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    QString uid = event->uid();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(uid);
+    QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->dtStart(), KDateTime(startDate, startTime, spec));
+    QCOMPARE(fetchEvent->dtEnd(), KDateTime(endDate, endTime, spec));
+
+    mKCal::ExtendedCalendar::ExpandedIncidenceList events
+        = m_calendar->rawExpandedEvents(rangeStartDate, rangeEndDate, false, false, rangeSpec);
+
+    QCOMPARE(events.size(), expectFound ? 1 : 0);
+    if (expectFound) {
+        QCOMPARE(events[0].second->summary(), event->summary());
+        QCOMPARE(events[0].first.dtStart, kdatetimeAsTimeSpec(event->dtStart(), rangeSpec).dateTime());
+        QCOMPARE(events[0].first.dtEnd, kdatetimeAsTimeSpec(event->dtEnd(), rangeSpec).dateTime());
+    }
 }
 
 // Check that the creation date can be tuned and restored properly.
@@ -652,7 +1334,7 @@ void tst_storage::tst_icalAllDay_data()
                           "UID:14B902BC-8D24-4A97-8541-63DF7FD41A72\n"
                           "SUMMARY:Test03\n"
                           "END:VEVENT").arg(zid)
-        << false;
+        << false; // TODO: FIXME: MR#17 addresses this issue.
     QTest::newRow("floating date")
         << QStringLiteral("14B902BC-8D24-4A97-8541-63DF7FD41A73")
         << QStringLiteral("BEGIN:VEVENT\n"

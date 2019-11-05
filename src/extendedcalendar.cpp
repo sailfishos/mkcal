@@ -52,6 +52,25 @@ using namespace KCalCore;
 // #ifdef to control expensive/spammy debug stmts
 #undef DEBUG_EXPANSION
 
+namespace {
+    // KDateTime::toClockTime() has the semantic that the input is first
+    // converted to the local system timezone, before having its timezone
+    // information stripped.
+    // In many cases in mkcal, we use clock-time to mean "floating"
+    // i.e. irrespective of timezone, and thus when converting to or from
+    // clock time, we don't want any conversion to the local system timezone
+    // to occur as part of that operation.
+    KDateTime kdatetimeAsTimeSpec(const KDateTime &input, const KDateTime::Spec &spec) {
+        if (spec.type() == KDateTime::ClockTime) {
+            return KDateTime(input.date(), input.time(), KDateTime::ClockTime);
+        } else if (input.isClockTime()) {
+            return KDateTime(input.date(), input.time(), spec);
+        } else {
+            return input.toTimeSpec(spec);
+        }
+    }
+}
+
 using namespace mKCal;
 /**
   Private class that helps to provide binary compatibility between releases.
@@ -941,39 +960,57 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(cons
         i.next();
         ev = i.value();
         if (isVisible(ev)) {
+            const bool asClockTime = ev->dtStart().isClockTime() || ts.type() == KDateTime::ClockTime;
+            const KDateTime startTime = ev->dtStart();
+            const KDateTime endTime = ev->dtEnd();
+            const KDateTime rangeStartTime = (ev->allDay() && asClockTime)
+                                           ? KDateTime(QDate(ksdt.date()), QTime(), KDateTime::ClockTime)
+                                           : ksdt;
+            const KDateTime rangeEndTime = (ev->allDay() && asClockTime)
+                                         ? KDateTime(QDate(kedt.date()), QTime(), KDateTime::ClockTime)
+                                         : kedt;
+            const KDateTime tsRangeStartTime = kdatetimeAsTimeSpec(rangeStartTime, ts);
+            const KDateTime tsRangeEndTime = kdatetimeAsTimeSpec(rangeEndTime, ts);
             if (ev->recurs()) {
+                int extraDays = (ev->isMultiDay() && !startInclusive)
+                              ? startTime.date().daysTo(endTime.date())
+                              : (ev->allDay() ? 1 : 0);
 
-                DateTimeList times;
-
-                int extraDays = (ev->isMultiDay() && !startInclusive) ?
-                                ev->dtStart().date().daysTo(ev->dtEnd().date()) : 0;
-                times = ev->recurrence()->timesInInterval(ksdt.addDays(-extraDays), kedt);
-
+                const DateTimeList times = ev->recurrence()->timesInInterval(tsRangeStartTime.addDays(-extraDays), tsRangeEndTime);
                 for (int ii = 0; ii < times.count(); ++ii) {
-                    KDateTime endDateTime = Duration(ev->dtStart(), ev->dtEnd()).end(times.at(ii));
-                    if (endDateTime < ksdt || (endInclusive && endDateTime > kedt))
+                    const KDateTime &timeInInterval(times.at(ii));
+                    const KDateTime tsStartTime = kdatetimeAsTimeSpec(timeInInterval, ts);
+                    const KDateTime tsEndTime = Duration(startTime, endTime).end(tsStartTime);
+                    if (tsStartTime > tsRangeEndTime
+                            || tsEndTime < tsRangeStartTime
+                            || (endInclusive && (tsEndTime > tsRangeEndTime))) {
                         continue;
-                    ExpandedIncidenceValidity eiv = { times.at(ii).toTimeSpec(ts).dateTime(),
-                                                      endDateTime.toTimeSpec(ts).dateTime()
-                                                    };
+                    }
+                    ExpandedIncidenceValidity eiv = {
+                        tsStartTime.dateTime(),
+                        tsEndTime.dateTime()
+                    };
                     eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
                 }
-
             } else {
+                const KDateTime tsStartTime = kdatetimeAsTimeSpec(startTime, ts);
+                const KDateTime tsEndTime = kdatetimeAsTimeSpec(endTime, ts);
                 if (ev->isMultiDay()) {
-                    if ((startInclusive == false || ev->dtStart() >= ksdt) &&
-                            ev->dtStart() <= kedt && ev->dtEnd() >= ksdt &&
-                            (endInclusive == false || ev->dtEnd() <= kedt)) {
-                        ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec(ts).dateTime(),
-                                                          ev->dtEnd().toTimeSpec(ts).dateTime()
-                                                        };
+                    if ((startInclusive == false || tsStartTime >= tsRangeStartTime) &&
+                            tsStartTime <= tsRangeEndTime && tsEndTime >= tsRangeStartTime &&
+                            (endInclusive == false || tsEndTime <= tsRangeEndTime)) {
+                        ExpandedIncidenceValidity eiv = {
+                            tsStartTime.dateTime(),
+                            tsEndTime.dateTime()
+                        };
                         eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
                     }
                 } else {
-                    if (ev->dtStart() >= ksdt && ev->dtStart() <= kedt) {
-                        ExpandedIncidenceValidity eiv = { ev->dtStart().toTimeSpec(ts).dateTime(),
-                                                          ev->dtEnd().toTimeSpec(ts).dateTime()
-                                                        };
+                    if (tsStartTime >= tsRangeStartTime && tsStartTime <= tsRangeEndTime) {
+                        ExpandedIncidenceValidity eiv = {
+                            tsStartTime.dateTime(),
+                            tsEndTime.dateTime()
+                        };
                         eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
                     }
                 }
