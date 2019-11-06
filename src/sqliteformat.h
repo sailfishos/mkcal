@@ -110,6 +110,12 @@ public:
                           sqlite3_stmt *stmt6, sqlite3_stmt *stmt7, sqlite3_stmt *stmt8,
                           sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11);
 
+    bool purgeDeletedComponents(const KCalCore::Incidence::Ptr &incidence,
+                                sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
+                                sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
+                                sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
+                                sqlite3_stmt *stmt7);
+
     /**
       Select incidences from Components  table.
 

@@ -57,6 +57,7 @@ enum DBOperation {
     DBNone,
     DBInsert,
     DBUpdate,
+    DBMarkDeleted,
     DBDelete,
     DBSelect
 };
@@ -82,6 +83,14 @@ class MKCAL_EXPORT ExtendedStorage
 public:
 
     /**
+      Action to be performed on save for deleted incidences.
+    */
+    enum DeleteAction {
+        MarkDeleted,
+        PurgeDeleted
+    };
+
+    /**
       A shared pointer to a ExtendedStorage
     */
     typedef QSharedPointer<ExtendedStorage> Ptr;
@@ -97,7 +106,7 @@ public:
       it can dead lock. If you do so, be ready to destroy it manually before the
       application closes.
 
-      @warning Once an Incidende has been added to the ExtendedStorage the UID
+      @warning Once an Incidence has been added to the ExtendedStorage the UID
       cannot change. It is possible to do so through the API, but the internal
       hash tables will not be updated and hence the changes will not be tracked.
     */
@@ -307,10 +316,30 @@ public:
     virtual int loadJournals(int limit, KDateTime *last) = 0;
 
     /**
+      Remove from storage all incidences that have been previously
+      marked as deleted and that matches the UID / RecID of the incidences
+      in list. The action is performed immediately on database.
+
+      @return True on success, false otherwise.
+     */
+    virtual bool purgeDeletedIncidences(const KCalCore::Incidence::List &list) = 0;
+
+    /**
       @copydoc
       CalStorage::save()
     */
     virtual bool save() = 0;
+
+    /**
+      This is an overload of save() method. When @deleteAction is
+      PurgeDeleted, the deleted incidences are not marked as deleted but completely
+      removed from the database and won't appear anymore when calling
+      deletedIncidences().
+
+      @param deleteAction the action to apply to deleted incidences
+      @return True if successful; false otherwise
+    */
+    virtual bool save(DeleteAction deleteAction) = 0;
 
     /**
       Mark if supported by the storage that an incidence has been opened.

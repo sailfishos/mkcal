@@ -1342,27 +1342,57 @@ void tst_storage::tst_deleted()
     event->setDtStart(KDateTime::currentUtcDateTime());
     event->setSummary("Deleted event");
     event->setCreated(KDateTime::currentUtcDateTime().addSecs(-3));
+    const QString customValue = QLatin1String("A great value");
+    event->setNonKDECustomProperty("X-TEST-PROPERTY", customValue);
+
+    KCalCore::Event::Ptr event2 = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(KDateTime::currentUtcDateTime());
+    event->setSummary("Purged event on save");
+    event->setCreated(KDateTime::currentUtcDateTime().addSecs(-3));
 
     QVERIFY(m_calendar->addEvent(event, "123456789-deletion"));
-    m_storage->save();
+    QVERIFY(m_calendar->addEvent(event2, "123456789-deletion"));
+    QVERIFY(m_storage->save());
     reloadDb();
-    m_storage->loadNotebookIncidences("123456789-deletion");
+    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
 
     KCalCore::Event::Ptr fetchEvent = m_calendar->event(event->uid());
     QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->nonKDECustomProperty("X-TEST-PROPERTY"), customValue);
 
     QVERIFY(m_calendar->deleteIncidence(fetchEvent));
     QVERIFY(!m_calendar->event(fetchEvent->uid()));
     QVERIFY(m_calendar->deletedEvent(fetchEvent->uid()));
 
-    m_storage->save();
+    // Deleted events are marked as deleted but remains in the DB
+    QVERIFY(m_storage->save());
     reloadDb();
-    m_storage->loadNotebookIncidences("123456789-deletion");
+    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
 
     KCalCore::Incidence::List deleted;
     QVERIFY(m_storage->deletedIncidences(&deleted, KDateTime::currentUtcDateTime().addSecs(-2), "123456789-deletion"));
     QCOMPARE(deleted.length(), 1);
     QCOMPARE(deleted[0]->uid(), event->uid());
+    QCOMPARE(deleted[0]->nonKDECustomProperty("X-TEST-PROPERTY"), customValue);
+
+    // One can purge previously deleted events from DB
+    QVERIFY(m_storage->purgeDeletedIncidences(deleted));
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, KDateTime::currentUtcDateTime().addSecs(-2), "123456789-deletion"));
+    QCOMPARE(deleted.length(), 0);
+
+    // One can purge deleted events from DB directly when they are
+    // removed from a calendar.
+    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    KCalCore::Event::Ptr fetchEvent2 = m_calendar->event(event2->uid());
+    QVERIFY(fetchEvent2);
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent2));
+    QVERIFY(m_storage->save(ExtendedStorage::PurgeDeleted));
+    reloadDb();
+    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, KDateTime::currentUtcDateTime().addSecs(-2), "123456789-deletion"));
+    QCOMPARE(deleted.length(), 0);
 }
 
 // Accessor check for modified incidences.
