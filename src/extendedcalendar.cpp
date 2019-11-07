@@ -5,6 +5,8 @@
   Copyright (c) 2001,2003,2004 Cornelius Schumacher <schumacher@kde.org>
   Copyright (C) 2003-2004 Reinhold Kainhofer <reinhold@kainhofer.com>
   Copyright (c) 2009 Alvaro Manera <alvaro.manera@nokia.com>
+  Copyright (c) 2014-2019 Jolla Ltd.
+  Copyright (c) 2019 Open Mobile Platform LLC.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
