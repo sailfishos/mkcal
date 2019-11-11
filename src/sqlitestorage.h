@@ -361,6 +361,13 @@ public:
     sqlite3_int64 toLocalOriginTime(KDateTime dt);
 
     /**
+      Convert seconds from the origin to clock time.
+      @param seconds relative to origin.
+      @return clocktime datetime.
+    */
+    KDateTime fromLocalOriginTime(sqlite3_int64 seconds);
+
+    /**
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
