@@ -1114,6 +1114,12 @@ static KDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
     } else {
         date = sqlite3_column_int64(stmt, index);
         dateTime = storage->fromOriginTime(date, timezone);
+        if (!dateTime.isValid()) {
+            // timezone is specified but invalid?
+            // fall back to local seconds from origin as clock time.
+            date = sqlite3_column_int64(stmt, index + 1);
+            dateTime = storage->fromLocalOriginTime(date);
+        }
     }
     if (isDate) {
         QTime localTime(dateTime.toLocalZone().time());

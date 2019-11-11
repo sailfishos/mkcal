@@ -28,6 +28,69 @@ namespace {
             return input.toTimeSpec(spec);
         }
     }
+
+    QString readStreamString(QDataStream &stream, int length)
+    {
+        QString result;
+        short character = 0;
+        for (int i = 0; i < length && stream.status() == QDataStream::Ok; ++i) {
+            stream >> character;
+            if (character) {
+                result.append(QChar(character));
+            }
+        }
+
+        return result;
+    }
+
+    QDataStream &operator>>(QDataStream &stream, long &value)
+    {
+        qint32 temp = 0;
+        stream >> temp;
+        value = temp;
+        return stream;
+    }
+
+    QDataStream &operator>>(QDataStream &stream, KCalCore::_MSSystemTime &value)
+    {
+        stream >> value.wYear;
+        stream >> value.wMonth;
+        stream >> value.wDayOfWeek;
+        stream >> value.wDay;
+        stream >> value.wHour;
+        stream >> value.wMinute;
+        stream >> value.wSecond;
+        stream >> value.wMilliseconds;
+
+        return stream;
+    }
+
+    QDataStream &operator>>(QDataStream &stream, KCalCore::_MSTimeZone &value)
+    {
+        stream >> value.Bias;
+        value.StandardName = readStreamString(stream, 32);
+        stream >> value.StandardDate;
+        stream >> value.StandardBias;
+        value.DaylightName = readStreamString(stream, 32);
+        stream >> value.DaylightDate;
+        stream >> value.DaylightBias;
+
+        return stream;
+    }
+
+    KCalCore::_MSTimeZone parseMsTimeZone(const QByteArray &encodedBuffer)
+    {
+        static const int DecodedMsTimeZoneLength = 172;
+        const QByteArray decodedTimeZoneBuffer = encodedBuffer.length() == DecodedMsTimeZoneLength
+                                               ? encodedBuffer
+                                               : QByteArray::fromBase64(encodedBuffer);
+
+        KCalCore::_MSTimeZone mstz;
+        QDataStream readStream(decodedTimeZoneBuffer);
+        readStream.setByteOrder(QDataStream::LittleEndian);
+        readStream >> mstz;
+        return mstz;
+    }
 }
 
 tst_storage::tst_storage(QObject *parent)
@@ -61,6 +124,111 @@ void tst_storage::tst_timezone()
     // for test sanity, verify kdatetime actually agrees timezone is for helsinki.
     KDateTime localTime(QDate(2014, 1, 1), KSystemTimeZones::zone("Europe/Helsinki"));
     QCOMPARE(localTime.utcOffset(), 7200);
+}
+
+void tst_storage::tst_vtimezone_data()
+{
+    QTest::addColumn<QByteArray>("encodedMsTimeZone");
+    QTest::addColumn<bool>("encodedMsTzValid");
+    QTest::addColumn<QDateTime>("dateTime");
+    QTest::addColumn<QString>("timezone");
+    QTest::addColumn<QString>("eventUid");
+
+    // Helsinki,Kyiv,Riga (UTC+2)
+    QTest::newRow("helsinki vtimezone")
+        << QByteArrayLiteral("iP///ygAVQBUAEMAKwAwADIAOgAwADAA"
+                             "KQAgAEgAZQBsAHMAaQBuAGsAaQAsACAA"
+                             "SwB5AGkAdgAsACAAUgBpAGcAYQAAAAoA"
+                             "AAAFAAQAAAAAAAAAAAAAACgAVQBUAEMA"
+                             "KwAwADIAOgAwADAAKQAgAEgAZQBsAHMA"
+                             "aQBuAGsAaQAsACAASwB5AGkAdgAsACAA"
+                             "UgBpAGcAYQAAAAMAAAAFAAMAAAAAAAAA"
+                             "xP///w==")
+        << true
+        << QDateTime(QDate(2019, 11, 06), QTime(10, 00, 00))
+        << QStringLiteral("Europe/Helsinki")
+        << QStringLiteral("tst_vtimezone:helsinki vtimezone");
+
+    // Amsterdam,Berlin (UTC+1)
+    QTest::newRow("berlin vtimezone")
+        << QByteArrayLiteral("xP///ygAVQBUAEMAKwAwADEAOgAwADAA"
+                             "KQAgAEEAbQBzAHQAZQByAGQAYQBtACwA"
+                             "IABCAGUAcgBsAGkAbgAsACAAQgAAAAoA"
+                             "AAAFAAMAAAAAAAAAAAAAACgAVQBUAEMA"
+                             "KwAwADEAOgAwADAAKQAgAEEAbQBzAHQA"
+                             "ZQByAGQAYQBtACwAIABCAGUAcgBsAGkA"
+                             "bgAsACAAQgAAAAMAAAAFAAIAAAAAAAAA"
+                             "xP///w==")
+        << true
+        << QDateTime(QDate(2019, 11, 06), QTime(10, 00, 00))
+        << QStringLiteral("Europe/Berlin")
+        << QStringLiteral("tst_vtimezone:berlin vtimezone");
+
+    // Brisbane (UTC+10)
+    QTest::newRow("brisbane vtimezone")
+        << QByteArrayLiteral("qP3//ygAVQBUAEMAKwAxADAAOgAwADAA"
+                             "KQAgAEIAcgBpAHMAYgBhAG4AZQAAAAAA"
+                             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                             "AAAAAAAAAAAAAAAAAAAAACgAVQBUAEMA"
+                             "KwAxADAAOgAwADAAKQAgAEIAcgBpAHMA"
+                             "YgBhAG4AZQAAAAAAAAAAAAAAAAAAAAAA"
+                             "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                             "AAAAAA==")
+        << false // not entirely sure why, but offset info not stored?
+        << QDateTime(QDate(2019, 11, 06), QTime(10, 00, 00))
+        << QStringLiteral("Australia/Brisbane")
+        << QStringLiteral("tst_vtimezone:brisbane vtimezone");
+}
+
+void tst_storage::tst_vtimezone()
+{
+    QFETCH(QByteArray, encodedMsTimeZone);
+    QFETCH(bool, encodedMsTzValid);
+    QFETCH(QDateTime, dateTime);
+    QFETCH(QString, timezone);
+    QFETCH(QString, eventUid);
+
+    KCalCore::_MSTimeZone mstz = parseMsTimeZone(encodedMsTimeZone);
+    KCalCore::ICalTimeZone vtimezone = m_calendar->parseZone(&mstz);
+
+    const KDateTime kdtvtz(dateTime, KDateTime::Spec(vtimezone));
+    const KDateTime kdtstz(dateTime, KDateTime::Spec(KSystemTimeZones::zone(timezone)));
+    const KDateTime endkdtstz(dateTime.addSecs(3600), KDateTime::Spec(KSystemTimeZones::zone(timezone)));
+
+    QCOMPARE(kdtvtz.toString(), kdtstz.toString());
+
+    // add an event which lasts an hour starting at the given date time in vtimezone spec.
+    KCalCore::Event::Ptr event = KCalCore::Event::Ptr(new KCalCore::Event());
+    event->startUpdates();
+    event->setUid(eventUid);
+    event->setLocation(QStringLiteral("Test location"));
+    event->setAllDay(false);
+    event->setDtStart(kdtvtz);
+    event->setDtEnd(KDateTime(dateTime.addSecs(3600), KDateTime::Spec(vtimezone)));
+    event->setDescription(QStringLiteral("Test description"));
+    event->setSummary(QStringLiteral("Test event summary"));
+    event->setCategories(QStringList() << QStringLiteral("Category One"));
+    event->endUpdates();
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    const QString uid = event->uid();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(uid);
+    QVERIFY(fetchEvent);
+    if (encodedMsTzValid) {
+        QCOMPARE(fetchEvent->dtStart().toString(), kdtstz.toString());
+        QCOMPARE(fetchEvent->dtEnd().toString(), endkdtstz.toString());
+    } else {
+        // if we were unable to reconstruct the vtimezone from the database data,
+        // we expect that the returned event will match the expected time,
+        // from clock-time perspective.
+        QCOMPARE(kdatetimeAsTimeSpec(fetchEvent->dtStart(), KDateTime::ClockTime),
+                 kdatetimeAsTimeSpec(kdtstz, KDateTime::ClockTime));
+        QCOMPARE(kdatetimeAsTimeSpec(fetchEvent->dtEnd(), KDateTime::ClockTime),
+                 kdatetimeAsTimeSpec(endkdtstz, KDateTime::ClockTime));
+    }
 }
 
 void tst_storage::tst_allday_data()
