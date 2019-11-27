@@ -6,7 +6,7 @@ TARGET = mkcal-qt5
 
 DEFINES += TIMED_SUPPORT
 
-CONFIG += link_pkgconfig create_pc create_prl no_install_prl
+CONFIG += link_pkgconfig create_pc create_prl no_install_prl c++11
 PKGCONFIG += sqlite3 \
     libkcalcoren-qt5 \
     timed-qt5

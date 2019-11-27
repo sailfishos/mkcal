@@ -2,7 +2,8 @@
   This file is part of the mkcal library.
 
   Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies). All rights reserved.
-  Contact: Alvaro Manera <alvaro.manera@nokia.com>
+  Copyright (c) 2014-2019 Jolla Ltd.
+  Copyright (c) 2019 Open Mobile Platform LLC.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
@@ -359,6 +360,13 @@ public:
       @return seconds relative to origin
     */
     sqlite3_int64 toLocalOriginTime(KDateTime dt);
+
+    /**
+      Convert seconds from the origin to clock time.
+      @param seconds relative to origin.
+      @return clocktime datetime.
+    */
+    KDateTime fromLocalOriginTime(sqlite3_int64 seconds);
 
     /**
       Convert seconds from the origin to UTC datetime.

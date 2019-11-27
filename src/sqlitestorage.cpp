@@ -2,7 +2,8 @@
   This file is part of the mkcal library.
 
   Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies). All rights reserved.
-  Contact: Alvaro Manera <alvaro.manera@nokia.com>
+  Copyright (c) 2014-2019 Jolla Ltd.
+  Copyright (c) 2019 Open Mobile Platform LLC.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
@@ -3020,6 +3021,13 @@ sqlite3_int64 SqliteStorage::toLocalOriginTime(KDateTime dt)
            + dt1.time().secsTo(dt2.time());
 }
 
+KDateTime SqliteStorage::fromLocalOriginTime(sqlite3_int64 seconds)
+{
+    // Note: don't call toClockTime() as that implies a conversion first to the local time zone.
+    KDateTime local(d->mOriginTime.addSecs(seconds));
+    return KDateTime(local.date(), local.time(), KDateTime::ClockTime);
+}
+
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds)
 {
     //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
@@ -3041,12 +3049,10 @@ KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, QString zonename)
                 // Then try calendar specific zones.
                 ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
                 ICalTimeZone icaltimezone = zones.value(zonename);
-                if (icaltimezone.isValid()) {
+                const QByteArray emptyTz = "BEGIN:VTIMEZONE\r\nTZID:" + zonename.toUtf8() + "\r\nEND:VTIMEZONE\r\n";
+                if (icaltimezone.isValid() && icaltimezone.vtimezone() != emptyTz) {
                     dt =
                         d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(icaltimezone));
-                } else {
-                    // Invalid zone, fall back to UTC.
-                    dt = d->mOriginTime.addSecs(seconds).toUtc();
                 }
             }
         } else {
