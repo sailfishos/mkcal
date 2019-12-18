@@ -428,7 +428,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory)
                 calendar()->deleteIncidence(toDelete);
             }
             if (!list.isEmpty()) {
-                save();
+                save(ExtendedStorage::PurgeDeleted);
             }
         } else {
             qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();

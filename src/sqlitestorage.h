@@ -225,9 +225,21 @@ public:
 
     /**
       @copydoc
+      ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
+    */
+    bool purgeDeletedIncidences(const KCalCore::Incidence::List &list);
+
+    /**
+      @copydoc
       CalStorage::save()
     */
     bool save();
+
+    /**
+      @copydoc
+      ExtendedStorage::save(ExtendedStorage::DeleteAction deleteAction)
+    */
+    bool save(ExtendedStorage::DeleteAction deleteAction);
 
     /**
       @copydoc
@@ -574,6 +586,9 @@ public Q_SLOTS:
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
 "update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, Percent=? where ComponentId=?"
+#define UPDATE_COMPONENTS_AS_DELETED \
+"update Components set DateDeleted=? where ComponentId=?"
+//"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
 
 #define DELETE_TIMEZONES \
 "delete from Timezones where TzId=1"
@@ -582,8 +597,7 @@ public Q_SLOTS:
 #define DELETE_INVITATIONS \
 "delete from Invitations where InvitationId=?"
 #define DELETE_COMPONENTS \
-"update Components set DateDeleted=? where ComponentId=?"
-//"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
+"delete from Components where ComponentId=?"
 #define DELETE_RDATES \
 "delete from Rdates where ComponentId=?"
 #define DELETE_CUSTOMPROPERTIES \
@@ -693,8 +707,8 @@ public Q_SLOTS:
 "select * from Components where DateDeleted>=? and DateCreated<?"
 #define SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK \
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
-#define SELECT_COMPONENTS_BY_UID_AND_DELETED \
-"select DateDeleted from Components where UID=? and DateDeleted<>0"
+#define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
+"select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
 #define SELECT_ATTENDEE_AND_COUNT \
 "select Email, Name, count(Email) from Attendee where Email<>0 group by Email"
 #define SELECT_EVENT_COUNT \

@@ -167,6 +167,55 @@ error:
     return false;
 }
 
+bool SqliteFormat::purgeDeletedComponents(const KCalCore::Incidence::Ptr &incidence,
+                                          sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
+                                          sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
+                                          sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
+                                          sqlite3_stmt *stmt7)
+{
+    int rv;
+    int index = 1;
+    const QByteArray u(incidence->uid().toUtf8());
+    qint64 secsRecurId = incidence->hasRecurrenceId()
+        ? d->mStorage->toOriginTime(incidence->recurrenceId()) : 0;
+
+    sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+    sqlite3_bind_int64(stmt1, index, secsRecurId);
+
+    sqlite3_step(stmt1);
+    while (rv == SQLITE_ROW) {
+        int rowid = sqlite3_column_int(stmt1, 0);
+
+        int index2 = 1;
+        sqlite3_bind_int(stmt2, index2, rowid);
+        sqlite3_step(stmt2);
+        sqlite3_reset(stmt2);
+
+        if (!d->modifyCustomproperties(incidence, rowid, DBDelete, stmt3, NULL))
+            qCWarning(lcMkcal) << "failed to delete customproperties for incidence" << u;
+
+        if (!d->modifyAlarms(incidence, rowid, DBDelete, stmt4, NULL))
+            qCWarning(lcMkcal) << "failed to delete alarms for incidence" << u;
+
+        if (!d->modifyAttendees(incidence, rowid, DBDelete, stmt5, NULL))
+            qCWarning(lcMkcal) << "failed to delete attendees for incidence" << u;
+
+        if (!d->modifyRecursives(incidence, rowid, DBDelete, stmt6, NULL))
+            qCWarning(lcMkcal) << "failed to delete recursives for incidence" << u;
+
+        if (!d->modifyRdates(incidence, rowid, DBDelete, stmt7, NULL))
+            qCWarning(lcMkcal) << "failed to delete rdates for incidence" << u;
+
+        sqlite3_step(stmt1);
+    }
+
+    sqlite3_reset(stmt1);
+    return true;
+
+error:
+    return false;
+}
+
 static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, const KDateTime &dateTime)
 {
     int rv = 0;
@@ -227,7 +276,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     sqlite3_int64 secs;
     int rowid = 0;
 
-    if (dbop == DBDelete || dbop == DBUpdate) {
+    if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
         rowid = d->selectRowId(incidence);
         if (!rowid) {
             qCWarning(lcMkcal) << "failed to select rowid of incidence" << incidence->uid() << incidence->recurrenceId();
@@ -236,6 +285,10 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     }
 
     if (dbop == DBDelete) {
+        sqlite3_bind_int(stmt1, index, rowid);
+    }
+
+    if (dbop == DBMarkDeleted) {
         secs = d->mStorage->toOriginTime(KDateTime::currentUtcDateTime());
         sqlite3_bind_int64(stmt1, index, secs);
         sqlite3_bind_int(stmt1, index, rowid);
