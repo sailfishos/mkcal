@@ -61,6 +61,9 @@ public:
     void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &)
     {
     }
+    bool purgeDeletedIncidences(const KCalCore::Incidence::List &)
+    {
+    }
 
     /**
       @copydoc
@@ -85,6 +88,10 @@ public:
       ExtendedStorage::save()
     */
     bool save()
+    {
+        return true;
+    }
+    bool save(DeleteAction)
     {
         return true;
     }
