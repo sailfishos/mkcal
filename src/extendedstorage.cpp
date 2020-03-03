@@ -543,39 +543,13 @@ void ExtendedStorage::resetAlarms(const Incidence::Ptr &incidence)
 
 void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
 {
-#if defined(TIMED_SUPPORT)
-    Timed::Interface timed;
-    const KDateTime now = KDateTime::currentLocalDateTime();
-    // list of all timed events
-    Timed::Event::List events;
+    clearAlarms(incidences);
+    setAlarms(incidences);
+}
 
-    foreach (const Incidence::Ptr incidence, incidences) {
-        clearAlarms(incidence);
-        d->setAlarms(incidence, events, now);
-
-    }
-    //Add all alarms at once
-    QDBusReply < QList<QVariant> > reply = timed.add_events_sync(events);
-    if (reply.isValid()) {
-        foreach (QVariant v, reply.value()) {
-            bool ok = true;
-            uint cookie = v.toUInt(&ok);
-            if (ok && cookie) {
-                qCDebug(lcMkcal) << "added alarm: " << cookie;
-            } else {
-                qCWarning(lcMkcal) << "failed to add alarm";
-            }
-        }
-    } else {
-        qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
-    }
-
-#else
-    foreach (const Incidence::Ptr incidence, incidences) {
-        clearAlarms(incidence);
-        setAlarms(incidence);
-    }
-#endif
+void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
+{
+    setAlarms(Incidence::List(1, incidence));
 }
 
 void ExtendedStorage::setAlarms(const Incidence::List &incidences)
@@ -597,95 +571,60 @@ void ExtendedStorage::setAlarms(const Incidence::List &incidences)
 #endif
 }
 
-void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
+void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
 {
 #if defined(TIMED_SUPPORT)
-    // list of all timed events
-    Timed::Event::List events;
-    d->setAlarms(incidence, events, KDateTime::currentLocalDateTime());
-    if (events.count() > 0) {
-        Timed::Interface timed;
-        if (!timed.isValid()) {
-            qCWarning(lcMkcal) << "cannot set alarm for incidence: "
-                               << "alarm interface is not valid" << timed.lastError();
-            return;
-        }
-        QDBusReply < QList<QVariant> > reply = timed.add_events_sync(events);
-        if (reply.isValid()) {
-            foreach (QVariant v, reply.value()) {
-                bool ok = true;
-                uint cookie = v.toUInt(&ok);
-                if (ok && cookie) {
-                    qCDebug(lcMkcal) << "added alarm: " << cookie;
-                } else {
-                    qCWarning(lcMkcal) << "failed to add alarm";
-                }
+    QMap<QString, QVariant> map;
+    map["APPLICATION"] = "libextendedkcal";
+    map["uid"] = incidence->uid();
+    if (incidence->hasRecurrenceId()) {
+        map["recurrenceId"] = incidence->recurrenceId().toString();
+    }
+
+    Timed::Interface timed;
+    if (!timed.isValid()) {
+        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
+                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                           << "alarm interface is not valid" << timed.lastError();
+        return;
+    }
+    QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
+    if (!reply.isValid()) {
+        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
+                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                           << timed.lastError();
+        return;
+    }
+
+    const QList<QVariant> &result = reply.value();
+    for (int i = 0; i < result.size(); i++) {
+        uint32_t cookie = result[i].toUInt();
+        if (!incidence->hasRecurrenceId()) {
+            QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
+            const QMap<QString, QVariant> attributeMap = attributesReply.value();
+            if (attributeMap.contains("recurrenceId")) {
+                continue;
             }
-        } else {
-            qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
         }
-    } else {
-        qCDebug(lcMkcal) << "No alarms to send";
+        qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
+                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-");
+        QDBusReply<bool> reply = timed.cancel_sync(cookie);
+        if (!reply.isValid() || !reply.value()) {
+            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
+                               << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                               << reply.value() << timed.lastError();
+        }
     }
 #else
     Q_UNUSED(incidence);
 #endif
 }
 
-void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
-{
-    clearAlarms(Incidence::List(1, incidence));
-}
-
 void ExtendedStorage::clearAlarms(const KCalCore::Incidence::List &incidences)
 {
-#if defined(TIMED_SUPPORT)
     foreach (const Incidence::Ptr incidence, incidences) {
-        QMap<QString, QVariant> map;
-        map["APPLICATION"] = "libextendedkcal";
-        map["uid"] = incidence->uid();
-        if (incidence->hasRecurrenceId()) {
-            map["recurrenceId"] = incidence->recurrenceId().toString();
-        }
-
-        Timed::Interface timed;
-        if (!timed.isValid()) {
-            qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                     << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
-                     << "alarm interface is not valid" << timed.lastError();
-            return;
-        }
-        QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
-        if (!reply.isValid()) {
-            qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                     << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
-                     << timed.lastError();
-            return;
-        }
-
-        const QList<QVariant> &result = reply.value();
-        for (int i = 0; i < result.size(); i++) {
-            uint32_t cookie = result[i].toUInt();
-            if (!incidence->hasRecurrenceId()) {
-                QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
-                const QMap<QString, QVariant> attributeMap = attributesReply.value();
-                if (attributeMap.contains("recurrenceId")) {
-                    continue;
-                }
-            }
-            qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
-                     << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-");
-            QDBusReply<bool> reply = timed.cancel_sync(cookie);
-            if (!reply.isValid() || !reply.value()) {
-                qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
-                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
-                         << reply.value() << timed.lastError();
-            }
-        }
+        clearAlarms(incidence);
     }
-#else
-    Q_UNUSED(incidences);
-#endif
 }
 
 void ExtendedStorage::clearAlarms(const QString &nb)
