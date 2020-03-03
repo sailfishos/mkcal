@@ -655,6 +655,11 @@ public:
     void setAlarms(const KCalCore::Incidence::Ptr &incidence);
 
     /**
+      Set alarms for a list of incidences.
+    */
+    void setAlarms(const KCalCore::Incidence::List &incidences);
+
+    /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 

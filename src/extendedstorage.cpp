@@ -65,9 +65,8 @@ using namespace mKCal;
 class mKCal::ExtendedStorage::Private
 {
 public:
-    Private(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
-        : mCalendar(cal),
-          mValidateNotebooks(validateNotebooks),
+    Private(bool validateNotebooks)
+        : mValidateNotebooks(validateNotebooks),
           mIsUncompletedTodosLoaded(false),
           mIsCompletedTodosDateLoaded(false),
           mIsCompletedTodosCreatedLoaded(false),
@@ -82,7 +81,6 @@ public:
           mDefaultNotebook(0)
     {}
 
-    ExtendedCalendar::Ptr mCalendar;
     bool mValidateNotebooks;
     QDate mStart;
     QDate mEnd;
@@ -101,15 +99,17 @@ public:
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
 
+    void setAlarmsForNotebook(const KCalCore::Incidence::List &incidences, const QString &nbuid);
 #if defined(TIMED_SUPPORT)
-    void setAlarms(const Incidence::Ptr &incidence, Timed::Event::List &events, const KDateTime &now);
+    void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const KDateTime &now);
+    void commitEvents(Timed::Event::List &events);
 #endif
 };
 //@endcond
 
 ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
     : CalStorage(cal),
-      d(new ExtendedStorage::Private(cal, validateNotebooks))
+      d(new ExtendedStorage::Private(validateNotebooks))
 {
     // Add the calendar as observer
     registerObserver(cal.data());
@@ -393,12 +393,21 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
+    bool wasVisible = calendar()->isVisible(nb->uid());
     if (!calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
         qCWarning(lcMkcal) << "cannot update notebook" << nb->uid() << "in calendar";
         return false;
     }
     if (!modifyNotebook(nb, DBUpdate)) {
         return false;
+    }
+    if (wasVisible && !nb->isVisible()) {
+        clearAlarms(nb->uid());
+    } else if (!wasVisible && nb->isVisible()) {
+        Incidence::List list;
+        if (allIncidences(&list, nb->uid())) {
+            d->setAlarmsForNotebook(list, nb->uid());
+        }
     }
 
     return true;
@@ -566,6 +575,25 @@ void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
         clearAlarms(incidence);
         setAlarms(incidence);
     }
+#endif
+}
+
+void ExtendedStorage::setAlarms(const Incidence::List &incidences)
+{
+#if defined(TIMED_SUPPORT)
+    const KDateTime now = KDateTime::currentLocalDateTime();
+    Timed::Event::List events;
+    foreach (const Incidence::Ptr incidence, incidences) {
+        // The incidence from the list must be in the calendar and in a notebook.
+        const QString &nbuid = calendar()->notebook(incidence->uid());
+        if (!calendar()->isVisible(incidence) || nbuid.isEmpty()) {
+            continue;
+        }
+        d->setAlarms(incidence, nbuid, events, now);
+    }
+    d->commitEvents(events);
+#else
+    Q_UNUSED(incidences);
 #endif
 }
 
@@ -738,12 +766,28 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
     return nbDefault;
 }
 
+void ExtendedStorage::Private::setAlarmsForNotebook(const KCalCore::Incidence::List &incidences, const QString &nbuid)
+{
+#if defined(TIMED_SUPPORT)
+    const KDateTime now = KDateTime::currentLocalDateTime();
+    // list of all timed events
+    Timed::Event::List events;
+    foreach (const Incidence::Ptr incidence, incidences) {
+        setAlarms(incidence, nbuid, events, now);
+    }
+    commitEvents(events);
+#else
+    Q_UNUSED(incidences);
+    Q_UNUSED(nbuid);
+#endif
+}
 
 #if defined(TIMED_SUPPORT)
-void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence, Timed::Event::List &events,
+void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
+                                         const QString &nbuid,
+                                         Timed::Event::List &events,
                                          const KDateTime &now)
 {
-    const QString nbuid = mCalendar->notebook(incidence->uid());
     const Alarm::List alarms = incidence->alarms();
     foreach (const Alarm::Ptr alarm, alarms) {
         if (!alarm->enabled()) {
@@ -853,6 +897,34 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence, Timed:
             e.setReminderFlag();
             e.setAlignedSnoozeFlag();
         }
+    }
+}
+
+void ExtendedStorage::Private::commitEvents(Timed::Event::List &events)
+{
+    if (events.count() > 0) {
+        Timed::Interface timed;
+        if (!timed.isValid()) {
+            qCWarning(lcMkcal) << "cannot set alarm for incidence: "
+                               << "alarm interface is not valid" << timed.lastError();
+            return;
+        }
+        QDBusReply < QList<QVariant> > reply = timed.add_events_sync(events);
+        if (reply.isValid()) {
+            foreach (QVariant v, reply.value()) {
+                bool ok = true;
+                uint cookie = v.toUInt(&ok);
+                if (ok && cookie) {
+                    qCDebug(lcMkcal) << "added alarm: " << cookie;
+                } else {
+                    qCWarning(lcMkcal) << "failed to add alarm";
+                }
+            }
+        } else {
+            qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
+        }
+    } else {
+        qCDebug(lcMkcal) << "No alarms to send";
     }
 }
 #endif
