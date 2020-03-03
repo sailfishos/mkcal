@@ -536,7 +536,7 @@ void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
 {
 #if defined(TIMED_SUPPORT)
     Timed::Interface timed;
-    KDateTime now = KDateTime::currentLocalDateTime();
+    const KDateTime now = KDateTime::currentLocalDateTime();
     // list of all timed events
     Timed::Event::List events;
 
@@ -569,136 +569,19 @@ void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
 #endif
 }
 
-// FIXME: combine code duplication between this and Private::setAlarms()
 void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
 {
 #if defined(TIMED_SUPPORT)
-    Timed::Interface timed;
-    int alarmNumer = 0;
-
-    if (!timed.isValid()) {
-        qCWarning(lcMkcal) << "cannot set alarm for incidence: "
-                 << "alarm interface is not valid" << timed.lastError();
-        return;
-    }
-
     // list of all timed events
     Timed::Event::List events;
-
-    Alarm::List alarms = incidence->alarms();
-    foreach (const Alarm::Ptr alarm, alarms) {
-        if (!alarm->enabled()) {
-            continue;
+    d->setAlarms(incidence, events, KDateTime::currentLocalDateTime());
+    if (events.count() > 0) {
+        Timed::Interface timed;
+        if (!timed.isValid()) {
+            qCWarning(lcMkcal) << "cannot set alarm for incidence: "
+                               << "alarm interface is not valid" << timed.lastError();
+            return;
         }
-
-        KDateTime now = KDateTime::currentLocalDateTime();
-        KDateTime preTime = now;
-        if (incidence->recurs()) {
-            KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(now);
-            if (nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0) {
-                if (now.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
-                    preTime = nextRecurrence;
-                }
-            }
-        }
-
-        KDateTime alarmTime = alarm->nextTime(preTime, true);
-        if (!alarmTime.isValid()) {
-            continue;
-        }
-
-        if (now.addSecs(60) > alarmTime) {
-            // don't allow alarms at the same minute -> take next alarm if so
-            alarmTime = alarm->nextTime(preTime.addSecs(60), true);
-            if (!alarmTime.isValid()) {
-                continue;
-            }
-        }
-        Timed::Event &e = events.append();
-        alarmNumer++;
-        e.setUserModeFlag();
-        e.setMaximalTimeoutSnoozeCounter(2);
-        if (alarmTime.isUtc()) {
-            e.setTicker(alarmTime.toTime_t());
-        } else {
-            e.setTicker(alarmTime.toUtc().toTime_t());
-        }
-        // The code'll crash (=exception) iff the content is empty. So
-        // we have to check here.
-        QString s;
-
-        s = incidence->summary();
-        // Timed braindeath: Required field, BUT if empty, it asserts
-        if (s.isEmpty()) {
-            s = ' ';
-        }
-        e.setAttribute("TITLE", s);
-        e.setAttribute("PLUGIN", "libCalendarReminder");
-        e.setAttribute("APPLICATION", "libextendedkcal");
-        //e.setAttribute( "translation", "organiser" );
-        // This really has to exist or code is badly broken
-        Q_ASSERT(!incidence->uid().isEmpty());
-        e.setAttribute("uid", incidence->uid());
-#ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
-        e.setAttribute("alarmtime", alarmTime.toString());
-#endif
-        if (!incidence->location().isEmpty()) {
-            e.setAttribute("location", incidence->location());
-        }
-        if (incidence->recurs()) {
-            e.setAttribute("recurs", "true");
-            Timed::Event::Action &a = e.addAction();
-            a.runCommand(QString("%1 %2 %3")
-                         .arg(RESET_ALARMS_CMD)
-                         .arg(calendar()->notebook(incidence->uid()))
-                         .arg(incidence->uid()));
-            a.whenServed();
-        }
-
-        // TODO - consider this how it should behave for recurrence
-        if ((incidence->type() == Incidence::TypeTodo)) {
-            Todo::Ptr todo = incidence.staticCast<Todo>();
-
-            if (todo->hasDueDate()) {
-                e.setAttribute("time", todo->dtDue(true).toString());
-            }
-            e.setAttribute("type", "todo");
-        } else if (incidence->dtStart().isValid()) {
-            KDateTime eventStart;
-
-            if (incidence->recurs()) {
-                // assuming alarms not later than event start
-                eventStart = incidence->recurrence()->getNextDateTime(alarmTime.addSecs(-60));
-            } else {
-                eventStart = incidence->dtStart();
-            }
-            e.setAttribute("time", eventStart.toString());
-            e.setAttribute("startDate", eventStart.toString());
-            if (incidence->endDateForStart(eventStart).isValid()) {
-                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toString());
-            }
-            e.setAttribute("type", "event");
-        }
-
-        if (incidence->hasRecurrenceId()) {
-            e.setAttribute("recurrenceId", incidence->recurrenceId().toString());
-        }
-        e.setAttribute("notebook", calendar()->notebook(incidence->uid()));
-
-        if (alarm->type() == Alarm::Procedure) {
-            QString prog = alarm->programFile();
-            if (!prog.isEmpty()) {
-                Timed::Event::Action &a = e.addAction();
-                a.runCommand(prog + " " + alarm->programArguments());
-                a.whenFinalized();
-            }
-        } else {
-            e.setReminderFlag();
-            e.setAlignedSnoozeFlag();
-        }
-    }
-
-    if (alarmNumer > 0) {
         QDBusReply < QList<QVariant> > reply = timed.add_events_sync(events);
         if (reply.isValid()) {
             foreach (QVariant v, reply.value()) {
@@ -857,12 +740,11 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
 
 
 #if defined(TIMED_SUPPORT)
-// FIXME: combine code duplication between this and ExtendedStorage::setAlarms()
 void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence, Timed::Event::List &events,
                                          const KDateTime &now)
 {
-    Alarm::List alarms = incidence->alarms();
-
+    const QString nbuid = mCalendar->notebook(incidence->uid());
+    const Alarm::List alarms = incidence->alarms();
     foreach (const Alarm::Ptr alarm, alarms) {
         if (!alarm->enabled()) {
             continue;
@@ -925,7 +807,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence, Timed:
             Timed::Event::Action &a = e.addAction();
             a.runCommand(QString("%1 %2 %3")
                          .arg(RESET_ALARMS_CMD)
-                         .arg(mCalendar->notebook(incidence->uid()))
+                         .arg(nbuid)
                          .arg(incidence->uid()));
             a.whenServed();
         }
@@ -958,7 +840,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence, Timed:
         if (incidence->hasRecurrenceId()) {
             e.setAttribute("recurrenceId", incidence->recurrenceId().toString());
         }
-        e.setAttribute("notebook", mCalendar->notebook(incidence->uid()));
+        e.setAttribute("notebook", nbuid);
 
         if (alarm->type() == Alarm::Procedure) {
             QString prog = alarm->programFile();
