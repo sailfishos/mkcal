@@ -68,6 +68,7 @@ private slots:
     void tst_icalAllDay();
     void tst_deleteAllEvents();
     void tst_calendarProperties();
+    void tst_alarms();
 
 private:
     void openDb(bool clear = false);
