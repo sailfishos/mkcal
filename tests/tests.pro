@@ -1,14 +1,16 @@
 TEMPLATE = app
 TARGET = tst_storage
 
-QT += testlib
+QT += testlib dbus
 CONFIG += link_pkgconfig c++11
+
+DEFINES += TIMED_SUPPORT
 
 INCLUDEPATH +=  ../src
 QMAKE_LIBDIR += ../src
 
 LIBS += -lmkcal-qt5
-PKGCONFIG += libkcalcoren-qt5 sqlite3
+PKGCONFIG += libkcalcoren-qt5 sqlite3 timed-qt5
 
 HEADERS += \
     tst_storage.h

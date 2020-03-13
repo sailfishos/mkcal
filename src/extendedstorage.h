@@ -40,13 +40,11 @@
 
 #include <kdatetime.h>
 
-#if defined(MKCAL_FOR_MEEGO)
-#include <MLocale>
-#endif
-
 namespace KCalCore {
 class Incidence;
 }
+
+class MkcalTool;
 
 namespace mKCal {
 
@@ -631,30 +629,6 @@ public:
                                         bool loadAlways = false);
 
     /**
-      Reset alarms for the incidence. This function will be called
-      automatically if application changes incidence alarms and calls save.
-      Alarm information is communicated via DBus to the new timed, which
-      will call the notification dialog when alarm triggers. If user presses
-      open on the dialog, a DBus call is made to organiser application for
-      displaying the incidence in question. See the documentation in
-      extendedcalendar.h for the general architecture.
-
-      @param incidence incidence
-    */
-    void resetAlarms(const KCalCore::Incidence::Ptr &incidence);
-
-    /**
-      Reset alarms for list of incidences.
-    */
-    void resetAlarms(const KCalCore::Incidence::List &incidences);
-
-    /**
-      Set alarms for the incidence without removing old alarms. This is the
-      same as resetAlarms except that the old alarms are not removed.
-    */
-    void setAlarms(const KCalCore::Incidence::Ptr &incidence);
-
-    /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 
@@ -688,9 +662,16 @@ protected:
     void setModified(const QString &info);
     void setProgress(const QString &info);
     void setFinished(bool error, const QString &info);
+
+    // These alarm methods are used to communicate with an external
+    // daemon, like timed, to bind Incidence::Alarm with the system notification.
     void clearAlarms(const KCalCore::Incidence::Ptr &incidence);
     void clearAlarms(const KCalCore::Incidence::List &incidences);
     void clearAlarms(const QString &nname);
+    void setAlarms(const KCalCore::Incidence::Ptr &incidence);
+    void setAlarms(const KCalCore::Incidence::List &incidences);
+    void resetAlarms(const KCalCore::Incidence::List &incidences);
+    void resetAlarms(const KCalCore::Incidence::Ptr &incidence);
 
     bool isUncompletedTodosLoaded();
     void setIsUncompletedTodosLoaded(bool loaded);
@@ -729,6 +710,8 @@ private:
     class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
+
+    friend class ::MkcalTool;
 };
 
 }

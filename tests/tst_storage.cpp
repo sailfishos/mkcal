@@ -27,6 +27,12 @@
 
 #include "tst_storage.h"
 #include "sqlitestorage.h"
+#ifdef TIMED_SUPPORT
+#include <timed-qt5/interface.h>
+#include <QtCore/QMap>
+#include <QtDBus/QDBusReply>
+using namespace Maemo;
+#endif
 
 // random
 const char *const NotebookId("12345678-9876-1111-2222-222222222222");
@@ -1672,6 +1678,79 @@ void tst_storage::tst_calendarProperties()
     sqlite3_close(database);
 }
 
+void tst_storage::tst_alarms()
+{
+    Notebook::Ptr notebook = Notebook::Ptr(new Notebook(QStringLiteral("Notebook for alarms"), QString()));
+    QVERIFY(m_storage->addNotebook(notebook));
+    const QString uid = notebook->uid();
+
+    const KDateTime dt = KDateTime::currentUtcDateTime().addSecs(300);
+    KCalCore::Event::Ptr ev = KCalCore::Event::Ptr(new KCalCore::Event);
+    ev->setDtStart(dt);
+    KCalCore::Alarm::Ptr alarm = ev->newAlarm();
+    alarm->setDisplayAlarm(QLatin1String("Testing alarm"));
+    alarm->setStartOffset(KCalCore::Duration(0));
+    alarm->setEnabled(true);
+    QVERIFY(m_calendar->addEvent(ev, uid));
+    QVERIFY(m_storage->save());
+
+#if defined(TIMED_SUPPORT)
+    QMap<QString, QVariant> map;
+    map["APPLICATION"] = "libextendedkcal";
+    map["notebook"] = uid;
+
+    Timed::Interface timed;
+    QVERIFY(timed.isValid());
+    QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), 1);
+#endif
+
+    QVERIFY(m_calendar->deleteIncidence(ev));
+    QVERIFY(m_storage->save());
+
+#if defined(TIMED_SUPPORT)
+    reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), 0);
+#endif
+
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    notebook->setIsVisible(false);
+    QVERIFY(m_storage->updateNotebook(notebook));
+
+    // Adding an event in a non visible notebook should not add alarm.
+    QVERIFY(m_calendar->addEvent(ev, uid));
+    QVERIFY(m_storage->save());
+#if defined(TIMED_SUPPORT)
+    reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), 0);
+#endif
+
+    // Clearing calendar to be in a situation where the calendar
+    // object has just been created.
+    m_calendar->close();
+
+    // Switching the notebook to visible should activate all alarms.
+    notebook->setIsVisible(true);
+    QVERIFY(m_storage->updateNotebook(notebook));
+#if defined(TIMED_SUPPORT)
+    reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), 1);
+#endif
+
+    // Switching the notebook to non visible should deactivate all alarms.
+    notebook->setIsVisible(false);
+    QVERIFY(m_storage->updateNotebook(notebook));
+#if defined(TIMED_SUPPORT)
+    reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), 0);
+#endif
+}
 
 void tst_storage::openDb(bool clear)
 {

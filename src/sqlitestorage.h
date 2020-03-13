@@ -419,7 +419,6 @@ public Q_SLOTS:
     void fileChanged(const QString &path);
 
     void queryFinished();
-
 };
 
 #define sqlite3_exec( db )                                    \
