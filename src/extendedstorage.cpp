@@ -727,6 +727,10 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
                                          Timed::Event::List &events,
                                          const KDateTime &now)
 {
+    if (incidence->status() == Incidence::StatusCanceled) {
+        return;
+    }
+
     const Alarm::List alarms = incidence->alarms();
     foreach (const Alarm::Ptr alarm, alarms) {
         if (!alarm->enabled()) {
