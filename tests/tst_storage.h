@@ -69,6 +69,7 @@ private slots:
     void tst_deleteAllEvents();
     void tst_calendarProperties();
     void tst_alarms();
+    void tst_load();
 
 private:
     void openDb(bool clear = false);

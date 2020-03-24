@@ -1633,6 +1633,17 @@ bool SqliteStorage::notifyOpened(const Incidence::Ptr &incidence)
     return false;
 }
 
+static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
+{
+    QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());
+    for (; it != list.constEnd(); ++it) {
+        if ((*it)->recurrenceId() == incidence->recurrenceId()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            const char *query2, int qsize2,
                                            const char *query3, int qsize3,
@@ -1674,9 +1685,13 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, notebookUid))) {
         bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
         bool added = true;
-        if (mIncidencesToInsert.contains(incidence->uid()) ||
-                mIncidencesToUpdate.contains(incidence->uid()) ||
-                mIncidencesToDelete.contains(incidence->uid()) ||
+        // Cannot use .contains(incidence->uid(), incidence) here, like
+        // in the rest of the file, since incidence here is a new one
+        // returned by the selectComponents() that cannot by design be already
+        // in the multihash tables.
+        if (isContaining(mIncidencesToInsert, incidence) ||
+                isContaining(mIncidencesToUpdate, incidence) ||
+                isContaining(mIncidencesToDelete, incidence) ||
                 (mStorage->validateNotebooks() && !hasNotebook)) {
             qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
                        << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
