@@ -61,15 +61,6 @@ public:
         }
     }
 
-    QString defaultAddress()
-    {
-        if (mInit) {
-            return mDefaultAccount ? mDefaultAccount->fromAddress().address() : QString();
-        } else {
-            return QString();
-        }
-    }
-
     void uninit()
     {
         mStore = 0;
@@ -84,11 +75,18 @@ public:
             return QString();
         }
         QMailAccount account(QMailAccountId(accountId.toULongLong()));
-        if (!account.id().isValid() || !(account.status() & QMailAccount::CanTransmit)) {
-            qWarning() << "Default plugin: invalid email account" << accountId;
-            return QString();
+        QString email;
+        if (account.id().isValid() && (account.status() & QMailAccount::CanTransmit)) {
+            email = account.fromAddress().address();
+        } else {
+            qDebug() << "Default plugin: account" << accountId << "is not an email account";
         }
-        return account.fromAddress().address();
+        if (email.isEmpty()) {
+            qDebug() << "Default plugin: account" << accountId << "do not have a valid email address";
+            init();
+            email = mDefaultAccount ? mDefaultAccount->fromAddress().address() : QString();
+        }
+        return email;
     }
 
     bool sendMail(const QString &accountId, const QStringList &recipients, const QString &subject,
@@ -287,8 +285,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     }
 
     // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
-    const QString &accountEmailAddress = d->accountEmailAddress(accountId);
-    Attendee::Ptr me = invitation->attendeeByMail(accountEmailAddress.isEmpty() ? d->defaultAddress() : accountEmailAddress);
+    Attendee::Ptr me = invitation->attendeeByMail(d->accountEmailAddress(accountId));
     if (me.isNull() || (!me->RSVP())) {
         qWarning() << "sendResponse() called with wrong invitation: we are not invited or no response is expected.";
         return false;
@@ -342,13 +339,7 @@ QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebo
         return QString();
     }
 
-    QString email = d->accountEmailAddress(notebook->account());
-    if (email.isEmpty()) {
-        qWarning() << "Notebook" << notebook->uid() << "do not have a valid account email address";
-        d->init();
-        email = d->defaultAddress();
-    }
-    return email;
+    return d->accountEmailAddress(notebook->account());
 }
 
 QString DefaultInvitationPlugin::displayName(const mKCal::Notebook::Ptr &notebook) const
