@@ -1,7 +1,7 @@
 Name:       mkcal-qt5
 
 Summary:    Extended KDE kcal calendar library port for Maemo
-Version:    0.5.15
+Version:    0.5.16
 Release:    1
 Group:      System/Libraries
 License:    LGPLv2+
