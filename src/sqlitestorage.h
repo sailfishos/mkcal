@@ -116,6 +116,12 @@ public:
 
     /**
       @copydoc
+      ExtendedStorage::loadSeries(const QString &)
+    */
+    bool loadSeries(const QString &uid);
+
+    /**
+      @copydoc
       ExtendedStorage::loadNotebookIncidences(const QString &)
     */
     bool loadNotebookIncidences(const QString &notebookUid);
@@ -644,6 +650,8 @@ public Q_SLOTS:
 "select * from Components where DateStart<=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_UID_AND_RECURID \
 "select * from Components where UID=? and RecurId=? and DateDeleted=0"
+#define SELECT_COMPONENTS_BY_UID \
+"select * from Components where UID=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
 #define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \

@@ -1814,6 +1814,56 @@ void tst_storage::tst_load()
     QVERIFY(m_calendar->deleteIncidence(m_calendar->incidence(event->uid())));
 }
 
+void tst_storage::tst_loadSeries()
+{
+    mKCal::Notebook::Ptr notebook =
+        mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-loadSeries",
+                                                 "test notebook",
+                                                 QLatin1String(""),
+                                                 "#001122",
+                                                 false, // Not shared.
+                                                 true, // Is master.
+                                                 false, // Not synced to Ovi.
+                                                 false, // Writable.
+                                                 true, // Visible.
+                                                 QLatin1String(""),
+                                                 QLatin1String(""),
+                                                 0));
+    m_storage->addNotebook(notebook);
+
+    KCalCore::Event::Ptr event = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(KDateTime::currentUtcDateTime());
+    event->setSummary("Parent event");
+    event->setCreated(KDateTime::currentUtcDateTime().addSecs(-3));
+    event->recurrence()->setDaily(1);
+    KCalCore::Event::Ptr occurrence(event->clone());
+    occurrence->clearRecurrence();
+    occurrence->setDtStart(event->dtStart().addDays(1));
+    occurrence->setRecurrenceId(event->dtStart().addDays(1));
+    occurrence->setSummary("Exception occurrence");
+    event->recurrence()->addExDateTime(occurrence->recurrenceId());
+    KCalCore::Event::Ptr single = KCalCore::Event::Ptr(new KCalCore::Event);
+    single->setDtStart(KDateTime::currentUtcDateTime().addDays(2));
+    single->setSummary("Single event");
+
+    QVERIFY(m_calendar->addEvent(event, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(occurrence, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(single, notebook->uid()));
+    QVERIFY(m_storage->save());
+    reloadDb();
+
+    QVERIFY(m_calendar->events().isEmpty());
+
+    QVERIFY(m_storage->loadSeries(event->uid()));
+    QCOMPARE(m_calendar->events().length(), 2);
+    QVERIFY(m_calendar->incidence(event->uid()));
+    QVERIFY(m_calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
+
+    QVERIFY(m_storage->loadSeries(single->uid()));
+    QCOMPARE(m_calendar->events().length(), 3);
+    QVERIFY(m_calendar->incidence(single->uid()));
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
