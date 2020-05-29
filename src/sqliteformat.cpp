@@ -333,7 +333,13 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             if (incidence->type() == Incidence::TypeEvent) {
                 Event::Ptr event = incidence.staticCast<Event>();
                 if (event->hasEndDate()) {
-                    effectiveDtEnd = event->dtEnd();
+                    // Keep this one day addition for backward compatibility reasons
+                    // with existing events in database.
+                    if (incidence->allDay()) {
+                        effectiveDtEnd = event->dtEnd().addDays(1);
+                    } else {
+                        effectiveDtEnd = event->dtEnd();
+                    }
                 }
             }
             sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd, incidence->allDay());
@@ -1201,6 +1207,13 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
             KDateTime end = getDateTime(d->mStorage, stmt1, 9, &endIsDate);
             if (startIsDate && (!end.isValid() || endIsDate)) {
                 event->setAllDay(true);
+                // Keep backward compatibility with already saved events with end + 1.
+                if (end.isValid()) {
+                    end = end.addDays(-1);
+                    if (end == start) {
+                        end = KDateTime();
+                    }
+                }
             }
             if (end.isValid()) {
                 event->setDtEnd(end);
