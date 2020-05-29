@@ -1142,7 +1142,9 @@ static KDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
     if (timezone.isEmpty()) {
         // consider empty timezone as clock time
         date = sqlite3_column_int64(stmt, index + 1);
-        dateTime = storage->fromOriginTime(date);
+        if (date || sqlite3_column_int64(stmt, index)) {
+            dateTime = storage->fromOriginTime(date);
+        }
         dateTime.setTimeSpec(KDateTime::ClockTime);
         if (isDate) {
             // This is a workaround, for wrongly stored date
@@ -1201,7 +1203,12 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
 
             bool startIsDate;
             KDateTime start = getDateTime(d->mStorage, stmt1, 5, &startIsDate);
-            event->setDtStart(start);
+            if (start.isValid()) {
+                event->setDtStart(start);
+            } else {
+                // start date time is mandatory in RFC5545 for VEVENTS.
+                event->setDtStart(d->mStorage->fromOriginTime(0));
+            }
 
             bool endIsDate;
             KDateTime end = getDateTime(d->mStorage, stmt1, 9, &endIsDate);
