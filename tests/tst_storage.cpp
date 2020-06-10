@@ -257,6 +257,44 @@ void tst_storage::tst_vtimezone()
     }
 }
 
+Q_DECLARE_METATYPE(KDateTime)
+void tst_storage::tst_veventdtstart_data()
+{
+    QTest::addColumn<KDateTime>("startDateTime");
+
+    QTest::newRow("clock time") << KDateTime(QDate(2020, 5, 29), QTime(10, 15), KDateTime::ClockTime);
+    QTest::newRow("UTC") << KDateTime(QDate(2020, 5, 29), QTime(10, 15), KDateTime::UTC);
+    QTest::newRow("time zone") << KDateTime(QDate(2020, 5, 29), QTime(10, 15), KDateTime::Spec(KSystemTimeZones::zone("Europe/Paris")));
+    QTest::newRow("date only") << KDateTime(QDate(2020, 5, 29));
+    QTest::newRow("origin date time") << m_storage.staticCast<SqliteStorage>()->fromOriginTime(0);
+    // Not allowed by RFC, will be converted to origin of time after save.
+    QTest::newRow("bogus KDateTime") << KDateTime();
+}
+
+void tst_storage::tst_veventdtstart()
+{
+    QFETCH(KDateTime, startDateTime);
+
+    KCalCore::Event::Ptr event = KCalCore::Event::Ptr(new KCalCore::Event);
+    event->setDtStart(startDateTime);
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    QString uid = event->uid();
+    reloadDb();
+
+    KCalCore::Event::Ptr fetchedEvent = m_calendar->event(uid);
+    QVERIFY(fetchedEvent.data());
+    QVERIFY(fetchedEvent->dtStart().isValid());
+    if (startDateTime.isValid()) {
+        QCOMPARE(fetchedEvent->dtStart(), startDateTime);
+    } else {
+        // KDateTime is bogus, invalid date time == January 1st 1970.
+        QCOMPARE(fetchedEvent->dtStart(), m_storage.staticCast<SqliteStorage>()->fromOriginTime(0));
+    }
+    QVERIFY(!fetchedEvent->hasEndDate());
+}
+
 void tst_storage::tst_allday_data()
 {
     QTest::addColumn<QDate>("startDate");

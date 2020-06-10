@@ -3231,34 +3231,32 @@ KDateTime SqliteStorage::fromLocalOriginTime(sqlite3_int64 seconds)
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds)
 {
     //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
-    return seconds ? d->mOriginTime.addSecs(seconds).toUtc() : KDateTime();
+    return d->mOriginTime.addSecs(seconds).toUtc();
 }
 
 KDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, QString zonename)
 {
     KDateTime dt;
 
-    if (seconds != 0) {
-        if (!zonename.isEmpty()) {
-            // First try system zones.
-            KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
-            if (ktimezone.isValid()) {
-                dt =
-                    d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(ktimezone));
-            } else {
-                // Then try calendar specific zones.
-                ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
-                ICalTimeZone icaltimezone = zones.value(zonename);
-                const QByteArray emptyTz = "BEGIN:VTIMEZONE\r\nTZID:" + zonename.toUtf8() + "\r\nEND:VTIMEZONE\r\n";
-                if (icaltimezone.isValid() && icaltimezone.vtimezone() != emptyTz) {
-                    dt =
-                        d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(icaltimezone));
-                }
-            }
+    if (!zonename.isEmpty()) {
+        // First try system zones.
+        KTimeZone ktimezone = KSystemTimeZones::zone(zonename);
+        if (ktimezone.isValid()) {
+            dt =
+                d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(ktimezone));
         } else {
-            // Empty zonename, use floating time.
-            dt = d->mOriginTime.addSecs(seconds).toClockTime();
+            // Then try calendar specific zones.
+            ICalTimeZones::ZoneMap zones = d->mCalendar->timeZones()->zones();
+            ICalTimeZone icaltimezone = zones.value(zonename);
+            const QByteArray emptyTz = "BEGIN:VTIMEZONE\r\nTZID:" + zonename.toUtf8() + "\r\nEND:VTIMEZONE\r\n";
+            if (icaltimezone.isValid() && icaltimezone.vtimezone() != emptyTz) {
+                dt =
+                    d->mOriginTime.addSecs(seconds).toUtc().toTimeSpec(KDateTime::Spec(icaltimezone));
+            }
         }
+    } else {
+        // Empty zonename, use floating time.
+        dt = d->mOriginTime.addSecs(seconds).toClockTime();
     }
 //  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
     return dt;
