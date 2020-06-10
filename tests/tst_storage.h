@@ -70,6 +70,7 @@ private slots:
     void tst_calendarProperties();
     void tst_alarms();
     void tst_load();
+    void tst_loadSeries();
 
 private:
     void openDb(bool clear = false);

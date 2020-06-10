@@ -154,6 +154,14 @@ public:
     virtual bool load(const QDate &start, const QDate &end) = 0;
 
     /**
+      Load all incidences sharing the same uid into the memory.
+
+      @param uid is uid of the series
+      @return true if the load was successful; false otherwise.
+    */
+    virtual bool loadSeries(const QString &uid) = 0;
+
+    /**
       Load incidences of one notebook into the memory.
 
       @param notebookUid is uid of notebook

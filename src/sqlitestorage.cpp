@@ -434,6 +434,66 @@ error:
     return count >= 0;
 }
 
+bool SqliteStorage::loadSeries(const QString &uid)
+{
+    if (!d->mIsOpened) {
+        return false;
+    }
+
+    int rv = 0;
+    int count = -1;
+    d->mIsLoading = true;
+
+    const char *query1 = NULL;
+    const char *query2 = NULL;
+    const char *query3 = NULL;
+    const char *query4 = NULL;
+    const char *query5 = NULL;
+    const char *query6 = NULL;
+    int qsize1 = 0;
+    int qsize2 = 0;
+    int qsize3 = 0;
+    int qsize4 = 0;
+    int qsize5 = 0;
+    int qsize6 = 0;
+
+    sqlite3_stmt *stmt1 = NULL;
+    const char *tail1 = NULL;
+    int index = 1;
+    QByteArray u;
+
+    if (!uid.isEmpty()) {
+        query1 = SELECT_COMPONENTS_BY_UID;
+        qsize1 = sizeof(SELECT_COMPONENTS_BY_UID);
+
+        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+        u = uid.toUtf8();
+        sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+
+        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
+        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
+
+        query3 = SELECT_ATTENDEE_BY_ID;
+        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
+
+        query4 = SELECT_ALARM_BY_ID;
+        qsize4 = sizeof(SELECT_ALARM_BY_ID);
+
+        query5 = SELECT_RECURSIVE_BY_ID;
+        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
+
+        query6 = SELECT_RDATES_BY_ID;
+        qsize6 = sizeof(SELECT_RDATES_BY_ID);
+
+        count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
+                                  query4, qsize4, query5, qsize5, query6, qsize6);
+    }
+error:
+    d->mIsLoading = false;
+
+    return count >= 0;
+}
+
 bool SqliteStorage::load(const QDate &date)
 {
     if (!d->mIsOpened) {

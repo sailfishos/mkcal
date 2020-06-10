@@ -111,6 +111,10 @@ public:
     {
         return true;
     }
+    bool loadSeries(const QString &)
+    {
+        return true;
+    }
     bool loadNotebookIncidences(const QString &)
     {
         return true;
