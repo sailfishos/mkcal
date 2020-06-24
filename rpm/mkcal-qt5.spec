@@ -3,7 +3,6 @@ Name:       mkcal-qt5
 Summary:    Extended KDE kcal calendar library port for Maemo
 Version:    0.5.20
 Release:    1
-Group:      System/Libraries
 License:    LGPLv2+
 URL:        https://github.com/mer-packages/mkcal
 Source0:    %{name}-%{version}.tar.bz2
@@ -27,7 +26,6 @@ Extended KDE kcal calendar library port for Maemo
 
 %package devel
 Summary:    Development files for mkcal
-Group:      Development/Libraries
 Requires:   %{name} = %{version}-%{release}
 
 %description devel
@@ -36,7 +34,6 @@ applications using mkcal
 
 %package tests
 Summary: Unit tests for mkcal
-Group: System/Libraries
 BuildRequires: pkgconfig(Qt5Test)
 Requires: %{name} = %{version}-%{release}
 

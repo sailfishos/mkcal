@@ -4,6 +4,8 @@ TARGET = mkcal-qt5
 
 #DEFINES += MKCAL_FOR_MEEGO TIMED_SUPPORT
 
+DEFINES += MKCALPLUGINDIR=\\\"$$[QT_INSTALL_LIBS]/mkcalplugins\\\"
+
 DEFINES += TIMED_SUPPORT
 
 CONFIG += link_pkgconfig create_pc create_prl no_install_prl c++11
@@ -14,11 +16,11 @@ PKGCONFIG += sqlite3 \
 QT += dbus
 QT -= gui
 
-target.path = /usr/lib
+target.path = $$[QT_INSTALL_LIBS]
 headers.path = /usr/include/mkcal-qt5
 headers.files += *.h \
 
-pkgconfig.path = /usr/lib/pkgconfig
+pkgconfig.path = $$[QT_INSTALL_LIBS]/pkgconfig
 
 INSTALLS += target \
     headers \
