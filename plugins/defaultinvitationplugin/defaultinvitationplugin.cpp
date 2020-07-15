@@ -74,12 +74,15 @@ public:
         if (accountId.isEmpty()) {
             return QString();
         }
-        QMailAccount account(QMailAccountId(accountId.toULongLong()));
         QString email;
-        if (account.id().isValid() && (account.status() & QMailAccount::CanTransmit)) {
-            email = account.fromAddress().address();
-        } else {
-            qDebug() << "Default plugin: account" << accountId << "is not an email account";
+        const QMailAccountId accId(accountId.toULongLong());
+        if (!QMailStore::instance()->queryAccounts(QMailAccountKey::id(accId)).isEmpty()) {
+            QMailAccount account(accId);
+            if (account.id().isValid() && (account.status() & QMailAccount::CanTransmit)) {
+                email = account.fromAddress().address();
+            } else {
+                qWarning() << "Default plugin: account" << accountId << "is invalid or cannot transmit";
+            }
         }
         if (email.isEmpty()) {
             qDebug() << "Default plugin: account" << accountId << "do not have a valid email address";
