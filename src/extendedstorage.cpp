@@ -577,9 +577,6 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";
     map["uid"] = incidence->uid();
-    if (incidence->hasRecurrenceId()) {
-        map["recurrenceId"] = incidence->recurrenceId().toString();
-    }
 
     Timed::Interface timed;
     if (!timed.isValid()) {
@@ -599,10 +596,18 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
     const QList<QVariant> &result = reply.value();
     for (int i = 0; i < result.size(); i++) {
         uint32_t cookie = result[i].toUInt();
-        if (!incidence->hasRecurrenceId()) {
+        // We got a list of all alarm matching UID of this incidence
+        // - single event -> delete the alarm
+        // - recurring parent event -> the recurs() case, delete if
+        //   recurrenceId attribute is empty (thus invalid KDateTime)
+        // - recurring exception event -> the hasRecurrenceId() case,
+        //   delete if the recurrenceId attribute is matching in terms of KDateTime.
+        if (incidence->recurs() || incidence->hasRecurrenceId()) {
             QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
             const QMap<QString, QVariant> attributeMap = attributesReply.value();
-            if (attributeMap.contains("recurrenceId")) {
+            const QVariant recurrenceId = attributeMap.value("recurrenceId", QVariant(QString()));
+            KDateTime recid = KDateTime::fromString(recurrenceId.toString(), KDateTime::ISODate);
+            if (incidence->recurrenceId() != recid) {
                 continue;
             }
         }
