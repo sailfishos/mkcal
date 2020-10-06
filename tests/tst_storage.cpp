@@ -341,7 +341,7 @@ void tst_storage::tst_allday()
     m_calendar->addEvent(event, NotebookId);
     m_storage->save();
     QString uid = event->uid();
-    reloadDb();
+    reloadDb(QDate(2012, 1, 1), QDate(2014, 1, 1));
 
     auto fetchedEvent = m_calendar->event(uid);
     QVERIFY(fetchedEvent.data());
@@ -1940,6 +1940,18 @@ void tst_storage::reloadDb()
     m_storage.clear();
     m_calendar.clear();
     openDb();
+}
+
+void tst_storage::reloadDb(const QDate &from, const QDate &to)
+{
+    m_storage.clear();
+    m_calendar.clear();
+
+    m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    m_storage = m_calendar->defaultStorage(m_calendar);
+    m_storage->open();
+
+    m_storage->load(from, to);
 }
 
 QTEST_GUILESS_MAIN(tst_storage)
