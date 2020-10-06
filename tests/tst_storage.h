@@ -77,6 +77,7 @@ private slots:
 private:
     void openDb(bool clear = false);
     void reloadDb();
+    void reloadDb(const QDate &from, const QDate &to);
 
     ExtendedCalendar::Ptr m_calendar;
     ExtendedStorage::Ptr m_storage;
