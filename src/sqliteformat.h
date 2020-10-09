@@ -35,7 +35,7 @@
 #include "extendedstorage.h"
 #include "notebook.h"
 
-#include <incidence.h>
+#include <KCalendarCore/Incidence>
 
 #include <sqlite3.h>
 
@@ -104,13 +104,13 @@ public:
       @param stmt4 prepared sqlite statement for alarm table
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyComponents(const KCalCore::Incidence::Ptr &incidence, const QString &notebook,
+    bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
                           DBOperation dbop, sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                           sqlite3_stmt *stmt3, sqlite3_stmt *stmt4, sqlite3_stmt *stmt5,
                           sqlite3_stmt *stmt6, sqlite3_stmt *stmt7, sqlite3_stmt *stmt8,
                           sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11);
 
-    bool purgeDeletedComponents(const KCalCore::Incidence::Ptr &incidence,
+    bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence,
                                 sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                 sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                 sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
@@ -127,7 +127,7 @@ public:
       @param notebook notebook of incidence
       @return the queried incidence.
     */
-    KCalCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
+    KCalendarCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                               sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                               sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
                                               QString &notebook);
@@ -138,7 +138,7 @@ public:
       @param stmt prepared sqlite statement for Attendees table
       @return ordered list of contacts.
     */
-    KCalCore::Person::List selectContacts(sqlite3_stmt *stmt);
+    KCalendarCore::Person::List selectContacts(sqlite3_stmt *stmt);
 
 private:
     //@cond PRIVATE

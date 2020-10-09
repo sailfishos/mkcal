@@ -35,12 +35,10 @@
 #include "extendedcalendar.h"
 #include "notebook.h"
 
-#include <calstorage.h>
-#include <calendar.h>
+#include <KCalendarCore/CalStorage>
+#include <KCalendarCore/Calendar>
 
-#include <kdatetime.h>
-
-namespace KCalCore {
+namespace KCalendarCore {
 class Incidence;
 }
 
@@ -74,7 +72,7 @@ const char *const DBusName = "alarm";
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
-    : public KCalCore::CalStorage, public KCalCore::Calendar::CalendarObserver
+    : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
 {
     Q_OBJECT
 
@@ -134,7 +132,7 @@ public:
       @param recurrenceid is recurrenceid of incidence, default null
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QString &uid, const KDateTime &recurrenceId = KDateTime()) = 0;
+    virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime()) = 0;
 
     /**
       Load incidences at given date into the memory.
@@ -232,7 +230,7 @@ public:
       @param last last loaded todo due/creation date in return
       @return number of loaded todos, or -1 on error
     */
-    virtual int loadCompletedTodos(bool hasDate, int limit, KDateTime *last) = 0;
+    virtual int loadCompletedTodos(bool hasDate, int limit, QDateTime *last) = 0;
 
     /**
       Load incidences based on start/due date or creation date.
@@ -244,7 +242,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadIncidences(bool hasDate, int limit, KDateTime *last) = 0;
+    virtual int loadIncidences(bool hasDate, int limit, QDateTime *last) = 0;
 
     /**
       Load future incidences based on start/due date.
@@ -257,7 +255,7 @@ public:
       @param last last loaded incidence start date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadFutureIncidences(int limit, KDateTime *last) = 0;
+    virtual int loadFutureIncidences(int limit, QDateTime *last) = 0;
 
     /**
       Load incidences that have location information based on parameters.
@@ -269,7 +267,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadGeoIncidences(bool hasDate, int limit, KDateTime *last) = 0;
+    virtual int loadGeoIncidences(bool hasDate, int limit, QDateTime *last) = 0;
 
     /**
       Load all unread incidences that are related to an invitation.
@@ -287,7 +285,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadOldInvitationIncidences(int limit, KDateTime *last) = 0;
+    virtual int loadOldInvitationIncidences(int limit, QDateTime *last) = 0;
 
     /**
       Load all contacts in the database. Doesn't put anything into calendar.
@@ -296,7 +294,7 @@ public:
 
       @return ordered list of persons
     */
-    virtual KCalCore::Person::List loadContacts() = 0;
+    virtual KCalendarCore::Person::List loadContacts() = 0;
 
     /**
       Load all incidences that have the specified attendee.
@@ -307,8 +305,8 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadContactIncidences(const KCalCore::Person::Ptr &person,
-                                      int limit, KDateTime *last) = 0;
+    virtual int loadContactIncidences(const KCalendarCore::Person &person,
+                                      int limit, QDateTime *last) = 0;
 
     /**
       Load journal entries based on parameters. Load direction is
@@ -319,7 +317,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadJournals(int limit, KDateTime *last) = 0;
+    virtual int loadJournals(int limit, QDateTime *last) = 0;
 
     /**
       Remove from storage all incidences that have been previously
@@ -328,7 +326,7 @@ public:
 
       @return True on success, false otherwise.
      */
-    virtual bool purgeDeletedIncidences(const KCalCore::Incidence::List &list) = 0;
+    virtual bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list) = 0;
 
     /**
       @copydoc
@@ -355,7 +353,7 @@ public:
       @param incidence The incidence that has been opened
       @return True if sucessful; false otherwise
     */
-    virtual bool notifyOpened(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     /**
       Cancel any ongoing action (load etc.).
@@ -376,31 +374,31 @@ public:
       @copydoc
       Calendar::CalendarObserver::calendarModified()
     */
-    virtual void calendarModified(bool modified, KCalCore::Calendar *calendar) = 0;
+    virtual void calendarModified(bool modified, KCalendarCore::Calendar *calendar) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdded()
     */
-    virtual void calendarIncidenceAdded(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceChanged()
     */
-    virtual void calendarIncidenceChanged(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceDeleted()
     */
-    virtual void calendarIncidenceDeleted(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar) = 0;
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
     */
-    virtual void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     // Synchronization Specific Methods //
 
@@ -416,8 +414,8 @@ public:
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool insertedIncidences(KCalCore::Incidence::List *list,
-                                    const KDateTime &after = KDateTime(),
+    virtual bool insertedIncidences(KCalendarCore::Incidence::List *list,
+                                    const QDateTime &after = QDateTime(),
                                     const QString &notebookUid = QString()) = 0;
 
     /**
@@ -430,8 +428,8 @@ public:
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool modifiedIncidences(KCalCore::Incidence::List *list,
-                                    const KDateTime &after = KDateTime(),
+    virtual bool modifiedIncidences(KCalendarCore::Incidence::List *list,
+                                    const QDateTime &after = QDateTime(),
                                     const QString &notebookUid = QString()) = 0;
 
     /**
@@ -442,8 +440,8 @@ public:
       @param notebookUid list only incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool deletedIncidences(KCalCore::Incidence::List *list,
-                                   const KDateTime &after = KDateTime(),
+    virtual bool deletedIncidences(KCalendarCore::Incidence::List *list,
+                                   const QDateTime &after = QDateTime(),
                                    const QString &notebookUid = QString()) = 0;
 
     /**
@@ -453,7 +451,7 @@ public:
       @param notebookUid list incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool allIncidences(KCalCore::Incidence::List *list,
+    virtual bool allIncidences(KCalendarCore::Incidence::List *list,
                                const QString &notebookUid = QString()) = 0;
 
     /**
@@ -464,17 +462,17 @@ public:
       @param notebookUid list incidences for given notebook
       @return true if execution was scheduled; false otherwise
     */
-    virtual bool duplicateIncidences(KCalCore::Incidence::List *list,
-                                     const KCalCore::Incidence::Ptr &incidence,
+    virtual bool duplicateIncidences(KCalendarCore::Incidence::List *list,
+                                     const KCalendarCore::Incidence::Ptr &incidence,
                                      const QString &notebookUid = QString()) = 0;
 
     /**
       Get deletion time of incidence
 
       @param incidence incidence to check
-      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise KDateTime()
+      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise QDateTime()
     */
-    virtual KDateTime incidenceDeletedDate(const KCalCore::Incidence::Ptr &incidence) = 0;
+    virtual QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     /**
       Get count of events
@@ -633,7 +631,7 @@ public:
       @param loadAlways set true to load always from storage
       @return the alarmed incidence, or null if there is no active alarm
     */
-    KCalCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
+    KCalendarCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
                                         bool loadAlways = false);
 
     /**
@@ -663,7 +661,7 @@ protected:
                                 bool signal = true) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
-                      KDateTime &loadStart, KDateTime &loadEnd);
+                      QDateTime &loadStart, QDateTime &loadEnd);
 
     void setLoadDates(const QDate &start, const QDate &end);
 
@@ -673,13 +671,13 @@ protected:
 
     // These alarm methods are used to communicate with an external
     // daemon, like timed, to bind Incidence::Alarm with the system notification.
-    void clearAlarms(const KCalCore::Incidence::Ptr &incidence);
-    void clearAlarms(const KCalCore::Incidence::List &incidences);
+    void clearAlarms(const KCalendarCore::Incidence::Ptr &incidence);
+    void clearAlarms(const KCalendarCore::Incidence::List &incidences);
     void clearAlarms(const QString &nname);
-    void setAlarms(const KCalCore::Incidence::Ptr &incidence);
-    void setAlarms(const KCalCore::Incidence::List &incidences);
-    void resetAlarms(const KCalCore::Incidence::List &incidences);
-    void resetAlarms(const KCalCore::Incidence::Ptr &incidence);
+    void setAlarms(const KCalendarCore::Incidence::Ptr &incidence);
+    void setAlarms(const KCalendarCore::Incidence::List &incidences);
+    void resetAlarms(const KCalendarCore::Incidence::List &incidences);
+    void resetAlarms(const KCalendarCore::Incidence::Ptr &incidence);
 
     bool isUncompletedTodosLoaded();
     void setIsUncompletedTodosLoaded(bool loaded);

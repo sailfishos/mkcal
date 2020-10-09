@@ -42,8 +42,6 @@ private slots:
     void cleanup();
 
     void tst_timezone();
-    void tst_vtimezone_data();
-    void tst_vtimezone();
     void tst_veventdtstart_data();
     void tst_veventdtstart();
     void tst_allday_data();

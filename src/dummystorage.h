@@ -29,7 +29,7 @@
 
 /**
  * This module provides a simple storage abstraction which contains
- * exactly nothing. It is only inteded to use for testing pouposes
+ * exactly nothing. It is only inteded to use for testing purposes
  */
 
 class MKCAL_EXPORT DummyStorage : public mKCal::ExtendedStorage
@@ -46,23 +46,24 @@ public:
         Q_ASSERT(r);
     }
 
-    void calendarModified(bool, KCalCore::Calendar *)
+    void calendarModified(bool, KCalendarCore::Calendar *)
     {
     }
-    void calendarIncidenceAdded(const KCalCore::Incidence::Ptr &)
+    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    void calendarIncidenceChanged(const KCalCore::Incidence::Ptr &)
+    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    void calendarIncidenceDeleted(const KCalCore::Incidence::Ptr &)
+    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &)
+    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    bool purgeDeletedIncidences(const KCalCore::Incidence::List &)
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
     {
+        return true;
     }
 
     /**
@@ -99,7 +100,7 @@ public:
     {
         return true;
     }
-    bool load(const QString &, const KDateTime &)
+    bool load(const QString &, const QDateTime &)
     {
         return true;
     }
@@ -147,19 +148,19 @@ public:
     {
         return 0;
     }
-    int loadCompletedTodos(bool, int, KDateTime *)
+    int loadCompletedTodos(bool, int, QDateTime *)
     {
         return 0;
     }
-    int loadIncidences(bool, int, KDateTime *)
+    int loadIncidences(bool, int, QDateTime *)
     {
         return 0;
     }
-    int loadFutureIncidences(int, KDateTime *)
+    int loadFutureIncidences(int, QDateTime *)
     {
         return 0;
     }
-    int loadGeoIncidences(bool, int, KDateTime *)
+    int loadGeoIncidences(bool, int, QDateTime *)
     {
         return 0;
     }
@@ -167,24 +168,24 @@ public:
     {
         return 0;
     }
-    int loadOldInvitationIncidences(int, KDateTime *)
+    int loadOldInvitationIncidences(int, QDateTime *)
     {
         return 0;
     }
-    KCalCore::Person::List loadContacts()
+    KCalendarCore::Person::List loadContacts()
     {
-        KCalCore::Person::List l;
+        KCalendarCore::Person::List l;
         return l;
     }
-    int loadContactIncidences(const KCalCore::Person::Ptr &, int, KDateTime *)
+    int loadContactIncidences(const KCalendarCore::Person &, int, QDateTime *)
     {
         return 0;
     }
-    int loadJournals(int, KDateTime *)
+    int loadJournals(int, QDateTime *)
     {
         return 0;
     }
-    bool notifyOpened(const KCalCore::Incidence::Ptr &)
+    bool notifyOpened(const KCalendarCore::Incidence::Ptr &)
     {
         return true;
     }
@@ -192,38 +193,38 @@ public:
     {
         return true;
     }
-    void calendarModified(bool, const KCalCore::Calendar *) const
+    void calendarModified(bool, const KCalendarCore::Calendar *) const
     {
     }
-    void calendarIncidenceAdded(const KCalCore::Incidence::Ptr &) const
+    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &) const
     {
     }
-    void calendarIncidenceChanged(const KCalCore::Incidence::Ptr &) const
+    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &) const
     {
     }
-    void calendarIncidenceDeleted(const KCalCore::Incidence::Ptr &) const
+    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &) const
     {
     }
-    void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &) const
+    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &) const
     {
     }
-    bool insertedIncidences(KCalCore::Incidence::List *, const KDateTime &, const QString &)
-    {
-        return true;
-    }
-    bool modifiedIncidences(KCalCore::Incidence::List *, const KDateTime &, const QString &)
+    bool insertedIncidences(KCalendarCore::Incidence::List *, const QDateTime &, const QString &)
     {
         return true;
     }
-    bool deletedIncidences(KCalCore::Incidence::List *, const KDateTime &, const QString &)
+    bool modifiedIncidences(KCalendarCore::Incidence::List *, const QDateTime &, const QString &)
     {
         return true;
     }
-    bool allIncidences(KCalCore::Incidence::List *, const QString &)
+    bool deletedIncidences(KCalendarCore::Incidence::List *, const QDateTime &, const QString &)
     {
         return true;
     }
-    bool duplicateIncidences(KCalCore::Incidence::List *, const KCalCore::Incidence::Ptr &, const QString &)
+    bool allIncidences(KCalendarCore::Incidence::List *, const QString &)
+    {
+        return true;
+    }
+    bool duplicateIncidences(KCalendarCore::Incidence::List *, const KCalendarCore::Incidence::Ptr &, const QString &)
     {
         return true;
     }
@@ -239,9 +240,9 @@ public:
     {
         return true;
     }
-    KDateTime incidenceDeletedDate(const KCalCore::Incidence::Ptr &incidence)
+    QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &)
     {
-        return KDateTime();
+        return QDateTime();
     }
     int eventCount()
     {

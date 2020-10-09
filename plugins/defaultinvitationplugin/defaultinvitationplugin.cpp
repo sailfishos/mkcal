@@ -17,15 +17,16 @@
 #include "defaultinvitationplugin.h"
 #include <extendedcalendar.h>
 #include <QDebug>
-#include <icalformat.h>
 #include <QTimer>
+
+#include <KCalendarCore/ICalFormat>
 
 #include <qmailaccount.h>
 #include <qmailstore.h>
 #include <qmailaddress.h>
 #include <qmailserviceaction.h>
 
-using namespace KCalCore;
+using namespace KCalendarCore;
 
 const QString name("DefaultInvitationPlugin");
 
@@ -226,8 +227,8 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
     const QString &ical = icf.createScheduleMessage(invitation, iTIPRequest);
 
     QStringList emails;
-    foreach (const Attendee::Ptr &att, attendees) {
-        emails.append(att->email());
+    foreach (const Attendee &att, attendees) {
+        emails.append(att.email());
     }
 
     const QString &description = invitation->description();
@@ -262,8 +263,8 @@ bool DefaultInvitationPlugin::sendUpdate(const QString &accountId, const Inciden
     const QString &ical = icf.createScheduleMessage(invitationCopy, cancelled ? iTIPCancel : iTIPRequest);
 
     QStringList emails;
-    foreach (const Attendee::Ptr &att, attendees) {
-        emails.append(att->email());
+    foreach (const Attendee &att, attendees) {
+        emails.append(att.email());
     }
 
     const QString &description = invitationCopy->description();
@@ -281,15 +282,15 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
     d->init();
 
     // Is there an organizer?
-    Person::Ptr organizer = invitation->organizer();
-    if (organizer.isNull() || organizer->email().isEmpty()) { // we do not have an organizer
+    const Person &organizer = invitation->organizer();
+    if (organizer.isEmpty() || organizer.email().isEmpty()) { // we do not have an organizer
         qWarning() << "sendResponse() called with wrong invitation: there is no organizer!";
         return false;
     }
 
     // Check: Am I one of the attendees? Had the organizer requested RSVP from me?
-    Attendee::Ptr me = invitation->attendeeByMail(d->accountEmailAddress(accountId));
-    if (me.isNull() || (!me->RSVP())) {
+    const Attendee &me = invitation->attendeeByMail(d->accountEmailAddress(accountId));
+    if (me.isNull() || (!me.RSVP())) {
         qWarning() << "sendResponse() called with wrong invitation: we are not invited or no response is expected.";
         return false;
     }
@@ -304,7 +305,7 @@ bool DefaultInvitationPlugin::sendResponse(const QString &accountId, const Incid
 
     const QString &ical = icf.createScheduleMessage(invitationCopy, iTIPReply);
 
-    bool res = d->sendMail(accountId, QStringList(organizer->email()), invitationCopy->summary(), body, ical, false);
+    bool res = d->sendMail(accountId, QStringList(organizer.email()), invitationCopy->summary(), body, ical, false);
 
     return res;
 }

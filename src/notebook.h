@@ -32,9 +32,7 @@
 
 #include "mkcal_export.h"
 
-#include <incidence.h>
-
-#include <kdatetime.h>
+#include <KCalendarCore/Incidence>
 
 #include <QtCore/QList>
 
@@ -228,7 +226,7 @@ public:
       Returns sync date.
       @see setSyncDate().
     */
-    KDateTime syncDate() const;
+    QDateTime syncDate() const;
 
     /**
       Sets sync date of notebook.
@@ -236,7 +234,7 @@ public:
       @param syncDate last sync date.
       @see syncDate().
     */
-    void setSyncDate(const KDateTime &syncDate);
+    void setSyncDate(const QDateTime &syncDate);
 
     /**
       Gets the name of the plugin that created the notebook.
@@ -284,7 +282,7 @@ public:
       Returns modification date, in UTC.
       Every time a property is set, the time is updated.
     */
-    KDateTime modifiedDate() const;
+    QDateTime modifiedDate() const;
 
     /**
       Sets modified date of notebook.
@@ -292,12 +290,12 @@ public:
       @param modifiedDate last modification date.
       @see modifiedDate().
     */
-    void setModifiedDate(const KDateTime &modifiedDate);
+    void setModifiedDate(const QDateTime &modifiedDate);
 
     /**
       Returns creation date, in UTC.
     */
-    KDateTime creationDate() const;
+    QDateTime creationDate() const;
 
     /**
       Sets creation date of notebook.
@@ -305,7 +303,7 @@ public:
       @param date creation date.
       @see creationDate().
     */
-    void setCreationDate(const KDateTime &date);
+    void setCreationDate(const QDateTime &date);
 
     /**
       Returns true if notebook is default notebook.
@@ -414,7 +412,7 @@ public:
       Utility function to find out whether the incidence is allowed
       within this notebook or not.
     */
-    bool incidenceAllowed(KCalCore::Incidence::Ptr incidence) const;
+    bool incidenceAllowed(KCalendarCore::Incidence::Ptr incidence) const;
 
     /**
       Set the notebook flags.

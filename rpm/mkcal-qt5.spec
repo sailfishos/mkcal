@@ -12,13 +12,10 @@ Requires(postun): /sbin/ldconfig
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
-BuildRequires:  kcalcore-qt5-devel >= 4.10.2+9git23
+BuildRequires:  pkgconfig(KF5CalendarCore)
 BuildRequires:  pkgconfig(sqlite3)
 BuildRequires:  pkgconfig(timed-qt5) >= 2.88
 BuildRequires:  pkgconfig(QmfClient)
-Requires:  kcalcore-qt5 >= 4.10.2+9git23
-# One cannot use the pkgconfig test for kcalcore because the version is not update
-# there due to local patching.
 
 %description
 Extended KDE kcal calendar library port for Maemo

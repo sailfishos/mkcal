@@ -98,9 +98,9 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::load(const QString &, const KDateTime &)
+      ExtendedStorage::load(const QString &, const QDateTime &)
     */
-    bool load(const QString &uid, const KDateTime &recurrenceId = KDateTime());
+    bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime());
 
     /**
       @copydoc
@@ -173,25 +173,25 @@ public:
       @copydoc
       ExtendedStorage::loadCompletedTodos()
     */
-    int loadCompletedTodos(bool hasDate, int limit, KDateTime *last);
+    int loadCompletedTodos(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadIncidences( bool, bool, int, KDateTime* );
+      ExtendedStorage::loadIncidences( bool, bool, int, QDateTime* );
     */
-    int loadIncidences(bool hasDate, int limit, KDateTime *last);
+    int loadIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadFutureIncidences( bool, int, KDateTime* );
+      ExtendedStorage::loadFutureIncidences( bool, int, QDateTime* );
     */
-    int loadFutureIncidences(int limit, KDateTime *last);
+    int loadFutureIncidences(int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadGeoIncidences( bool, bool, int, KDateTime* );
+      ExtendedStorage::loadGeoIncidences( bool, bool, int, QDateTime* );
     */
-    int loadGeoIncidences(bool hasDate, int limit, KDateTime *last);
+    int loadGeoIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
@@ -203,37 +203,37 @@ public:
       @copydoc
       ExtendedStorage::loadInvitationIncidences()
     */
-    int loadOldInvitationIncidences(int limit, KDateTime *last);
+    int loadOldInvitationIncidences(int limit, QDateTime *last);
 
     /**
       @copydoc
       ExtendedStorage::loadContacts()
     */
-    KCalCore::Person::List loadContacts();
+    KCalendarCore::Person::List loadContacts();
 
     /**
       @copydoc
-      ExtendedStorage::loadContactIncidences( const KCalCore::Person::Ptr & )
+      ExtendedStorage::loadContactIncidences( const KCalendarCore::Person & )
     */
-    int loadContactIncidences(const KCalCore::Person::Ptr &person, int limit, KDateTime *last);
+    int loadContactIncidences(const KCalendarCore::Person &person, int limit, QDateTime *last);
 
     /**
       @copydoc
       ExtendedStorage::loadJournals()
     */
-    int loadJournals(int limit, KDateTime *last);
+    int loadJournals(int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::notifyOpened( const KCalCore::Incidence::Ptr & )
+      ExtendedStorage::notifyOpened( const KCalendarCore::Incidence::Ptr & )
     */
-    bool notifyOpened(const KCalCore::Incidence::Ptr &incidence);
+    bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
       ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
-    bool purgeDeletedIncidences(const KCalCore::Incidence::List &list);
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
 
     /**
       @copydoc
@@ -263,78 +263,78 @@ public:
       @copydoc
       Calendar::CalendarObserver::calendarModified()
     */
-    void calendarModified(bool modified, KCalCore::Calendar *calendar);
+    void calendarModified(bool modified, KCalendarCore::Calendar *calendar);
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceCreated()
     */
-    void calendarIncidenceCreated(const KCalCore::Incidence::Ptr &incidence);
+    void calendarIncidenceCreated(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdded()
     */
-    void calendarIncidenceAdded(const KCalCore::Incidence::Ptr &incidence);
+    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceChanged()
     */
-    void calendarIncidenceChanged(const KCalCore::Incidence::Ptr &incidence);
+    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceDeleted()
     */
-    void calendarIncidenceDeleted(const KCalCore::Incidence::Ptr &incidence);
+    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar);
 
     /**
       @copydoc
       Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
     */
-    void calendarIncidenceAdditionCanceled(const KCalCore::Incidence::Ptr &incidence);
+    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
       ExtendedStorage::insertedIncidences()
     */
-    bool insertedIncidences(KCalCore::Incidence::List *list, const KDateTime &after,
+    bool insertedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
                             const QString &notebookUid = QString());
 
     /**
       @copydoc
       ExtendedStorage::modifiedIncidences()
     */
-    bool modifiedIncidences(KCalCore::Incidence::List *list, const KDateTime &after,
+    bool modifiedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
                             const QString &notebookUid = QString());
 
     /**
       @copydoc
       ExtendedStorage::deletedIncidences()
     */
-    bool deletedIncidences(KCalCore::Incidence::List *list, const KDateTime &after,
+    bool deletedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
                            const QString &notebookUid = QString());
 
     /**
       @copydoc
       ExtendedStorage::allIncidences()
     */
-    bool allIncidences(KCalCore::Incidence::List *list, const QString &notebookUid = QString());
+    bool allIncidences(KCalendarCore::Incidence::List *list, const QString &notebookUid = QString());
 
     /**
       @copydoc
       ExtendedStorage::duplicateIncidences()
     */
-    bool duplicateIncidences(KCalCore::Incidence::List *list,
-                             const KCalCore::Incidence::Ptr &incidence,
+    bool duplicateIncidences(KCalendarCore::Incidence::List *list,
+                             const KCalendarCore::Incidence::Ptr &incidence,
                              const QString &notebookUid = QString());
 
     /**
       @copydoc
       ExtendedStorage::incidenceDeletedDate()
     */
-    KDateTime incidenceDeletedDate(const KCalCore::Incidence::Ptr &incidence);
+    QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
@@ -369,7 +369,7 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toOriginTime(KDateTime dt);
+    sqlite3_int64 toOriginTime(const QDateTime &dt);
 
     /**
       Convert local datetime to seconds relative to the origin.
@@ -377,21 +377,21 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toLocalOriginTime(KDateTime dt);
+    sqlite3_int64 toLocalOriginTime(const QDateTime &dt);
 
     /**
       Convert seconds from the origin to clock time.
       @param seconds relative to origin.
       @return clocktime datetime.
     */
-    KDateTime fromLocalOriginTime(sqlite3_int64 seconds);
+    QDateTime fromLocalOriginTime(sqlite3_int64 seconds);
 
     /**
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
     */
-    KDateTime fromOriginTime(sqlite3_int64 seconds);
+    QDateTime fromOriginTime(sqlite3_int64 seconds);
 
     /**
       Convert seconds from the origin to datetime in given timezone.
@@ -399,7 +399,7 @@ public:
       @param zonename timezone name.
       @return datetime in timezone.
     */
-    KDateTime fromOriginTime(sqlite3_int64 seconds, QString zonename);
+    QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename);
 
 private:
     /**

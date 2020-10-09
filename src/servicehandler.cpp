@@ -12,11 +12,11 @@
 
 #include "servicehandler.h"
 #include "servicehandlerif.h"
-#include <invitationhandlerif.h>
+#include "invitationhandlerif.h"
 #include "logging_p.h"
 
 using namespace mKCal;
-using namespace KCalCore;
+using namespace KCalendarCore;
 
 enum ExecutedPlugin {
     None = 0,
@@ -313,7 +313,7 @@ int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Exte
     }
 }
 
-bool ServiceHandler::deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
+bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
                                       const ExtendedStorage::Ptr &storage, const QString &uri)
 {
     if (storage.isNull() || notebook.isNull() || incidence.isNull())

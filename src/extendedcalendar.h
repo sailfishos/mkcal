@@ -63,7 +63,7 @@
 
   @section introduction Introduction
 
-  mKCal library extends KCalCore library to add a persistant storage
+  mKCal library extends KCalendarCore library to add a persistant storage
   in a sqlite database.
 
   This two libraries come from the original KCal from KDE. They have been
@@ -73,7 +73,7 @@
 
   There are two important base classes.
   <ul>
-  <li>Abstract class <b>Calendar</b> from KCalCore contain incidences
+  <li>Abstract class <b>Calendar</b> from KCalendarCore contain incidences
   (events, todos, journals) and methods for adding/deleting/querying them.
   It is implemented by <b>ExtendedCalendar</b> in mKCal.
 
@@ -110,8 +110,7 @@
   for the user). Every incidence is assigned to a notebook.
   The correct way to create an incidence (simple todo in this case) is this:
   @code
-  KDateTime now =
-    KDateTime::currentDateTime( KDateTime::Spec( KSystemTimeZones::zone( "Europe/Helsinki" ) ) );
+  QDateTime now = QDateTime::currentDateTime();
   Notebook::Ptr personal( "Personal" );
 
   Todo::Ptr todo = Todo::Ptr( new Todo() );
@@ -195,8 +194,7 @@
 
 #include "mkcal_export.h"
 
-#include <memorycalendar.h>
-#include <icaltimezones.h>
+#include <KCalendarCore/MemoryCalendar>
 #include <extendedstorageobserver.h>
 
 namespace mKCal {
@@ -208,7 +206,7 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalCore::MemoryCalendar,
+class MKCAL_EXPORT ExtendedCalendar : public KCalendarCore::MemoryCalendar,
     public ExtendedStorageObserver
 {
 public:
@@ -232,15 +230,15 @@ public:
 
     /**
       @copydoc
-      Calendar::Calendar(const KDateTime::Spec &)
+      Calendar::Calendar(const QTimeZone &)
     */
-    explicit ExtendedCalendar(const KDateTime::Spec &timeSpec);
+    explicit ExtendedCalendar(const QTimeZone &timeZone);
 
     /**
       @copydoc
-      Calendar::Calendar(const QString &)
+      Calendar::Calendar(const QByteArray &)
     */
-    explicit ExtendedCalendar(const QString &timeZoneId);
+    explicit ExtendedCalendar(const QByteArray &timeZoneId);
 
     /**
       @copydoc
@@ -268,24 +266,32 @@ public:
 
       @see ICalTimeZoneSource::parse( MSTimeZone *, ICalTimeZones & )
     */
-    KCalCore::ICalTimeZone parseZone(KCalCore::MSTimeZone *tz);
+    /* KCalendarCore::ICalTimeZone parseZone(KCalendarCore::MSTimeZone *tz); */
 
     /**
       Dissociate only one single Incidence from a recurring Incidence.
       Incidence for the specified @a date will be dissociated and returned.
 
       @param incidence is a pointer to a recurring Incidence.
-      @param dateTime is the KDateTime within the recurring Incidence on which
+      @param dateTime is the QDateTime within the recurring Incidence on which
       the dissociation will be performed.
       @param spec is the spec in which the @a dateTime is formulated.
       @return a pointer to a dissociated Incidence
     */
-    KCalCore::Incidence::Ptr dissociateSingleOccurrence(const KCalCore::Incidence::Ptr &incidence,
-                                                        const KDateTime &dateTime,
-                                                        const KDateTime::Spec &spec);
+    KCalendarCore::Incidence::Ptr dissociateSingleOccurrence(const KCalendarCore::Incidence::Ptr &incidence,
+                                                             const QDateTime &dateTime);
 
-    bool addIncidence(const KCalCore::Incidence::Ptr &incidence);
-    bool deleteIncidence(const KCalCore::Incidence::Ptr &incidence);
+    /**
+      @copydoc
+      Calendar::addIncidence()
+    */
+    bool addIncidence(const KCalendarCore::Incidence::Ptr &incidence);
+
+    /**
+      @copydoc
+      Calendar::deleteIncidence()
+    */
+    bool deleteIncidence(const KCalendarCore::Incidence::Ptr &incidence);
 
     // Event Specific Methods //
 
@@ -293,7 +299,7 @@ public:
       @copydoc
       Calendar::addEvent()
     */
-    bool addEvent(const KCalCore::Event::Ptr &event);
+    bool addEvent(const KCalendarCore::Event::Ptr &event);
 
     /**
       @copydoc
@@ -304,7 +310,7 @@ public:
       @warning There is now check if the notebookUid is valid or not. If it is not
       valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
-    bool addEvent(const KCalCore::Event::Ptr &event, const QString &notebookUid);
+    bool addEvent(const KCalendarCore::Event::Ptr &event, const QString &notebookUid);
 
     /**
       @copydoc
@@ -314,19 +320,19 @@ public:
       so if you have to Calendars with the same event, the pointer isn't the same for
       both. The deleting in the second one will fail.
     */
-    bool deleteEvent(const KCalCore::Event::Ptr &event);
+    bool deleteEvent(const KCalendarCore::Event::Ptr &event);
 
     /**
       Returns the earliest date after @a date on which an event occurs, or an invalid date if
       there is no next date.
      */
-    QDate nextEventsDate(const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec());
+    QDate nextEventsDate(const QDate &, const QTimeZone &timespec = QTimeZone());
 
     /**
       Returns the latest date before @a date on which an event occurs, or an invalid date if
       there is no previous date.
      */
-    QDate previousEventsDate(const QDate &, const KDateTime::Spec &timespec = KDateTime::Spec());
+    QDate previousEventsDate(const QDate &, const QTimeZone &timespec = QTimeZone());
 
 
     // To-do Specific Methods //
@@ -335,7 +341,7 @@ public:
       @copydoc
       Calendar::addTodo()
     */
-    bool addTodo(const KCalCore::Todo::Ptr &todo);
+    bool addTodo(const KCalendarCore::Todo::Ptr &todo);
 
     /**
       @copydoc
@@ -346,7 +352,7 @@ public:
       @warning There is now check if the notebookUid is valid or not. If it is not
       valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
-    bool addTodo(const KCalCore::Todo::Ptr &todo, const QString &notebookUid);
+    bool addTodo(const KCalendarCore::Todo::Ptr &todo, const QString &notebookUid);
 
     /**
       @copydoc
@@ -355,7 +361,7 @@ public:
       so if you have to Calendars with the same event, the pointer isn't the same for
       both. The deleting in the second one will fail.
     */
-    bool deleteTodo(const KCalCore::Todo::Ptr &todo);
+    bool deleteTodo(const KCalendarCore::Todo::Ptr &todo);
 
     // Journal Specific Methods //
 
@@ -363,7 +369,7 @@ public:
       @copydoc
       Calendar::addJournal()
     */
-    bool addJournal(const KCalCore::Journal::Ptr &journal);
+    bool addJournal(const KCalendarCore::Journal::Ptr &journal);
 
     /**
       @copydoc
@@ -374,7 +380,7 @@ public:
       @warning There is now check if the notebookUid is valid or not. If it is not
       valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
-    bool addJournal(const KCalCore::Journal::Ptr &journal, const QString &notebookUid);
+    bool addJournal(const KCalendarCore::Journal::Ptr &journal, const QString &notebookUid);
 
     /**
       @copydoc
@@ -383,9 +389,9 @@ public:
       so if you have to Calendars with the same event, the pointer isn't the same for
       both. The deleting in the second one will fail.
     */
-    bool deleteJournal(const KCalCore::Journal::Ptr &journal);
+    bool deleteJournal(const KCalendarCore::Journal::Ptr &journal);
 
-    using KCalCore::Calendar::rawJournals;
+    using KCalendarCore::Calendar::rawJournals;
     /**
       Returns an unfiltered list of all Journals occurring within a date range.
 
@@ -399,9 +405,9 @@ public:
       @return the list of unfiltered Journals occurring within the specified
       date range.
     */
-    KCalCore::Journal::List rawJournals(
+    KCalendarCore::Journal::List rawJournals(
         const QDate &start, const QDate &end,
-        const KDateTime::Spec &timespec = KDateTime::Spec(),
+        const QTimeZone &timespec = QTimeZone(),
         bool inclusive = false) const;
 
     /**
@@ -409,14 +415,14 @@ public:
 
       @param uid to the Incidence to be updated.
     */
-    void incidenceUpdate(const QString &uid, const KDateTime &recurrenceId);
+    void incidenceUpdate(const QString &uid, const QDateTime &recurrenceId);
 
     /**
       Notify the IncidenceBase::Observer that the incidence has been updated.
 
       @param uid to the Incidence just updated.
     */
-    void incidenceUpdated(const QString &uid, const KDateTime &recurrenceId);
+    void incidenceUpdated(const QString &uid, const QDateTime &recurrenceId);
 
     // Incidence Specific Methods, also see Calendar.h for more //
 
@@ -434,14 +440,14 @@ public:
       @param email attendee email address
       @return list of incidences for the attendee
     */
-    KCalCore::Incidence::List attendeeIncidences(const QString &email);
+    KCalendarCore::Incidence::List attendeeIncidences(const QString &email);
 
     /**
       List all incidences with geographic information in the memory.
 
       @return list of incidences
     */
-    KCalCore::Incidence::List geoIncidences();
+    KCalendarCore::Incidence::List geoIncidences();
 
     /**
       List incidences with geographic information in the memory.
@@ -452,7 +458,7 @@ public:
       @param diffLongitude maximum longitudinal difference
       @return list of incidences
     */
-    KCalCore::Incidence::List geoIncidences(float geoLatitude, float geoLongitude,
+    KCalendarCore::Incidence::List geoIncidences(float geoLatitude, float geoLongitude,
                                             float diffLatitude, float diffLongitude);
 
     /**
@@ -463,8 +469,8 @@ public:
 
       @return the list of filtered Incidences occurring on the specified date.
     */
-    virtual KCalCore::Incidence::List incidences(const QDate &date,
-                                                 const QList<KCalCore::Incidence::IncidenceType> &types);
+    virtual KCalendarCore::Incidence::List incidences(const QDate &date,
+                                                 const QList<KCalendarCore::Incidence::IncidenceType> &types);
 
     /**
       Delete all incidences from the memory cache. They will be deleted from
@@ -477,14 +483,14 @@ public:
 
       @param list is a pointer to a list of Incidences.
       @param sortField specifies the IncidenceSortField (see this header).
-      @param sortDirection specifies the KCalCore::SortDirection (see calendar.h).
+      @param sortDirection specifies the KCalendarCore::SortDirection (see calendar.h).
 
       @return a list of Incidences sorted as specified.
     */
-    static KCalCore::Incidence::List sortIncidences(
-        KCalCore::Incidence::List *list,
+    static KCalendarCore::Incidence::List sortIncidences(
+        KCalendarCore::Incidence::List *list,
         IncidenceSortField sortField = IncidenceSortDate,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending);
+        KCalendarCore::SortDirection sortDirection = KCalendarCore::SortDirectionAscending);
 
     /**
        Single expanded incidence validity struct.  The first field contains the
@@ -502,7 +508,7 @@ public:
        The second field contains a pointer to the actual Incidence
        instance.
     */
-    typedef QPair<ExpandedIncidenceValidity, KCalCore::Incidence::Ptr> ExpandedIncidence;
+    typedef QPair<ExpandedIncidenceValidity, KCalendarCore::Incidence::Ptr> ExpandedIncidence;
 
     /**
        List of ExpandedIncidences.
@@ -527,9 +533,9 @@ public:
       @return a list of ExpandedIncidences sorted by start time (the
       first item in the ExpandedIncidence tuple) in ascending order.
     */
-    ExpandedIncidenceList expandRecurrences(KCalCore::Incidence::List *list,
-                                            const KDateTime &start,
-                                            const KDateTime &end,
+    ExpandedIncidenceList expandRecurrences(KCalendarCore::Incidence::List *list,
+                                            const QDateTime &start,
+                                            const QDateTime &end,
                                             int maxExpand = 1000,
                                             bool *expandLimitHit = 0);
 
@@ -541,7 +547,7 @@ public:
     */
     ExpandedIncidenceList rawExpandedEvents(const QDate &start, const QDate &end,
                                             bool startInclusive = false, bool endInclusive = false,
-                                            const KDateTime::Spec &timespec = KDateTime::Spec()) const;
+                                            const QTimeZone &timeZone = QTimeZone()) const;
 
     /**
       Expand multiday incidences in a list.
@@ -574,7 +580,7 @@ public:
                                          bool merge = true,
                                          bool *expandLimitHit = 0);
 
-    using KCalCore::Calendar::incidences;
+    using KCalendarCore::Calendar::incidences;
 
     /**
       Returns a filtered list of all Incidences occurring within a date range.
@@ -585,7 +591,7 @@ public:
       @return the list of filtered Incidences occurring within the specified
       date range.
     */
-    KCalCore::Incidence::List incidences(const QDate &start, const QDate &end);
+    KCalendarCore::Incidence::List incidences(const QDate &start, const QDate &end);
 
     /**
       Creates the default Storage Object used in Maemo.
@@ -609,7 +615,7 @@ public:
       @param hasGeo value -1 = don't care, 0 = no geo, 1 = geo defined
       @return list of uncompleted todos
     */
-    KCalCore::Todo::List uncompletedTodos(bool hasDate, int hasGeo);
+    KCalendarCore::Todo::List uncompletedTodos(bool hasDate, int hasGeo);
 
     /**
       Get completed todos between given time.
@@ -620,8 +626,8 @@ public:
       @param end end datetime
       @return list of completed todos
     */
-    KCalCore::Todo::List completedTodos(bool hasDate, int hasGeo,
-                                        const KDateTime &start, const KDateTime &end);
+    KCalendarCore::Todo::List completedTodos(bool hasDate, int hasGeo,
+                                        const QDateTime &start, const QDateTime &end);
 
     /**
       Get incidences based on start/due dates or creation dates.
@@ -631,8 +637,8 @@ public:
       @param end end datetime
       @return list of incidences
     */
-    KCalCore::Incidence::List incidences(bool hasDate, const KDateTime &start,
-                                         const KDateTime &end);
+    KCalendarCore::Incidence::List incidences(bool hasDate, const QDateTime &start,
+                                         const QDateTime &end);
 
     /**
       Get incidences that have geo location defined.
@@ -642,8 +648,8 @@ public:
       @param end end datetime
       @return list of geo incidences
     */
-    KCalCore::Incidence::List geoIncidences(bool hasDate, const KDateTime &start,
-                                            const KDateTime &end);
+    KCalendarCore::Incidence::List geoIncidences(bool hasDate, const QDateTime &start,
+                                            const QDateTime &end);
 
     /**
       Get all incidences that have unread invitation status.
@@ -652,8 +658,8 @@ public:
       @return list of unread incidences
       @see IncidenceBase::setInvitationStatus()
     */
-    KCalCore::Incidence::List unreadInvitationIncidences(
-        const KCalCore::Person::Ptr &person = KCalCore::Person::Ptr());
+    KCalendarCore::Incidence::List unreadInvitationIncidences(
+        const KCalendarCore::Person &person = KCalendarCore::Person());
 
     /**
       Get incidences that have read/sent invitation status.
@@ -663,8 +669,8 @@ public:
       @return list of old incidences
       @see IncidenceBase::setInvitationStatus()
     */
-    KCalCore::Incidence::List oldInvitationIncidences(const KDateTime &start,
-                                                      const KDateTime &end);
+    KCalendarCore::Incidence::List oldInvitationIncidences(const QDateTime &start,
+                                                      const QDateTime &end);
 
     /**
       Get incidences related to given contact. Relation is determined
@@ -675,10 +681,10 @@ public:
       @param end end datetime
       @return list of related incidences
     */
-    KCalCore::Incidence::List contactIncidences(const KCalCore::Person::Ptr &person,
-                                                const KDateTime &start, const KDateTime &end);
+    KCalendarCore::Incidence::List contactIncidences(const KCalendarCore::Person &person,
+                                                const QDateTime &start, const QDateTime &end);
 
-    using KCalCore::Calendar::journals;
+    using KCalendarCore::Calendar::journals;
 
     /**
       Get journals between given times.
@@ -687,7 +693,7 @@ public:
       @param end end datetime
       @return list of journals
     */
-    KCalCore::Journal::List journals(const QDate &start, const QDate &end);
+    KCalendarCore::Journal::List journals(const QDate &start, const QDate &end);
 
     /**
       Add incidences into calendar from a list of Incidences.
@@ -700,7 +706,7 @@ public:
 
       @return a list of Incidences added into calendar memory.
     */
-    KCalCore::Incidence::List addIncidences(KCalCore::Incidence::List *list,
+    KCalendarCore::Incidence::List addIncidences(KCalendarCore::Incidence::List *list,
                                             const QString &notebookUid,
                                             bool duplicateRemovalEnabled = true);
 
