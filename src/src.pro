@@ -2,16 +2,15 @@
 TEMPLATE = lib
 TARGET = mkcal-qt5
 
-#DEFINES += MKCAL_FOR_MEEGO TIMED_SUPPORT
-
 DEFINES += MKCALPLUGINDIR=\\\"$$[QT_INSTALL_LIBS]/mkcalplugins\\\"
 
-DEFINES += TIMED_SUPPORT
+DEFINES += TIMED_SUPPORT NOTIFICATIONS_SUPPORT
 
 CONFIG += link_pkgconfig create_pc create_prl no_install_prl c++11
 PKGCONFIG += sqlite3 \
     libkcalcoren-qt5 \
-    timed-qt5
+    timed-qt5 \
+    nemonotifications-qt5
 
 QT += dbus
 QT -= gui

@@ -53,6 +53,9 @@ using namespace KCalCore;
 # include <QtDBus/QDBusReply>
 using namespace Maemo;
 static const QLatin1String RESET_ALARMS_CMD("invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms");
+#ifdef NOTIFICATIONS_SUPPORT
+# include <notification.h>
+#endif // NOTIFICATIONS_SUPPORT
 #endif
 
 using namespace mKCal;
@@ -574,6 +577,31 @@ void ExtendedStorage::setAlarms(const Incidence::List &incidences)
 void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
 {
 #if defined(TIMED_SUPPORT)
+#   if defined(NOTIFICATIONS_SUPPORT)
+    for (QObject *obj : Notification::notificationsByCategory(QStringLiteral("x-jolla.alarmui.calendar"))) {
+        Notification *n = qobject_cast<Notification*>(obj);
+        const QVariantList actions = n->remoteActions();
+        if (!actions.size()) {
+            continue;
+        }
+
+        const QVariantMap eventAction = actions.first().toMap();
+        const QVariantList arguments = eventAction.value(QStringLiteral("arguments")).toList();
+        if (arguments.size() < 2) {
+            continue;
+        }
+
+        const QString uid = arguments.at(0).toString();
+        const QString recurrenceId = arguments.at(1).toString();
+        if (uid == incidence->uid()
+                && (incidence->recurrenceId().toString().isEmpty()
+                    || incidence->recurrenceId().toString() == recurrenceId)) {
+            // we have a notification about this deleted occurrence or series.  close it.
+            n->close();
+        }
+    }
+#   endif // defined(NOTIFICATIONS_SUPPORT)
+
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";
     map["uid"] = incidence->uid();
