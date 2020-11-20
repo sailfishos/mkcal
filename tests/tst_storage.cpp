@@ -1260,10 +1260,15 @@ void tst_storage::tst_deleted()
     QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
 
     KCalendarCore::Incidence::List deleted;
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), "123456789-deletion"));
+    QVERIFY(deleted.isEmpty());
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), "123456789-deletion"));
     QCOMPARE(deleted.length(), 1);
     QCOMPARE(deleted[0]->uid(), event->uid());
     QCOMPARE(deleted[0]->nonKDECustomProperty("X-TEST-PROPERTY"), customValue);
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), "123456789-deletion"));
+    QCOMPARE(deleted.length(), 1);
 
     // One can purge previously deleted events from DB
     QVERIFY(m_storage->purgeDeletedIncidences(deleted));
