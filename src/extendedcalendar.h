@@ -317,25 +317,6 @@ public:
     bool deleteEvent(const KCalCore::Event::Ptr &event);
 
     /**
-      @copydoc
-      Calendar::rawEvents(KCalCore::EventSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Event::List rawEvents(
-        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::rawEventsForDate(const QDate &, const KDateTime::Spec &,
-                                 KCalCore::EventSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Event::List rawEventsForDate(
-        const QDate &date, const KDateTime::Spec &timespec = KDateTime::Spec(),
-        KCalCore::EventSortField sortField = KCalCore::EventSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-
-    /**
       Returns the earliest date after @a date on which an event occurs, or an invalid date if
       there is no next date.
      */
@@ -376,20 +357,6 @@ public:
     */
     bool deleteTodo(const KCalCore::Todo::Ptr &todo);
 
-    /**
-      @copydoc
-      Calendar::rawTodos(KCalCore::TodoSortField, KCalCore::SortDirection)
-    */
-    KCalCore::Todo::List rawTodos(
-        KCalCore::TodoSortField sortField = KCalCore::TodoSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
-    /**
-      @copydoc
-      Calendar::rawTodosForDate()
-    */
-    KCalCore::Todo::List rawTodosForDate(const QDate &date) const;
-
     // Journal Specific Methods //
 
     /**
@@ -418,14 +385,7 @@ public:
     */
     bool deleteJournal(const KCalCore::Journal::Ptr &journal);
 
-    /**
-      @copydoc
-      Calendar::rawJournals()
-    */
-    KCalCore::Journal::List rawJournals(
-        KCalCore::JournalSortField sortField = KCalCore::JournalSortUnsorted,
-        KCalCore::SortDirection sortDirection = KCalCore::SortDirectionAscending) const;
-
+    using KCalCore::Calendar::rawJournals;
     /**
       Returns an unfiltered list of all Journals occurring within a date range.
 
@@ -443,12 +403,6 @@ public:
         const QDate &start, const QDate &end,
         const KDateTime::Spec &timespec = KDateTime::Spec(),
         bool inclusive = false) const;
-
-    /**
-      @copydoc
-      Calendar::rawJournalsForDate()
-    */
-    KCalCore::Journal::List rawJournalsForDate(const QDate &date) const;
 
     /**
       Notify the IncidenceBase::Observer that the incidence will be updated.

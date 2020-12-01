@@ -356,30 +356,6 @@ bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
     }
 }
 
-Todo::List ExtendedCalendar::rawTodos(TodoSortField sortField, SortDirection sortDirection) const
-{
-    Todo::List todoList = MemoryCalendar::rawTodos(sortField, sortDirection);
-    // Need to filter out non visible todos for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawTodos().
-    todoList.erase(std::remove_if(todoList.begin(), todoList.end(),
-                                  [this] (const Todo::Ptr &todo) {return !isVisible(todo);}),
-                   todoList.end());
-
-    return todoList;
-}
-
-Todo::List ExtendedCalendar::rawTodosForDate(const QDate &date) const
-{
-    Todo::List todoList = MemoryCalendar::rawTodosForDate(date);
-    // Need to filter out non visible todos for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawTodosForDate().
-    todoList.erase(std::remove_if(todoList.begin(), todoList.end(),
-                                  [this] (const Todo::Ptr &todo) {return !isVisible(todo);}),
-                   todoList.end());
-
-    return todoList;
-}
-
 void ExtendedCalendar::incidenceUpdate(const QString &uid, const KDateTime &recurrenceId)
 {
     // The static_cast is ok as the ExtendedCalendar only observes Incidence objects
@@ -405,21 +381,6 @@ void ExtendedCalendar::incidenceUpdated(const QString &uid, const KDateTime &rec
     MemoryCalendar::incidenceUpdated(uid, recurrenceId);
 }
 
-Event::List ExtendedCalendar::rawEventsForDate(const QDate &date,
-                                               const KDateTime::Spec &timespec,
-                                               EventSortField sortField,
-                                               SortDirection sortDirection) const
-{
-    Event::List eventList = MemoryCalendar::rawEventsForDate(date, timespec, sortField, sortDirection);
-    // Need to filter out non visible events for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawEventsForDate().
-    eventList.erase(std::remove_if(eventList.begin(), eventList.end(),
-                                   [this] (const Event::Ptr &event) {return !isVisible(event);}),
-                    eventList.end());
-
-    return eventList;
-}
-
 ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(const QDate &start, const QDate &end,
                                                                             bool startInclusive, bool endInclusive,
                                                                             const KDateTime::Spec &timespec) const
@@ -433,73 +394,64 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(cons
     // Iterate over all events. Look for recurring events that occur on this date
     const Event::List events(rawEvents());
     for (const Event::Ptr &ev: events) {
-        const bool asClockTime = ev->dtStart().isClockTime() || ts.type() == KDateTime::ClockTime;
-        const KDateTime startTime = ev->dtStart();
-        const KDateTime endTime = ev->dtEnd();
-        const KDateTime rangeStartTime = (ev->allDay() && asClockTime)
-            ? KDateTime(ksdt.date(), QTime(), KDateTime::ClockTime)
-            : ev->allDay() ? ksdt
-            : KDateTime(ksdt.date(), QTime(0,0,0), ksdt.timeSpec());
-        const KDateTime rangeEndTime = (ev->allDay() && asClockTime)
-            ? KDateTime(kedt.date(), QTime(), KDateTime::ClockTime)
-            : kedt;
-        const KDateTime tsRangeStartTime = kdatetimeAsTimeSpec(rangeStartTime, ts);
-        const KDateTime tsRangeEndTime = kdatetimeAsTimeSpec(rangeEndTime, ts);
-        if (ev->recurs()) {
-            int extraDays = (ev->isMultiDay() && !startInclusive)
-                ? startTime.date().daysTo(endTime.date())
-                : (ev->allDay() ? 1 : 0);
-            const KDateTime tsAdjustedRangeStartTime(tsRangeStartTime.addDays(-extraDays));
-            const DateTimeList times = ev->recurrence()->timesInInterval(tsAdjustedRangeStartTime, tsRangeEndTime);
-            for (const KDateTime &timeInInterval : times) {
-                const KDateTime tsStartTime = kdatetimeAsTimeSpec(timeInInterval, ts);
-                const KDateTime tsEndTime = Duration(startTime, endTime).end(tsStartTime);
-                if (tsStartTime >= tsRangeEndTime
-                    || tsEndTime <= tsAdjustedRangeStartTime
-                    || (endInclusive && (tsEndTime > tsRangeEndTime))) {
-                    continue;
-                }
-                ExpandedIncidenceValidity eiv = {tsStartTime.dateTime(),
-                                                 tsEndTime.dateTime()};
-                eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
-            }
-        } else {
-            const KDateTime tsStartTime = kdatetimeAsTimeSpec(startTime, ts);
-            const KDateTime tsEndTime = kdatetimeAsTimeSpec(endTime, ts);
-            if (ev->isMultiDay()) {
-                if ((startInclusive == false || tsStartTime >= tsRangeStartTime) &&
-                    tsStartTime <= tsRangeEndTime && tsEndTime >= tsRangeStartTime &&
-                    (endInclusive == false || tsEndTime <= tsRangeEndTime)) {
+        if (isVisible(ev)) {
+            const bool asClockTime = ev->dtStart().isClockTime() || ts.type() == KDateTime::ClockTime;
+            const KDateTime startTime = ev->dtStart();
+            const KDateTime endTime = ev->dtEnd();
+            const KDateTime rangeStartTime = (ev->allDay() && asClockTime)
+                                           ? KDateTime(ksdt.date(), QTime(), KDateTime::ClockTime)
+                                           : ev->allDay() ? ksdt
+                                                          : KDateTime(ksdt.date(), QTime(0,0,0), ksdt.timeSpec());
+            const KDateTime rangeEndTime = (ev->allDay() && asClockTime)
+                                         ? KDateTime(kedt.date(), QTime(), KDateTime::ClockTime)
+                                         : kedt;
+            const KDateTime tsRangeStartTime = kdatetimeAsTimeSpec(rangeStartTime, ts);
+            const KDateTime tsRangeEndTime = kdatetimeAsTimeSpec(rangeEndTime, ts);
+            if (ev->recurs()) {
+                int extraDays = (ev->isMultiDay() && !startInclusive)
+                              ? startTime.date().daysTo(endTime.date())
+                              : (ev->allDay() ? 1 : 0);
+                const KDateTime tsAdjustedRangeStartTime(tsRangeStartTime.addDays(-extraDays));
+                const DateTimeList times = ev->recurrence()->timesInInterval(tsAdjustedRangeStartTime, tsRangeEndTime);
+                for (const KDateTime &timeInInterval : times) {
+                    const KDateTime tsStartTime = kdatetimeAsTimeSpec(timeInInterval, ts);
+                    const KDateTime tsEndTime = Duration(startTime, endTime).end(tsStartTime);
+                    if (tsStartTime >= tsRangeEndTime
+                            || tsEndTime <= tsAdjustedRangeStartTime
+                            || (endInclusive && (tsEndTime > tsRangeEndTime))) {
+                        continue;
+                    }
                     ExpandedIncidenceValidity eiv = {
-                                                     tsStartTime.dateTime(),
-                                                     tsEndTime.dateTime()
+                        tsStartTime.dateTime(),
+                        tsEndTime.dateTime()
                     };
                     eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
                 }
             } else {
-                if (tsStartTime >= tsRangeStartTime && tsStartTime <= tsRangeEndTime) {
-                    ExpandedIncidenceValidity eiv = {
-                                                     tsStartTime.dateTime(),
-                                                     tsEndTime.dateTime()
-                    };
-                    eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
+                const KDateTime tsStartTime = kdatetimeAsTimeSpec(startTime, ts);
+                const KDateTime tsEndTime = kdatetimeAsTimeSpec(endTime, ts);
+                if (ev->isMultiDay()) {
+                    if ((startInclusive == false || tsStartTime >= tsRangeStartTime) &&
+                            tsStartTime <= tsRangeEndTime && tsEndTime >= tsRangeStartTime &&
+                            (endInclusive == false || tsEndTime <= tsRangeEndTime)) {
+                        ExpandedIncidenceValidity eiv = {
+                            tsStartTime.dateTime(),
+                            tsEndTime.dateTime()
+                        };
+                        eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
+                    }
+                } else {
+                    if (tsStartTime >= tsRangeStartTime && tsStartTime <= tsRangeEndTime) {
+                        ExpandedIncidenceValidity eiv = {
+                            tsStartTime.dateTime(),
+                            tsEndTime.dateTime()
+                        };
+                        eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
+                    }
                 }
             }
         }
     }
-
-    return eventList;
-}
-
-Event::List ExtendedCalendar::rawEvents(EventSortField sortField,
-                                        SortDirection sortDirection) const
-{
-    Event::List eventList = MemoryCalendar::rawEvents(sortField, sortDirection);
-    // Need to filter out non visible events for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawEvents().
-    eventList.erase(std::remove_if(eventList.begin(), eventList.end(),
-                                   [this] (const Event::Ptr &event) {return !isVisible(event);}),
-                    eventList.end());
 
     return eventList;
 }
@@ -518,6 +470,9 @@ QDate ExtendedCalendar::nextEventsDate(const QDate &date, const KDateTime::Spec 
 
     const Event::List &events(rawEvents());
     for (const Event::Ptr &ev: events) {
+        if (!isVisible(ev)) {
+            continue;
+        }
         if (ev->recurs()) {
             if (ev->isMultiDay()) {
                 int extraDays = ev->dtStart().date().daysTo(ev->dtEnd().date());
@@ -572,6 +527,9 @@ QDate ExtendedCalendar::previousEventsDate(const QDate &date, const KDateTime::S
 
     const Event::List events(rawEvents());
     for (const Event::Ptr &ev: events) {
+        if (!isVisible(ev)) {
+            continue;
+        }
         if (ev->recurs()) {
             KDateTime prev = ev->recurrence()->getPreviousDateTime(kdt);
             prev.setDateOnly(true);
@@ -659,31 +617,6 @@ bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
     }
 }
 
-Journal::List ExtendedCalendar::rawJournals(JournalSortField sortField,
-                                            SortDirection sortDirection) const
-{
-    Journal::List journalList = MemoryCalendar::rawJournals(sortField, sortDirection);
-    // Need to filter out non visible journalss for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawJournals().
-    journalList.erase(std::remove_if(journalList.begin(), journalList.end(),
-                                     [this] (const Journal::Ptr &journal) {return !isVisible(journal);}),
-                      journalList.end());
-
-    return journalList;
-}
-
-Journal::List ExtendedCalendar::rawJournalsForDate(const QDate &date) const
-{
-    Journal::List journalList = MemoryCalendar::rawJournalsForDate(date);
-    // Need to filter out non visible journalss for compatibility reasons with
-    // older implementations of ExtendedCalendar::rawJournalsForDate().
-    journalList.erase(std::remove_if(journalList.begin(), journalList.end(),
-                                     [this] (const Journal::Ptr &journal) {return !isVisible(journal);}),
-                      journalList.end());
-
-    return journalList;
-}
-
 Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end,
                                             const KDateTime::Spec &timespec, bool inclusive) const
 {
@@ -696,6 +629,9 @@ Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end
     // Get journals
     const Journal::List journals(rawJournals());
     for (const Journal::Ptr &journal: journals) {
+        if (!isVisible(journal)) {
+            continue;
+        }
         KDateTime rStart = journal->dtStart();
         if (nd.isValid() && nd < rStart) {
             continue;
@@ -1239,7 +1175,7 @@ Todo::List ExtendedCalendar::uncompletedTodos(bool hasDate, int hasGeo)
 
     const Todo::List todos(rawTodos());
     for (const Todo::Ptr &todo: todos) {
-        if (!todo->isCompleted()) {
+        if (isVisible(todo) && !todo->isCompleted()) {
             if ((hasDate && todo->hasDueDate()) || (!hasDate && !todo->hasDueDate())) {
                 if (hasGeo < 0 || (hasGeo && todo->hasGeo()) || (!hasGeo && !todo->hasGeo())) {
                     list.append(todo);
@@ -1271,7 +1207,7 @@ Todo::List ExtendedCalendar::completedTodos(bool hasDate, int hasGeo,
 
     const Todo::List todos(rawTodos());
     for (const Todo::Ptr &todo: todos) {
-        if (todo->isCompleted()) {
+        if (isVisible(todo) && todo->isCompleted()) {
             if (hasDate && todo->hasDueDate()) {
                 if (hasGeo < 0 || (hasGeo && todo->hasGeo()) || (!hasGeo && !todo->hasGeo())) {
                     if ((!todo->recurs() && isDateInRange(todo->dtDue(), start, end))
@@ -1353,20 +1289,20 @@ Incidence::List ExtendedCalendar::incidences(bool hasDate,
     Todo::List todos = rawTodos();
     std::copy_if(todos.constBegin(), todos.constEnd(),
                  std::back_inserter(list),
-                 [hasDate, start, end] (const Todo::Ptr &todo) {
-                     return isTodoInRange(todo, hasDate ? 1 : 0, start, end);});
+                 [this, hasDate, start, end] (const Todo::Ptr &todo) {
+                     return isVisible(todo) && isTodoInRange(todo, hasDate ? 1 : 0, start, end);});
 
     Event::List events = rawEvents();
     std::copy_if(events.constBegin(), events.constEnd(),
                  std::back_inserter(list),
-                 [hasDate, start, end] (const Event::Ptr &event) {
-                     return isEventInRange(event, hasDate ? 1 : 0, start, end);});
+                 [this, hasDate, start, end] (const Event::Ptr &event) {
+                     return isVisible(event) && isEventInRange(event, hasDate ? 1 : 0, start, end);});
 
     Journal::List journals = rawJournals();
     std::copy_if(journals.constBegin(), journals.constEnd(),
                  std::back_inserter(list),
-                 [hasDate, start, end] (const Journal::Ptr &journal) {
-                     return isJournalInRange(journal, hasDate ? 1 : 0, start, end);});
+                 [this, hasDate, start, end] (const Journal::Ptr &journal) {
+                     return isVisible(journal) && isJournalInRange(journal, hasDate ? 1 : 0, start, end);});
 
     return list;
 }
@@ -1379,6 +1315,9 @@ Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
 
     const Journal::List journals(rawJournals());
     for (const Journal::Ptr &journal: journals) {
+        if (!isVisible(journal)) {
+            continue;
+        }
         KDateTime st = journal->dtStart();
         // If start time is not valid, try to use the creation time.
         if (!st.isValid())
