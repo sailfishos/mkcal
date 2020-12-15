@@ -78,29 +78,9 @@ using namespace mKCal;
 */
 //@cond PRIVATE
 
-template <typename K>
-void removeAll(QVector< QSharedPointer<K> > &c, const QSharedPointer<K> &x)
-{
-    if (x.isNull()) {
-        return;
-    }
-    c.remove(c.indexOf(x));
-}
-
 /**
   Make a QHash::value that returns a QVector.
 */
-template <typename K, typename V>
-QVector<V> values(const QMultiHash<K, V> &c)
-{
-    QVector<V> v;
-    v.reserve(c.size());
-    for (typename QMultiHash<K, V>::const_iterator it = c.begin(), end = c.end() ; it != end ; ++it) {
-        v.push_back(it.value());
-    }
-    return v;
-}
-
 template <typename K, typename V>
 QVector<V> values(const QMultiHash<K, V> &c, const K &x)
 {
@@ -113,7 +93,6 @@ QVector<V> values(const QMultiHash<K, V> &c, const K &x)
     return v;
 }
 
-
 class mKCal::ExtendedCalendar::Private
 {
 public:
@@ -123,26 +102,11 @@ public:
     ~Private()
     {
     }
-    QMultiHash<QString, Event::Ptr>mEvents;          // hash on uids of all Events
-    QMultiHash<QString, Event::Ptr>mEventsForDate;   // on start dates of non-recurring,
-    //   single-day Events
-
-    QMultiHash<QString, Todo::Ptr>mTodos;            // hash on uids of all Todos
-    QMultiHash<QString, Todo::Ptr>mTodosForDate;     // on due/start dates for all Todos
-
-    QMultiHash<QString, Journal::Ptr>mJournals;      // hash on uids of all Journals
-    QMultiHash<QString, Journal::Ptr>mJournalsForDate; // on dates of all Journals
-
     Incidence::List mGeoIncidences;                  // list of all Geo Incidences
-
-    QMultiHash<QString, Event::Ptr> mDeletedEvents;    // list of all deleted Events
-    QMultiHash<QString, Todo::Ptr> mDeletedTodos;      // list of all deleted Todos
-    QMultiHash<QString, Journal::Ptr> mDeletedJournals; // list of all deleted Journals
-
     QMultiHash<QString, Incidence::Ptr>mAttendeeIncidences; // lists of incidences for attendees
 
-    void addIncidenceToLists(const Incidence::Ptr &incidence, const KDateTime::Spec &timeSpec);
-    void removeIncidenceFromLists(const Incidence::Ptr &incidence, const KDateTime::Spec &timeSpec);
+    void addIncidenceToLists(const Incidence::Ptr &incidence);
+    void removeIncidenceFromLists(const Incidence::Ptr &incidence);
 
     /**
      * Figure when particular recurrence of an incidence starts.
@@ -172,19 +136,13 @@ public:
 };
 
 ExtendedCalendar::ExtendedCalendar(const KDateTime::Spec &timeSpec)
-    : Calendar(timeSpec), d(new mKCal::ExtendedCalendar::Private)
+    : MemoryCalendar(timeSpec), d(new mKCal::ExtendedCalendar::Private)
 {
 }
 
 ExtendedCalendar::ExtendedCalendar(const QString &timeZoneId)
-    : Calendar(timeZoneId), d(new mKCal::ExtendedCalendar::Private)
+    : MemoryCalendar(timeZoneId), d(new mKCal::ExtendedCalendar::Private)
 {
-}
-
-ExtendedCalendar::~ExtendedCalendar()
-{
-    close();
-    delete d;
 }
 
 bool ExtendedCalendar::reload()
@@ -201,19 +159,9 @@ bool ExtendedCalendar::save()
 
 void ExtendedCalendar::close()
 {
-    setObserversEnabled(false);
-
-    deleteAllIncidences();
-
-    d->mDeletedEvents.clear();
-    d->mDeletedTodos.clear();
-    d->mDeletedJournals.clear();
-
-    clearNotebookAssociations();
-
-    setModified(false);
-
-    setObserversEnabled(true);
+    d->mGeoIncidences.clear();
+    d->mAttendeeIncidences.clear();
+    MemoryCalendar::close();
 }
 
 ICalTimeZone ExtendedCalendar::parseZone(MSTimeZone *tz)
@@ -226,40 +174,6 @@ ICalTimeZone ExtendedCalendar::parseZone(MSTimeZone *tz)
         zone = src.parse(tz, *icalZones);
     }
     return zone;
-}
-
-void ExtendedCalendar::doSetTimeSpec(const KDateTime::Spec &timeSpec)
-{
-    // Reset date based hashes to the new spec.
-    d->mEventsForDate.clear();
-    d->mTodosForDate.clear();
-    d->mJournalsForDate.clear();
-
-    QHashIterator<QString, Event::Ptr>ie(d->mEvents);
-    while (ie.hasNext()) {
-        ie.next();
-        d->mEventsForDate.insert(
-            ie.value()->dtStart().toTimeSpec(timeSpec).date().toString(), ie.value());
-    }
-
-    QHashIterator<QString, Todo::Ptr>it(d->mTodos);
-    while (it.hasNext()) {
-        it.next();
-        Todo::Ptr todo = it.value();
-        if (todo->hasDueDate()) {
-            d->mTodosForDate.insert(todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            d->mTodosForDate.insert(
-                todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
-        }
-    }
-
-    QHashIterator<QString, Journal::Ptr>ij(d->mJournals);
-    while (ij.hasNext()) {
-        ij.next();
-        d->mJournalsForDate.insert(
-            ij.value()->dtStart().toTimeSpec(timeSpec).date().toString(), ij.value());
-    }
 }
 
 // Dissociate a single occurrence or all future occurrences from a recurring
@@ -343,6 +257,20 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
     return newInc;
 }
 
+bool ExtendedCalendar::addIncidence(const Incidence::Ptr &incidence)
+{
+    // Need to by-pass the override done in MemoryCalendar to get back
+    // the genericity of the call implemented in the Calendar class.
+    return Calendar::addIncidence(incidence);
+}
+
+bool ExtendedCalendar::deleteIncidence(const Incidence::Ptr &incidence)
+{
+    // Need to by-pass the override done in MemoryCalendar to get back
+    // the genericity of the call implemented in the Calendar class.
+    return Calendar::deleteIncidence(incidence);
+}
+
 bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent)
 {
     return addEvent(aEvent, defaultNotebook());
@@ -359,112 +287,28 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
         return false;
     }
 
-    if (d->mEvents.contains(aEvent->uid())) {
-        Event::Ptr old;
-        if (!aEvent->hasRecurrenceId()) {
-            old = event(aEvent->uid());
-        } else {
-            old = event(aEvent->uid(), aEvent->recurrenceId());
-        }
-        if (old) {
-            qCDebug(lcMkcal) << "Duplicate found, event was not added";
-            return false;
-        }
+    if (MemoryCalendar::event(aEvent->uid(), aEvent->recurrenceId())) {
+        qCDebug(lcMkcal) << "Duplicate found, event was not added";
+        return false;
     }
 
-    notifyIncidenceAdded(aEvent);
-    d->mEvents.insert(aEvent->uid(), aEvent);
-    d->addIncidenceToLists(aEvent, timeSpec());
-    aEvent->registerObserver(this);
-
-    setModified(true);
-
-    return setNotebook(aEvent, notebookUid);
-}
-
-bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
-{
-    const QString uid = event->uid();
-    if (d->mEvents.remove(uid, event)) {
-        event->unRegisterObserver(this);
-        setModified(true);
-        notifyIncidenceDeleted(event);
-        d->mDeletedEvents.insert(uid, event);
-
-        d->removeIncidenceFromLists(event, timeSpec());
-
-        event->setLastModified(KDateTime::currentUtcDateTime());
-        return true;
+    if (MemoryCalendar::addIncidence(aEvent)) {
+        d->addIncidenceToLists(aEvent);
+        return setNotebook(aEvent, notebookUid);
     } else {
-        qCWarning(lcMkcal) << "Event not found.";
         return false;
     }
 }
 
-bool ExtendedCalendar::deleteEventInstances(const Event::Ptr &event)
+bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
 {
-    QList<Event::Ptr> values = d->mEvents.values(event->uid());
-    QList<Event::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            qCDebug(lcMkcal) << "deleting child event" << (*it)->uid()
-                             << (*it)->dtStart() << (*it)->dtEnd()
-                             << "in calendar";
-            deleteEvent((*it));
-        }
+    if (MemoryCalendar::deleteIncidence(event)) {
+        event->unRegisterObserver(this);
+        d->removeIncidenceFromLists(event);
+        return true;
+    } else {
+        return false;
     }
-
-    return true;
-}
-
-void ExtendedCalendar::deleteAllEvents()
-{
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        notifyIncidenceDeleted(i.value());
-        // suppress update notifications for the relation removal triggered
-        // by the following deletions
-        i.value()->startUpdates();
-    }
-    d->mEvents.clear();
-    d->mEventsForDate.clear();
-}
-
-Event::Ptr ExtendedCalendar::event(const QString &uid, const KDateTime &recurrenceId) const
-{
-    QList<Event::Ptr> values = d->mEvents.values(uid);
-    QList<Event::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Event::Ptr();
-}
-
-Event::Ptr ExtendedCalendar::deletedEvent(const QString &uid, const KDateTime &recurrenceId) const
-{
-    QList<Event::Ptr> values = d->mDeletedEvents.values(uid);
-    QList<Event::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Event::Ptr();
 }
 
 bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo)
@@ -483,369 +327,33 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
         return false;
     }
 
-    if (d->mTodos.contains(aTodo->uid())) {
-        Todo::Ptr old;
-        if (!aTodo->hasRecurrenceId()) {
-            old = todo(aTodo->uid());
+    Todo::Ptr old = MemoryCalendar::todo(aTodo->uid(), aTodo->recurrenceId());
+    if (old) {
+        if (aTodo->revision() > old->revision()) {
+            deleteTodo(old);   // move old to deleted
         } else {
-            old = todo(aTodo->uid(), aTodo->recurrenceId());
-        }
-        if (old) {
-            if (aTodo->revision() > old->revision()) {
-                deleteTodo(old);   // move old to deleted
-            } else {
-                qCDebug(lcMkcal) << "Duplicate found, todo was not added";
-                return false;
-            }
+            qCDebug(lcMkcal) << "Duplicate found, todo was not added";
+            return false;
         }
     }
 
-
-    notifyIncidenceAdded(aTodo);
-    d->mTodos.insert(aTodo->uid(), aTodo);
-    d->addIncidenceToLists(aTodo, timeSpec());
-    aTodo->registerObserver(this);
-
-    // Set up sub-to-do relations
-    setupRelations(aTodo);
-
-    setModified(true);
-
-    return setNotebook(aTodo, notebookUid);
-}
-
-//@cond PRIVATE
-void ExtendedCalendar::Private::addIncidenceToLists(const Incidence::Ptr &incidence,
-                                                    const KDateTime::Spec &timeSpec)
-{
-    const Person::Ptr organizer = incidence->organizer();
-    if (organizer && !organizer->isEmpty()) {
-        mAttendeeIncidences.insert(organizer->email(), incidence);
-    }
-    const Attendee::List &list = incidence->attendees();
-    Attendee::List::ConstIterator it;
-    for (it = list.begin(); it != list.end(); ++it) {
-        mAttendeeIncidences.insert((*it)->email(), incidence);
-    }
-    if (incidence->hasGeo()) {
-        mGeoIncidences.append(incidence);
-    }
-
-    if (incidence->type() == Incidence::TypeEvent) {
-        Event::Ptr event = incidence.staticCast<Event>();
-        if (!event->recurs() && !event->isMultiDay()) {
-            mEventsForDate.insert(
-                event->dtStart().toTimeSpec(timeSpec).date().toString(), event);
-        }
-    } else if (incidence->type() == Incidence::TypeTodo) {
-        Todo::Ptr todo = incidence.staticCast<Todo>();
-        if (todo->hasDueDate()) {
-            mTodosForDate.insert(
-                todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            mTodosForDate.insert(
-                todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
-        }
-    } else if (incidence->type() == Incidence::TypeJournal) {
-        Journal::Ptr journal = incidence.staticCast<Journal>();
-        mJournalsForDate.insert(
-            journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal);
+    if (MemoryCalendar::addIncidence(aTodo)) {
+        d->addIncidenceToLists(aTodo);
+        return setNotebook(aTodo, notebookUid);
     } else {
-        Q_ASSERT(false);
-    }
-}
-
-void ExtendedCalendar::Private::removeIncidenceFromLists(const Incidence::Ptr &incidence,
-                                                         const KDateTime::Spec &timeSpec)
-{
-    const Person::Ptr organizer = incidence->organizer();
-    if (organizer && !organizer->isEmpty()) {
-        mAttendeeIncidences.remove(organizer->email(), incidence);
-    }
-    const Attendee::List &list = incidence->attendees();
-    Attendee::List::ConstIterator it;
-    for (it = list.begin(); it != list.end(); ++it) {
-        mAttendeeIncidences.remove((*it)->email(), incidence);
-    }
-    if (incidence->hasGeo()) {
-        mGeoIncidences.removeAll(incidence);
-    }
-
-    if (incidence->type() == Incidence::TypeEvent) {
-        Event::Ptr event = incidence.staticCast<Event>();
-        if (!event->dtStart().isNull()) {   // Not mandatory to have dtStart
-            mEventsForDate.remove(
-                event->dtStart().toTimeSpec(timeSpec).date().toString(), event);
-        }
-    } else if (incidence->type() == Incidence::TypeTodo) {
-        Todo::Ptr todo = incidence.staticCast<Todo>();
-        if (todo->hasDueDate()) {
-            mTodosForDate.remove(todo->dtDue().toTimeSpec(timeSpec).date().toString(), todo);
-        } else if (todo->hasStartDate()) {
-            mTodosForDate.remove(
-                todo->dtStart().toTimeSpec(timeSpec).date().toString(), todo);
-        }
-    } else if (incidence->type() == Incidence::TypeJournal) {
-        Journal::Ptr journal = incidence.staticCast<Journal>();
-        mJournalsForDate.remove(
-            journal->dtStart().toTimeSpec(timeSpec).date().toString(), journal);
-    } else {
-        Q_ASSERT(false);
-    }
-}
-//@endcond
-
-bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
-{
-    // Handle orphaned children
-    removeRelations(todo);
-
-    if (d->mTodos.remove(todo->uid(), todo)) {
-        todo->unRegisterObserver(this);
-        setModified(true);
-        notifyIncidenceDeleted(todo);
-        d->mDeletedTodos.insert(todo->uid(), todo);
-
-        d->removeIncidenceFromLists(todo, timeSpec());
-
-        todo->setLastModified(KDateTime::currentUtcDateTime());
-
-        return true;
-    } else {
-        qCWarning(lcMkcal) << "Todo not found.";
         return false;
     }
 }
 
-bool ExtendedCalendar::deleteTodoInstances(const Todo::Ptr &todo)
+bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
 {
-    QList<Todo::Ptr> values = d->mTodos.values(todo->uid());
-    QList<Todo::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            qCDebug(lcMkcal) << "deleting child todo" << (*it)->uid()
-                     << (*it)->dtStart() << (*it)->dtDue()
-                     << "in calendar";
-            deleteTodo((*it));
-        }
+    if (MemoryCalendar::deleteIncidence(todo)) {
+        todo->unRegisterObserver(this);
+        d->removeIncidenceFromLists(todo);
+        return true;
+    } else {
+        return false;
     }
-
-    return true;
-}
-
-void ExtendedCalendar::deleteAllTodos()
-{
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        notifyIncidenceDeleted(i.value());
-        // suppress update notifications for the relation removal triggered
-        // by the following deletions
-        i.value()->startUpdates();
-    }
-    d->mTodos.clear();
-    d->mTodosForDate.clear();
-}
-
-Todo::Ptr ExtendedCalendar::todo(const QString &uid, const KDateTime &recurrenceId) const
-{
-    QList<Todo::Ptr> values = d->mTodos.values(uid);
-    QList<Todo::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Todo::Ptr();
-}
-
-Todo::Ptr ExtendedCalendar::deletedTodo(const QString &uid, const KDateTime &recurrenceId) const
-{
-    QList<Todo::Ptr> values = d->mDeletedTodos.values(uid);
-    QList<Todo::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Todo::Ptr();
-}
-
-Todo::List ExtendedCalendar::rawTodos(TodoSortField sortField, SortDirection sortDirection) const
-{
-    Todo::List todoList;
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        if (isVisible(i.value())) {
-            todoList.append(i.value());
-        }
-    }
-    return Calendar::sortTodos(todoList, sortField, sortDirection);
-}
-
-Todo::List ExtendedCalendar::deletedTodos(TodoSortField sortField,
-                                          SortDirection sortDirection) const
-{
-    Todo::List todoList;
-    QHashIterator<QString, Todo::Ptr>i(d->mDeletedTodos);
-    while (i.hasNext()) {
-        i.next();
-        todoList.append(i.value());
-    }
-    return Calendar::sortTodos(todoList, sortField, sortDirection);
-}
-
-Todo::List ExtendedCalendar::todoInstances(const Incidence::Ptr &todo, TodoSortField sortField,
-                                           SortDirection sortDirection) const
-{
-    Todo::List list;
-
-    QList<Todo::Ptr> values = d->mTodos.values(todo->uid());
-    QList<Todo::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            list.append(*it);
-        }
-    }
-    return Calendar::sortTodos(list, sortField, sortDirection);
-}
-
-Todo::List ExtendedCalendar::rawTodosForDate(const QDate &date) const
-{
-    Todo::List todoList;
-    Todo::Ptr t;
-
-    KDateTime::Spec ts = timeSpec();
-    QString dateStr = date.toString();
-    QMultiHash<QString, Todo::Ptr>::const_iterator it = d->mTodosForDate.constFind(dateStr);
-    while (it != d->mTodosForDate.constEnd() && it.key() == dateStr) {
-        t = it.value();
-        if (isVisible(t)) {
-            todoList.append(t);
-        }
-        ++it;
-    }
-
-    // Iterate over all todos. Look for recurring todoss that occur on this date
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        t = i.value();
-        if (isVisible(t)) {
-            if (t->recurs()) {
-                if (t->recursOn(date, ts)) {
-                    if (!todoList.contains(t)) {
-                        todoList.append(t);
-                    }
-                }
-            }
-        }
-    }
-
-    return todoList;
-}
-
-Todo::List ExtendedCalendar::rawTodos(const QDate &start, const QDate &end,
-                                      const KDateTime::Spec &timespec, bool inclusive) const
-{
-    Q_UNUSED(inclusive);   // use only exact dtDue/dtStart, not dtStart and dtEnd
-
-    Todo::List todoList;
-    KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
-    KDateTime st(start, ts);
-    KDateTime nd(end, ts);
-
-    // Get todos
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    Todo::Ptr todo;
-    while (i.hasNext()) {
-        i.next();
-        todo = i.value();
-        if (!isVisible(todo)) {
-            continue;
-        }
-
-        KDateTime rStart = todo->hasDueDate() ? todo->dtDue() :
-                           todo->hasStartDate() ? todo->dtStart() :
-                           KDateTime();
-        if (!rStart.isValid()) {
-            continue;
-        }
-
-        if (!todo->recurs()) {   // non-recurring todos
-            if (nd.isValid() && nd < rStart) {
-                continue;
-            }
-            if (st.isValid() && rStart < st) {
-                continue;
-            }
-        } else { // recurring events
-            switch (todo->recurrence()->duration()) {
-            case -1: // infinite
-                break;
-            case 0: // end date given
-            default: // count given
-                KDateTime rEnd(todo->recurrence()->endDate(), ts);
-                if (!rEnd.isValid()) {
-                    continue;
-                }
-                if (st.isValid() && rEnd < st) {
-                    continue;
-                }
-                break;
-            } // switch(duration)
-        } //if(recurs)
-
-        todoList.append(todo);
-    }
-
-    return todoList;
-}
-
-Alarm::List ExtendedCalendar::alarmsTo(const KDateTime &to) const
-{
-    return alarms(KDateTime(QDate(1900, 1, 1)), to);
-}
-
-Alarm::List ExtendedCalendar::alarms(const KDateTime &from, const KDateTime &to) const
-{
-    Alarm::List alarmList;
-    QHashIterator<QString, Event::Ptr>ie(d->mEvents);
-    Event::Ptr e;
-    while (ie.hasNext()) {
-        ie.next();
-        e = ie.value();
-        if (e->recurs()) {
-            appendRecurringAlarms(alarmList, e, from, to);
-        } else {
-            appendAlarms(alarmList, e, from, to);
-        }
-    }
-
-    QHashIterator<QString, Todo::Ptr>it(d->mTodos);
-    Todo::Ptr t;
-    while (it.hasNext()) {
-        it.next();
-        t = it.value();
-        if (!t->isCompleted()) {
-            appendAlarms(alarmList, t, from, to);
-        }
-    }
-
-    return alarmList;
 }
 
 void ExtendedCalendar::incidenceUpdate(const QString &uid, const KDateTime &recurrenceId)
@@ -857,7 +365,8 @@ void ExtendedCalendar::incidenceUpdate(const QString &uid, const KDateTime &recu
         return;
     }
 
-    d->removeIncidenceFromLists(incidence, timeSpec());
+    d->removeIncidenceFromLists(incidence);
+    MemoryCalendar::incidenceUpdate(uid, recurrenceId);
 }
 
 void ExtendedCalendar::incidenceUpdated(const QString &uid, const KDateTime &recurrenceId)
@@ -868,78 +377,8 @@ void ExtendedCalendar::incidenceUpdated(const QString &uid, const KDateTime &rec
         return;
     }
 
-    incidence->setLastModified(KDateTime::currentUtcDateTime());
-    // we should probably update the revision number here,
-    // or internally in the Event itself when certain things change.
-    // need to verify with ical documentation.
-
-    d->addIncidenceToLists(incidence, timeSpec());
-
-    notifyIncidenceChanged(incidence);
-
-    setModified(true);
-}
-
-Event::List ExtendedCalendar::rawEventsForDate(const QDate &date,
-                                               const KDateTime::Spec &timespec,
-                                               EventSortField sortField,
-                                               SortDirection sortDirection) const
-{
-    Event::List eventList;
-    Event::Ptr ev;
-
-    // Find the hash for the specified date
-    QString dateStr = date.toString();
-    QMultiHash<QString, Event::Ptr>::const_iterator it = d->mEventsForDate.constFind(dateStr);
-    // Iterate over all non-recurring, single-day events that start on this date
-    KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
-    KDateTime kdt(date, ts);
-    while (it != d->mEventsForDate.constEnd() && it.key() == dateStr) {
-        ev = it.value();
-        if (isVisible(ev)) {
-            KDateTime end(ev->dtEnd().toTimeSpec(ev->dtStart()));
-            if (ev->allDay()) {
-                end.setDateOnly(true);
-            }
-            //qCDebug(lcMkcal) << dateStr << kdt << ev->summary() << ev->dtStart() << end;
-            if (end >= kdt) {
-                eventList.append(ev);
-            }
-        }
-        ++it;
-    }
-
-    // Iterate over all events. Look for recurring events that occur on this date
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        ev = i.value();
-        if (isVisible(ev)) {
-            if (ev->recurs()) {
-                if (ev->isMultiDay()) {
-                    int extraDays = ev->dtStart().date().daysTo(ev->dtEnd().date());
-                    for (int i = 0; i <= extraDays; ++i) {
-                        if (ev->recursOn(date.addDays(-i), ts)) {
-                            eventList.append(ev);
-                            break;
-                        }
-                    }
-                } else {
-                    if (ev->recursOn(date, ts)) {
-                        eventList.append(ev);
-                    }
-                }
-            } else {
-                if (ev->isMultiDay()) {
-                    if (ev->dtStart().date() <= date && ev->dtEnd().date() >= date) {
-                        eventList.append(ev);
-                    }
-                }
-            }
-        }
-    }
-
-    return Calendar::sortEvents(eventList, sortField, sortDirection);
+    d->addIncidenceToLists(incidence);
+    MemoryCalendar::incidenceUpdated(uid, recurrenceId);
 }
 
 ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(const QDate &start, const QDate &end,
@@ -948,17 +387,13 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(cons
 {
     ExpandedIncidenceList eventList;
 
-    Event::Ptr ev;
-
     KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
     KDateTime ksdt(start, ts);
     KDateTime kedt = KDateTime(end.addDays(1), QTime(0, 0, 0), ts);
 
     // Iterate over all events. Look for recurring events that occur on this date
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        ev = i.value();
+    const Event::List events(rawEvents());
+    for (const Event::Ptr &ev: events) {
         if (isVisible(ev)) {
             const bool asClockTime = ev->dtStart().isClockTime() || ts.type() == KDateTime::ClockTime;
             const KDateTime startTime = ev->dtStart();
@@ -1021,121 +456,8 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(cons
     return eventList;
 }
 
-Event::List ExtendedCalendar::rawEvents(const QDate &start, const QDate &end,
-                                        const KDateTime::Spec &timespec, bool inclusive) const
-{
-    Event::List eventList;
-    KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
-    KDateTime st(start, ts);
-    KDateTime nd(end, ts);
-
-    // Get non-recurring events
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    Event::Ptr event;
-    while (i.hasNext()) {
-        i.next();
-        event = i.value();
-        if (!isVisible(event)) {
-            continue;
-        }
-
-        KDateTime rStart = event->dtStart();
-        if (nd.isValid() && nd < rStart) {
-            continue;
-        }
-        if (inclusive && st.isValid() && rStart < st) {
-            continue;
-        }
-
-        if (!event->recurs()) {   // non-recurring events
-            KDateTime rEnd = event->dtEnd();
-            if (st.isValid() && rEnd < st) {
-                continue;
-            }
-            if (inclusive && nd.isValid() && nd < rEnd) {
-                continue;
-            }
-        } else { // recurring events
-            switch (event->recurrence()->duration()) {
-            case -1: // infinite
-                if (inclusive) {
-                    continue;
-                }
-                break;
-            case 0: // end date given
-            default: // count given
-                KDateTime rEnd(event->recurrence()->endDate(), ts);
-                if (!rEnd.isValid()) {
-                    continue;
-                }
-                if (st.isValid() && rEnd < st) {
-                    continue;
-                }
-                if (inclusive && nd.isValid() && nd < rEnd) {
-                    continue;
-                }
-                break;
-            } // switch(duration)
-        } //if(recurs)
-
-        eventList.append(event);
-    }
-
-    return eventList;
-}
-
-Event::List ExtendedCalendar::rawEventsForDate(const KDateTime &kdt) const
-{
-    return rawEventsForDate(kdt.date(), kdt.timeSpec());
-}
-
-Event::List ExtendedCalendar::rawEvents(EventSortField sortField,
-                                        SortDirection sortDirection) const
-{
-    Event::List eventList;
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        if (isVisible(i.value())) {
-            eventList.append(i.value());
-        }
-    }
-    return Calendar::sortEvents(eventList, sortField, sortDirection);
-}
-
-Event::List ExtendedCalendar::deletedEvents(EventSortField sortField,
-                                            SortDirection sortDirection) const
-{
-    Event::List eventList;
-    QHashIterator<QString, Event::Ptr>i(d->mDeletedEvents);
-    while (i.hasNext()) {
-        i.next();
-        eventList.append(i.value());
-    }
-    return Calendar::sortEvents(eventList, sortField, sortDirection);
-}
-
-Event::List ExtendedCalendar::eventInstances(const Incidence::Ptr &event,
-                                             EventSortField sortField,
-                                             SortDirection sortDirection) const
-{
-    Event::List list;
-
-    QList<Event::Ptr> values = d->mEvents.values(event->uid());
-    QList<Event::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            list.append(*it);
-        }
-    }
-
-    return Calendar::sortEvents(list, sortField, sortDirection);
-}
-
 QDate ExtendedCalendar::nextEventsDate(const QDate &date, const KDateTime::Spec &timespec)
 {
-    Event::Ptr ev;
-
     KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
 
     KDateTime kdt(date, ts);
@@ -1146,13 +468,11 @@ QDate ExtendedCalendar::nextEventsDate(const QDate &date, const KDateTime::Spec 
 
     KDateTime rv;
 
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        ev = i.value();
-        if (!isVisible(ev))
+    const Event::List &events(rawEvents());
+    for (const Event::Ptr &ev: events) {
+        if (!isVisible(ev)) {
             continue;
-
+        }
         if (ev->recurs()) {
             if (ev->isMultiDay()) {
                 int extraDays = ev->dtStart().date().daysTo(ev->dtEnd().date());
@@ -1198,8 +518,6 @@ QDate ExtendedCalendar::nextEventsDate(const QDate &date, const KDateTime::Spec 
 
 QDate ExtendedCalendar::previousEventsDate(const QDate &date, const KDateTime::Spec &timespec)
 {
-    Event::Ptr ev;
-
     KDateTime::Spec ts = timespec.isValid() ? timespec : timeSpec();
 
     KDateTime kdt(date, ts);
@@ -1207,13 +525,11 @@ QDate ExtendedCalendar::previousEventsDate(const QDate &date, const KDateTime::S
 
     KDateTime rv;
 
-    QHashIterator<QString, Event::Ptr>i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        ev = i.value();
-        if (!isVisible(ev))
+    const Event::List events(rawEvents());
+    for (const Event::Ptr &ev: events) {
+        if (!isVisible(ev)) {
             continue;
-
+        }
         if (ev->recurs()) {
             KDateTime prev = ev->recurrence()->getPreviousDateTime(kdt);
             prev.setDateOnly(true);
@@ -1272,178 +588,33 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
         return false;
     }
 
-
-    if (d->mJournals.contains(aJournal->uid())) {
-        Journal::Ptr old;
-        if (!aJournal->hasRecurrenceId()) {
-            old = journal(aJournal->uid());
+    Journal::Ptr old = journal(aJournal->uid(), aJournal->recurrenceId());
+    if (old) {
+        if (aJournal->revision() > old->revision()) {
+            deleteJournal(old);   // move old to deleted
         } else {
-            old = journal(aJournal->uid(), aJournal->recurrenceId());
-        }
-        if (old) {
-            if (aJournal->revision() > old->revision()) {
-                deleteJournal(old);   // move old to deleted
-            } else {
-                qCDebug(lcMkcal) << "Duplicate found, journal was not added";
-                return false;
-            }
+            qCDebug(lcMkcal) << "Duplicate found, journal was not added";
+            return false;
         }
     }
 
-    notifyIncidenceAdded(aJournal);
-    d->mJournals.insert(aJournal->uid(), aJournal);
-    d->addIncidenceToLists(aJournal, timeSpec());
-    aJournal->registerObserver(this);
-
-    setModified(true);
-
-    return setNotebook(aJournal, notebookUid);;
-}
-
-bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
-{
-    if (d->mJournals.remove(journal->uid(), journal)) {
-        journal->unRegisterObserver(this);
-        setModified(true);
-        notifyIncidenceDeleted(journal);
-        d->mDeletedJournals.insert(journal->uid(), journal);
-
-        d->removeIncidenceFromLists(journal, timeSpec());
-
-        journal->setLastModified(KDateTime::currentUtcDateTime());
-
-        return true;
+    if (MemoryCalendar::addIncidence(aJournal)) {
+        d->addIncidenceToLists(aJournal);
+        return setNotebook(aJournal, notebookUid);
     } else {
-        qCWarning(lcMkcal) << "Journal not found.";
         return false;
     }
 }
 
-bool ExtendedCalendar::deleteJournalInstances(const Journal::Ptr &journal)
+bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
 {
-    QList<Journal::Ptr> values = d->mJournals.values(journal->uid());
-    QList<Journal::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            qCDebug(lcMkcal) << "deleting child journal" << (*it)->uid()
-                     << (*it)->dtStart()
-                     << "in calendar";
-            deleteJournal((*it));
-        }
+    if (MemoryCalendar::deleteIncidence(journal)) {
+        journal->unRegisterObserver(this);
+        d->removeIncidenceFromLists(journal);
+        return true;
+    } else {
+        return false;
     }
-
-    return true;
-}
-
-void ExtendedCalendar::deleteAllJournals()
-{
-    QHashIterator<QString, Journal::Ptr>i(d->mJournals);
-    while (i.hasNext()) {
-        i.next();
-        notifyIncidenceDeleted(i.value());
-        // suppress update notifications for the relation removal triggered
-        // by the following deletions
-        i.value()->startUpdates();
-    }
-    d->mJournals.clear();
-    d->mJournalsForDate.clear();
-}
-
-Journal::Ptr ExtendedCalendar::journal(const QString &uid, const KDateTime &recurrenceId) const
-{
-    QList<Journal::Ptr> values = d->mJournals.values(uid);
-    QList<Journal::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Journal::Ptr();
-}
-
-Journal::Ptr ExtendedCalendar::deletedJournal(const QString &uid,
-                                              const KDateTime &recurrenceId) const
-{
-    QList<Journal::Ptr> values = d->mDeletedJournals.values(uid);
-    QList<Journal::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if (recurrenceId.isNull()) {
-            if (!(*it)->hasRecurrenceId()) {
-                return *it;
-            }
-        } else {
-            if ((*it)->hasRecurrenceId() && (*it)->recurrenceId() == recurrenceId) {
-                return *it;
-            }
-        }
-    }
-    return Journal::Ptr();
-}
-
-Journal::List ExtendedCalendar::rawJournals(JournalSortField sortField,
-                                            SortDirection sortDirection) const
-{
-    Journal::List journalList;
-    QHashIterator<QString, Journal::Ptr>i(d->mJournals);
-    while (i.hasNext()) {
-        i.next();
-        if (isVisible(i.value())) {
-            journalList.append(i.value());
-        }
-    }
-    return Calendar::sortJournals(journalList, sortField, sortDirection);
-}
-
-Journal::List ExtendedCalendar::deletedJournals(JournalSortField sortField,
-                                                SortDirection sortDirection) const
-{
-    Journal::List journalList;
-    QHashIterator<QString, Journal::Ptr>i(d->mDeletedJournals);
-    while (i.hasNext()) {
-        i.next();
-        journalList.append(i.value());
-    }
-    return Calendar::sortJournals(journalList, sortField, sortDirection);
-}
-
-Journal::List ExtendedCalendar::journalInstances(const Incidence::Ptr &journal,
-                                                 JournalSortField sortField,
-                                                 SortDirection sortDirection) const
-{
-    Journal::List list;
-
-    QList<Journal::Ptr> values = d->mJournals.values(journal->uid());
-    QList<Journal::Ptr>::const_iterator it;
-    for (it = values.constBegin(); it != values.constEnd(); ++it) {
-        if ((*it)->hasRecurrenceId()) {
-            list.append(*it);
-        }
-    }
-    return Calendar::sortJournals(list, sortField, sortDirection);
-}
-
-Journal::List ExtendedCalendar::rawJournalsForDate(const QDate &date) const
-{
-    Journal::List journalList;
-    Journal::Ptr j;
-
-    QString dateStr = date.toString();
-    QMultiHash<QString, Journal::Ptr>::const_iterator it = d->mJournalsForDate.constFind(dateStr);
-
-    while (it != d->mJournalsForDate.constEnd() && it.key() == dateStr) {
-        j = it.value();
-        if (isVisible(j)) {
-            journalList.append(j);
-        }
-        ++it;
-    }
-    return journalList;
 }
 
 Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end,
@@ -1456,15 +627,11 @@ Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end
     KDateTime nd(end, ts);
 
     // Get journals
-    QHashIterator<QString, Journal::Ptr>i(d->mJournals);
-    Journal::Ptr journal;
-    while (i.hasNext()) {
-        i.next();
-        journal = i.value();
+    const Journal::List journals(rawJournals());
+    for (const Journal::Ptr &journal: journals) {
         if (!isVisible(journal)) {
             continue;
         }
-
         KDateTime rStart = journal->dtStart();
         if (nd.isValid() && nd < rStart) {
             continue;
@@ -1567,23 +734,6 @@ Incidence::List ExtendedCalendar::incidences(const QDate &date,
     return mergeIncidenceList(elist, tlist, jlist);
 }
 
-bool ExtendedCalendar::deleteIncidenceInstances(const Incidence::Ptr &incidence)
-{
-    if (!incidence) {
-        return false;
-    }
-
-    if (incidence->type() == Incidence::TypeEvent) {
-        return deleteEventInstances(incidence.staticCast<Event>());
-    } else   if (incidence->type() == Incidence::TypeTodo) {
-        return deleteTodoInstances(incidence.staticCast<Todo>());
-    } else   if (incidence->type() == Incidence::TypeJournal) {
-        return deleteJournalInstances(incidence.staticCast<Journal>());
-    }
-
-    return false;
-}
-
 void ExtendedCalendar::deleteAllIncidences()
 {
     deleteAllEvents();
@@ -1628,6 +778,38 @@ Incidence::List ExtendedCalendar::sortIncidences(Incidence::List *incidenceList,
 }
 
 //@cond PRIVATE
+void ExtendedCalendar::Private::addIncidenceToLists(const Incidence::Ptr &incidence)
+{
+    const Person::Ptr organizer = incidence->organizer();
+    if (organizer && !organizer->isEmpty()) {
+        mAttendeeIncidences.insert(organizer->email(), incidence);
+    }
+    const Attendee::List &list = incidence->attendees();
+    Attendee::List::ConstIterator it;
+    for (it = list.begin(); it != list.end(); ++it) {
+        mAttendeeIncidences.insert((*it)->email(), incidence);
+    }
+    if (incidence->hasGeo()) {
+        mGeoIncidences.append(incidence);
+    }
+}
+
+void ExtendedCalendar::Private::removeIncidenceFromLists(const Incidence::Ptr &incidence)
+{
+    const Person::Ptr organizer = incidence->organizer();
+    if (organizer && !organizer->isEmpty()) {
+        mAttendeeIncidences.remove(organizer->email(), incidence);
+    }
+    const Attendee::List &list = incidence->attendees();
+    Attendee::List::ConstIterator it;
+    for (it = list.begin(); it != list.end(); ++it) {
+        mAttendeeIncidences.remove((*it)->email(), incidence);
+    }
+    if (incidence->hasGeo()) {
+        mGeoIncidences.removeAll(incidence);
+    }
+}
+
 QDateTime ExtendedCalendar::Private::incidenceRecurrenceStart(const KCalCore::Incidence::Ptr &incidence,
                                                               const QDateTime ost)
 {
@@ -1641,7 +823,6 @@ QDateTime ExtendedCalendar::Private::incidenceRecurrenceStart(const KCalCore::In
     KDateTime dt(ost.addSecs(1));
     return incidence->recurrence()->getPreviousDateTime(dt).toLocalZone().dateTime();
 }
-
 
 QDateTime ExtendedCalendar::Private::incidenceEndTime(const KCalCore::Incidence::Ptr &incidence,
                                                       const QDateTime ost,
@@ -1992,14 +1173,9 @@ Todo::List ExtendedCalendar::uncompletedTodos(bool hasDate, int hasGeo)
 {
     Todo::List list;
 
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        Todo::Ptr todo = i.value();
-        if (!isVisible(todo))
-            continue;
-
-        if (!todo->isCompleted()) {
+    const Todo::List todos(rawTodos());
+    for (const Todo::Ptr &todo: todos) {
+        if (isVisible(todo) && !todo->isCompleted()) {
             if ((hasDate && todo->hasDueDate()) || (!hasDate && !todo->hasDueDate())) {
                 if (hasGeo < 0 || (hasGeo && todo->hasGeo()) || (!hasGeo && !todo->hasGeo())) {
                     list.append(todo);
@@ -2010,48 +1186,39 @@ Todo::List ExtendedCalendar::uncompletedTodos(bool hasDate, int hasGeo)
     return list;
 }
 
+static bool isDateInRange(const KDateTime &dt,
+                          const KDateTime &start, const KDateTime &end)
+{
+    return ((!start.isValid() || start <= dt) &&
+            (!end.isValid() || end >= dt));
+}
+
+static bool isDateSpanInRange(const KDateTime &dtStart, const KDateTime &dtEnd,
+                              const KDateTime &start, const KDateTime &end)
+{
+    return ((!start.isValid() || start <= dtEnd) &&
+            (!end.isValid() || end >= dtStart));
+}
+
 Todo::List ExtendedCalendar::completedTodos(bool hasDate, int hasGeo,
                                             const KDateTime &start, const KDateTime &end)
 {
     Todo::List list;
 
-    QHashIterator<QString, Todo::Ptr>i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        Todo::Ptr todo = i.value();
-        if (!isVisible(todo))
-            continue;
-
-        if (todo->isCompleted()) {
+    const Todo::List todos(rawTodos());
+    for (const Todo::Ptr &todo: todos) {
+        if (isVisible(todo) && todo->isCompleted()) {
             if (hasDate && todo->hasDueDate()) {
                 if (hasGeo < 0 || (hasGeo && todo->hasGeo()) || (!hasGeo && !todo->hasGeo())) {
-                    if (!todo->recurs()) {   // non-recurring todos
-                        if ((!start.isValid() || start <= todo->dtDue()) &&
-                                (!end.isValid() || end >= todo->dtDue())) {
-                            list.append(todo);
-                        }
-                    } else { // recurring todos
-                        switch (todo->recurrence()->duration()) {
-                        case -1: // infinite
-                            list.append(todo);
-                            break;
-                        case 0: // end date given
-                        default: // count given
-                            KDateTime rEnd = todo->recurrence()->endDateTime();
-                            if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                                // append if last recurrence is smaller than given start
-                                // this is not perfect as there may not be any occurrences
-                                // inside given start and end, but this is fast to check
-                                list.append(todo);
-                            }
-                            break;
-                        }
+                    if ((!todo->recurs() && isDateInRange(todo->dtDue(), start, end))
+                        || (todo->recurs() && (todo->recurrence()->duration() == -1
+                                               || isDateInRange(todo->recurrence()->endDateTime(), start, end)))) {
+                        list.append(todo);
                     }
                 }
             } else if (!hasDate && !todo->hasDueDate()) {   // todos without due date
                 if (hasGeo < 0 || (hasGeo && todo->hasGeo()) || (!hasGeo && !todo->hasGeo())) {
-                    if ((!start.isValid() || start <= todo->created()) &&
-                            (!end.isValid() || end >= todo->created())) {
+                    if (isDateInRange(todo->created(), start, end)) {
                         list.append(todo);
                     }
                 }
@@ -2059,6 +1226,59 @@ Todo::List ExtendedCalendar::completedTodos(bool hasDate, int hasGeo,
         }
     }
     return list;
+}
+
+static bool isEventInRange(const Event::Ptr &event, int hasDate,
+                           const KDateTime &start, const KDateTime &end)
+{
+    if ((hasDate < 0 || hasDate) &&
+        event->dtStart().isValid() && event->dtEnd().isValid()) {
+        if ((!event->recurs() && isDateSpanInRange(event->dtStart(), event->dtEnd(), start, end))
+            || (event->recurs() && (event->recurrence()->duration() == -1
+                                    || isDateInRange(event->recurrence()->endDateTime(), start, end)))) {
+            return true;
+        }
+    } else if ((hasDate < 0 || !hasDate) &&  // events without valid dates
+               (!event->dtStart().isValid() || !event->dtEnd().isValid())) {
+        if (isDateInRange(event->created(), start, end)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool isTodoInRange(const Todo::Ptr &todo, int hasDate,
+                          const KDateTime &start, const KDateTime &end)
+{
+    if ((hasDate < 0 || hasDate) && todo->hasDueDate()) {    // todos with due date
+        if ((!todo->recurs() && isDateInRange(todo->dtDue(), start, end))
+            || (todo->recurs() && (todo->recurrence()->duration() == -1
+                                   || isDateInRange(todo->recurrence()->endDateTime(), start, end)))) {
+            return true;
+        }
+    } else if ((hasDate < 0 || !hasDate) && !todo->hasDueDate()) {   // todos without due date
+        if (isDateInRange(todo->created(), start, end)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool isJournalInRange(const Journal::Ptr &journal, int hasDate,
+                             const KDateTime &start, const KDateTime &end)
+{
+    if ((hasDate < 0 || hasDate) && journal->dtStart().isValid()) {
+        if ((!journal->recurs() && isDateInRange(journal->dtStart(), start, end))
+            || (journal->recurs() && (journal->recurrence()->duration() == -1
+                                      || isDateInRange(journal->recurrence()->endDateTime(), start, end)))) {
+            return true;
+        }
+    } else if ((hasDate < 0 || !hasDate) && !journal->dtStart().isValid()) { // journals without valid dates
+        if (isDateInRange(journal->created(), start, end)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Incidence::List ExtendedCalendar::incidences(bool hasDate,
@@ -2066,144 +1286,38 @@ Incidence::List ExtendedCalendar::incidences(bool hasDate,
 {
     Incidence::List list;
 
-    QHashIterator<QString, Todo::Ptr>i1(d->mTodos);
-    while (i1.hasNext()) {
-        i1.next();
-        Todo::Ptr todo = i1.value();
-        if (hasDate && todo->hasDueDate() && isVisible(todo)) {    // todos with due date
-            if (!todo->recurs()) {   // non-recurring todos
-                if ((!start.isValid() || start <= todo->dtDue()) &&
-                        (!end.isValid() || end >= todo->dtDue())) {
-                    list.append(todo);
-                }
-            } else { // recurring todos
-                switch (todo->recurrence()->duration()) {
-                case -1: // infinite
-                    list.append(todo);
-                    break;
-                case 0: // end date given
-                default: // count given
-                    KDateTime rEnd = todo->recurrence()->endDateTime();
-                    if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                        // append if last recurrence is smaller than given start
-                        // this is not perfect as there may not be any occurrences
-                        // inside given start and end, but this is fast to check
-                        list.append(todo);
-                    }
-                    break;
-                }
-            }
-        } else if (!hasDate && !todo->hasDueDate()) {   // todos without due date
-            if ((!start.isValid() || start <= todo->created()) &&
-                    (!end.isValid() || end >= todo->created())) {
-                list.append(todo);
-            }
-        }
-    }
-    QHashIterator<QString, Event::Ptr>i2(d->mEvents);
-    while (i2.hasNext()) {
-        i2.next();
-        Event::Ptr event = i2.value();
-        if (hasDate &&  isVisible(event) &&    // events with end and start dates
-                event->dtStart().isValid() && event->dtEnd().isValid()) {
-            if (!event->recurs()) {   // non-recurring events
-                if ((!start.isValid() || start <= event->dtEnd()) &&
-                        (!end.isValid() || end >= event->dtStart())) {
-                    list.append(event);
-                }
-            } else { // recurring events
-                switch (event->recurrence()->duration()) {
-                case -1: // infinite
-                    list.append(event);
-                    break;
-                case 0: // end date given
-                default: // count given
-                    KDateTime rEnd = event->recurrence()->endDateTime();
-                    if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                        // append if last recurrence is smaller than given start
-                        // this is not perfect as there may not be any occurrences
-                        // inside given start and end, but this is fast to check
-                        list.append(event);
-                    }
-                    break;
-                }
-            }
-        } else if (!hasDate &&  // events without valid dates
-                   (!event->dtStart().isValid() || !event->dtEnd().isValid())) {
-            if ((!start.isValid() || start <= event->created()) &&
-                    (!end.isValid() || end >= event->created())) {
-                list.append(event);
-            }
-        }
-    }
-    QHashIterator<QString, Journal::Ptr>i3(d->mJournals);
-    while (i3.hasNext()) {
-        i3.next();
-        Journal::Ptr journal = i3.value();
-        if (hasDate &&  isVisible(journal) &&    // journals with end and start dates
-// PENDING(kdab) Review
-#ifdef KDAB_TEMPORARILY_REMOVED
-                journal->dtStart().isValid() && journal->dtEnd().isValid()) {
-#else
-                journal->dtStart().isValid()) {
-#endif
-            if (!journal->recurs()) {   // non-recurring journals
-// PENDING(kdab) Review
-#ifdef KDAB_TEMPORARILY_REMOVED
-                if ((!start.isValid() || start <= journal->dtEnd()) &&
-                        (!end.isValid() || end >= journal->dtStart())) {
-#else
-                if (!start.isValid() ||
-                        (!end.isValid() || end >= journal->dtStart())) {
-#endif
-                    list.append(journal);
-                }
-            } else { // recurring journals
-                switch (journal->recurrence()->duration()) {
-                case -1: // infinite
-                    list.append(journal);
-                    break;
-                case 0: // end date given
-                default: // count given
-                    KDateTime rEnd = journal->recurrence()->endDateTime();
-                    if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                        // append if last recurrence is smaller than given start
-                        // this is not perfect as there may not be any occurrences
-                        // inside given start and end, but this is fast to check
-                        list.append(journal);
-                    }
-                    break;
-                }
-            }
-        } else if (!hasDate &&  // journals without valid dates
-// PENDING(kdab) Review
-#ifdef KDAB_TEMPORARILY_REMOVED
-                   (!journal->dtStart().isValid() || !journal->dtEnd().isValid())) {
-#else
-                   !journal->dtStart().isValid()) {
-#endif
-            if ((!start.isValid() || start <= journal->created()) &&
-                    (!end.isValid() || end >= journal->created())) {
-                list.append(journal);
-            }
-        }
-    }
+    Todo::List todos = rawTodos();
+    std::copy_if(todos.constBegin(), todos.constEnd(),
+                 std::back_inserter(list),
+                 [this, hasDate, start, end] (const Todo::Ptr &todo) {
+                     return isVisible(todo) && isTodoInRange(todo, hasDate ? 1 : 0, start, end);});
+
+    Event::List events = rawEvents();
+    std::copy_if(events.constBegin(), events.constEnd(),
+                 std::back_inserter(list),
+                 [this, hasDate, start, end] (const Event::Ptr &event) {
+                     return isVisible(event) && isEventInRange(event, hasDate ? 1 : 0, start, end);});
+
+    Journal::List journals = rawJournals();
+    std::copy_if(journals.constBegin(), journals.constEnd(),
+                 std::back_inserter(list),
+                 [this, hasDate, start, end] (const Journal::Ptr &journal) {
+                     return isVisible(journal) && isJournalInRange(journal, hasDate ? 1 : 0, start, end);});
+
     return list;
 }
 
 Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
 {
-    QHashIterator<QString, Journal::Ptr>i(d->mJournals);
-    Journal::Ptr journal;
     Journal::List journalList;
     KDateTime startK(start);
     KDateTime endK(end);
 
-    while (i.hasNext()) {
-        i.next();
-        journal = i.value();
-        if (!isVisible(journal))
+    const Journal::List journals(rawJournals());
+    for (const Journal::Ptr &journal: journals) {
+        if (!isVisible(journal)) {
             continue;
+        }
         KDateTime st = journal->dtStart();
         // If start time is not valid, try to use the creation time.
         if (!st.isValid())
@@ -2219,87 +1333,19 @@ Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
     return journalList;
 }
 
-Journal::List ExtendedCalendar::journals(const QDate &date) const
-{
-    return Calendar::journals(date);
-}
-
 Incidence::List ExtendedCalendar::geoIncidences(bool hasDate,
                                                 const KDateTime &start, const KDateTime &end)
 {
     Incidence::List list;
 
-    QHashIterator<QString, Todo::Ptr>i1(d->mTodos);
-    while (i1.hasNext()) {
-        i1.next();
-        Todo::Ptr todo = i1.value();
-        if (todo->hasGeo()) {
-            if (hasDate && todo->hasDueDate()) {   // todos with due date
-                if (!todo->recurs()) {   // non-recurring todos
-                    if ((!start.isValid() || start <= todo->dtDue()) &&
-                            (!end.isValid() || end >= todo->dtDue())) {
-                        list.append(todo);
-                    }
-                } else { // recurring todos
-                    switch (todo->recurrence()->duration()) {
-                    case -1: // infinite
-                        list.append(todo);
-                        break;
-                    case 0: // end date given
-                    default: // count given
-                        KDateTime rEnd = todo->recurrence()->endDateTime();
-                        if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                            // append if last recurrence is smaller than given start
-                            // this is not perfect as there may not be any occurrences
-                            // inside given start and end, but this is fast to check
-                            list.append(todo);
-                        }
-                        break;
-                    }
-                }
-            } else if (!hasDate && !todo->hasDueDate()) {   // todos without due date
-                if ((!start.isValid() || start <= todo->created()) &&
-                        (!end.isValid() || end >= todo->created())) {
-                    list.append(todo);
-                }
+    for (Incidence::Ptr incidence: const_cast<const Incidence::List&>(d->mGeoIncidences)) {
+        if (incidence->type() == Incidence::TypeTodo) {
+            if (isTodoInRange(incidence.staticCast<Todo>(), hasDate ? 1 : 0, start, end)) {
+                list.append(incidence);
             }
-        }
-    }
-    QHashIterator<QString, Event::Ptr>i2(d->mEvents);
-    while (i2.hasNext()) {
-        i2.next();
-        Event::Ptr event = i2.value();
-        if (event->hasGeo()) {
-            if (hasDate &&  // events with end and start dates
-                    event->dtStart().isValid() && event->dtEnd().isValid()) {
-                if (!event->recurs()) {   // non-recurring events
-                    if ((!start.isValid() || start <= event->dtEnd()) &&
-                            (!end.isValid() || end >= event->dtStart())) {
-                        list.append(event);
-                    }
-                } else { // recurring events
-                    switch (event->recurrence()->duration()) {
-                    case -1: // infinite
-                        list.append(event);
-                        break;
-                    case 0: // end date given
-                    default: // count given
-                        KDateTime rEnd = event->recurrence()->endDateTime();
-                        if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                            // append if last recurrence is smaller than given start
-                            // this is not perfect as there may not be any occurrences
-                            // inside given start and end, but this is fast to check
-                            list.append(event);
-                        }
-                        break;
-                    }
-                }
-            } else if (!hasDate &&  // events without valid dates
-                       (!event->dtStart().isValid() || !event->dtEnd().isValid())) {
-                if ((!start.isValid() || start <= event->created()) &&
-                        (!end.isValid() || end >= event->created())) {
-                    list.append(event);
-                }
+        } else if (incidence->type() == Incidence::TypeEvent) {
+            if (isEventInRange(incidence.staticCast<Event>(), hasDate ? 1 : 0, start, end)) {
+                list.append(incidence);
             }
         }
     }
@@ -2307,38 +1353,32 @@ Incidence::List ExtendedCalendar::geoIncidences(bool hasDate,
 }
 
 #if 0
-Incidence::List ExtendedCalendar::unreadInvitationIncidences(Person *person)
+Incidence::List ExtendedCalendar::unreadInvitationIncidences(const KCalCore::Person::Ptr &person)
 {
     Incidence::List list;
 
-    QHashIterator<QString, Todo::Ptr>i1(d->mTodos);
-    while (i1.hasNext()) {
-        i1.next();
-        Todo::Ptr todo = i1.value();
+    const Todo::List todos(rawTodos());
+    for (const Todo::Ptr &todo: todos) {
         if (todo->invitationStatus() == IncidenceBase::StatusUnread) {
-            if (!person || person->email() == todo->organizer().email() ||
+            if (!person || person->email() == todo->organizer()->email() ||
                     todo->attendeeByMail(person->email())) {
                 list.append(todo);
             }
         }
     }
-    QHashIterator<QString, Event::Ptr>i2(d->mEvents);
-    while (i2.hasNext()) {
-        i2.next();
-        Event::Ptr event = i2.value();
+    const Event::List events(rawEvents());
+    for (const Event::Ptr &event: events) {
         if (event->invitationStatus() == IncidenceBase::StatusUnread) {
-            if (!person || person->email() == event->organizer().email() ||
+            if (!person || person->email() == event->organizer()->email() ||
                     event->attendeeByMail(person->email())) {
                 list.append(event);
             }
         }
     }
-    QHashIterator<QString, Journal::Ptr>i3(d->mJournals);
-    while (i3.hasNext()) {
-        i3.next();
-        Journal::Ptr journal = i3.value();
+    const Journal::List journals(rawJournals());
+    for (const Journal::Ptr &journal: journals) {
         if (journal->invitationStatus() == IncidenceBase::StatusUnread) {
-            if (person || person->email() == journal->organizer().email() ||
+            if (person || person->email() == journal->organizer()->email() ||
                     journal->attendeeByMail(person->email())) {
                 list.append(journal);
             }
@@ -2352,37 +1392,25 @@ Incidence::List ExtendedCalendar::oldInvitationIncidences(const KDateTime &start
 {
     Incidence::List list;
 
-    QHashIterator<QString, Todo::Ptr>i1(d->mTodos);
-    while (i1.hasNext()) {
-        i1.next();
-        Todo::Ptr todo = i1.value();
-        if (todo->invitationStatus() > IncidenceBase::StatusUnread) {
-            if ((!start.isValid() || start <= todo->created()) &&
-                    (!end.isValid() || end >= todo->created())) {
-                list.append(todo);
-            }
+    const Todo::List todos(rawTodos());
+    for (const Todo::Ptr &todo: todos) {
+        if (todo->invitationStatus() > IncidenceBase::StatusUnread
+            && isDateInRange(todo->created(), strat, end)) {
+            list.append(todo);
         }
     }
-    QHashIterator<QString, Event::Ptr>i2(d->mEvents);
-    while (i2.hasNext()) {
-        i2.next();
-        Event::Ptr *event = i2.value();
-        if (event->invitationStatus() > IncidenceBase::StatusUnread) {
-            if ((!start.isValid() || start <= event->created()) &&
-                    (!end.isValid() || end >= event->created())) {
-                list.append(event);
-            }
+    const Event::List events(rawEvents());
+    for (const Event::Ptr &event: events) {
+        if (event->invitationStatus() > IncidenceBase::StatusUnread
+            && isDateInRange(event->created(), start, end)) {
+            list.append(event);
         }
     }
-    QHashIterator<QString, Journal::Ptr>i3(d->mJournals);
-    while (i3.hasNext()) {
-        i3.next();
-        Journal::Ptr journal = i3.value();
-        if (journal->invitationStatus() > IncidenceBase::StatusUnread) {
-            if ((!start.isValid() || start <= journal->created()) &&
-                    (!end.isValid() || end >= journal->created())) {
-                list.append(journal);
-            }
+    const Journal::List journals(rawJournals());
+    for (const Journal::Ptr &journal: journals) {
+        if (journal->invitationStatus() > IncidenceBase::StatusUnread
+            && isDateInRange(journal->created(), start, end)) {
+            list.append(journal);
         }
     }
     return list;
@@ -2393,102 +1421,19 @@ Incidence::List ExtendedCalendar::contactIncidences(const Person::Ptr &person,
                                                     const KDateTime &start, const KDateTime &end)
 {
     Incidence::List list;
-    Incidence::List::Iterator it;
-    Incidence::List vals = values(d->mAttendeeIncidences, person->email());
-    for (it = vals.begin(); it != vals.end(); ++it) {
-        Incidence::Ptr incidence = *it;
+    const QList<Incidence::Ptr> incidences(d->mAttendeeIncidences.values(person->email()));
+    for (const Incidence::Ptr &incidence: incidences) {
         if (incidence->type() == Incidence::TypeEvent) {
-            Event::Ptr event = incidence.staticCast<Event>();
-            if (event->dtStart().isValid() && event->dtEnd().isValid()) {
-                if (!event->recurs()) {   // non-recurring events
-                    if ((!start.isValid() || start <= event->dtEnd()) &&
-                            (!end.isValid() || end >= event->dtStart())) {
-                        list.append(event);
-                    }
-                } else { // recurring events
-                    switch (event->recurrence()->duration()) {
-                    case -1: // infinite
-                        list.append(event);
-                        break;
-                    case 0: // end date given
-                    default: // count given
-                        KDateTime rEnd = event->recurrence()->endDateTime();
-                        if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                            // append if last recurrence is smaller than given start
-                            // this is not perfect as there may not be any occurrences
-                            // inside given start and end, but this is fast to check
-                            list.append(event);
-                        }
-                        break;
-                    }
-                }
-            } else {
-                if ((!start.isValid() || start <= event->created()) &&
-                        (!end.isValid() || end >= event->created())) {
-                    list.append(event);
-                }
+            if (isEventInRange(incidence.staticCast<Event>(), -1, start, end)) {
+                list.append(incidence);
             }
         } else if (incidence->type() == Incidence::TypeTodo) {
-            Todo::Ptr todo = incidence.staticCast<Todo>();
-            if (todo->hasDueDate()) {
-                if (!todo->recurs()) {   // non-recurring todos
-                    if ((!start.isValid() || start <= todo->dtDue()) &&
-                            (!end.isValid() || end >= todo->dtDue())) {
-                        list.append(todo);
-                    }
-                } else { // recurring todos
-                    switch (todo->recurrence()->duration()) {
-                    case -1: // infinite
-                        list.append(todo);
-                        break;
-                    case 0: // end date given
-                    default: // count given
-                        KDateTime rEnd = todo->recurrence()->endDateTime();
-                        if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                            // append if last recurrence is smaller than given start
-                            // this is not perfect as there may not be any occurrences
-                            // inside given start and end, but this is fast to check
-                            list.append(todo);
-                        }
-                        break;
-                    }
-                }
-            } else {
-                if ((!start.isValid() || start <= todo->created()) &&
-                        (!end.isValid() || end >= todo->created())) {
-                    list.append(todo);
-                }
+            if (isTodoInRange(incidence.staticCast<Todo>(), -1, start, end)) {
+                list.append(incidence);
             }
         } else if (incidence->type() == Incidence::TypeJournal) {
-            Journal::Ptr journal = incidence.staticCast<Journal>();
-            if (journal->dtStart().isValid()) {
-                if (!journal->recurs()) {   // non-recurring journals
-                    if ((!start.isValid() || start <= journal->dtStart()) &&
-                            (!end.isValid() || end >= journal->dtStart())) {
-                        list.append(journal);
-                    }
-                } else { // recurring journals
-                    switch (journal->recurrence()->duration()) {
-                    case -1: // infinite
-                        list.append(journal);
-                        break;
-                    case 0: // end date given
-                    default: // count given
-                        KDateTime rEnd = journal->recurrence()->endDateTime();
-                        if (rEnd.isValid() && (!start.isValid() || start <= rEnd)) {
-                            // append if last recurrence is smaller than given start
-                            // this is not perfect as there may not be any occurrences
-                            // inside given start and end, but this is fast to check
-                            list.append(journal);
-                        }
-                        break;
-                    }
-                }
-            } else {
-                if ((!start.isValid() || start <= journal->created()) &&
-                        (!end.isValid() || end >= journal->created())) {
-                    list.append(journal);
-                }
+            if (isJournalInRange(incidence.staticCast<Journal>(), -1, start, end)) {
+                list.append(incidence);
             }
         }
     }
@@ -2529,6 +1474,8 @@ void ExtendedCalendar::storageModified(ExtendedStorage *storage, const QString &
     Q_UNUSED(storage);
     Q_UNUSED(info);
 
+    clearNotebookAssociations();
+
     // Despite the strange name, close() method does exactly what we
     // want - clears the in-memory contents of the calendar.
     close();
@@ -2549,56 +1496,37 @@ void ExtendedCalendar::storageFinished(ExtendedStorage *storage, bool error, con
 
 int ExtendedCalendar::eventCount(const QString &notebookUid)
 {
+    Event::List events = rawEvents();
+
     if (notebookUid.isEmpty())
-        return d->mEvents.size();
+        return events.size();
 
-    int count = 0;
-    QHashIterator<QString, Event::Ptr> i(d->mEvents);
-    while (i.hasNext()) {
-        i.next();
-        if (notebook(i.value()) == notebookUid)
-            count++;
-    }
-
-    return count;
+    return std::count_if(events.constBegin(), events.constEnd(),
+                         [this, notebookUid] (const Event::Ptr &event)
+                         {return notebook(event) == notebookUid;});
 }
 
 int ExtendedCalendar::todoCount(const QString &notebookUid)
 {
+    Todo::List todos = rawTodos();
+
     if (notebookUid.isEmpty())
-        return d->mTodos.size();
+        return todos.size();
 
-    int count = 0;
-    QHashIterator<QString, Todo::Ptr> i(d->mTodos);
-    while (i.hasNext()) {
-        i.next();
-        if (notebook(i.value()) == notebookUid)
-            count++;
-    }
-
-    return count;
+    return std::count_if(todos.constBegin(), todos.constEnd(),
+                         [this, notebookUid] (const Todo::Ptr &todo)
+                         {return notebook(todo) == notebookUid;});
 }
 
 int ExtendedCalendar::journalCount(const QString &notebookUid)
 {
+    Journal::List journals = rawJournals();
+
     if (notebookUid.isEmpty())
-        return d->mJournals.size();
+        return journals.size();
 
-    int count = 0;
-    QHashIterator<QString, Journal::Ptr> i(d->mJournals);
-    while (i.hasNext()) {
-        i.next();
-        if (notebook(i.value()) == notebookUid)
-            count++;
-    }
-
-    return count;
-}
-
-void ExtendedCalendar::virtual_hook(int id, void *data)
-{
-    Q_UNUSED(id);
-    Q_UNUSED(data);
-    Q_ASSERT(false);
+    return std::count_if(journals.constBegin(), journals.constEnd(),
+                         [this, notebookUid] (const Journal::Ptr &journal)
+                         {return notebook(journal) == notebookUid;});
 }
 
