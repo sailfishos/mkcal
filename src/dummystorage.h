@@ -55,7 +55,7 @@ public:
     void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &)
+    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &, const KCalendarCore::Calendar *)
     {
     }
     void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &)
