@@ -120,7 +120,7 @@ public:
         @param uri uri of attachment to be deleted
     @return True if OK, false otherwise.
     */
-    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalCore::Incidence::Ptr &incidence,
+    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &incidence,
                                   const QString &uri) = 0;
 
     /** \brief Share notebook.

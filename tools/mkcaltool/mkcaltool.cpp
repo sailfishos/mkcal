@@ -34,14 +34,14 @@ MkcalTool::MkcalTool()
 
 int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
 {
-    mKCal::ExtendedCalendar::Ptr cal(new mKCal::ExtendedCalendar(KDateTime::Spec::LocalZone()));
+    mKCal::ExtendedCalendar::Ptr cal(new mKCal::ExtendedCalendar(QTimeZone::systemTimeZone()));
     mKCal::ExtendedStorage::Ptr storage = cal->defaultStorage(cal);
     storage->open();
     if (!storage->load(eventUid)) {
         qWarning() << "Unable to load event" << eventUid << "from notebook" << notebookUid;
         return 1;
     }
-    KCalCore::Event::Ptr event = cal->event(eventUid);
+    KCalendarCore::Event::Ptr event = cal->event(eventUid);
     if (!event) {
         qWarning() << "Unable to fetch event" << eventUid << "from notebook" << notebookUid;
         return 1;

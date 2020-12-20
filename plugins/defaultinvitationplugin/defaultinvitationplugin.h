@@ -20,7 +20,7 @@
 #include "servicehandlerif.h"
 #include <QtCore/QObject>
 
-using namespace KCalCore;
+using namespace KCalendarCore;
 
 /**
  * \brief DefaultInvitationPlugin class.
@@ -40,7 +40,7 @@ public:
     DefaultInvitationPlugin();
     ~DefaultInvitationPlugin();
 
-    //! \reimp InvitationHandler KCalCore
+    //! \reimp InvitationHandler KCalendarCore
     bool sendInvitation(const QString &accountId, const QString &notebookId, const Incidence::Ptr &invitation,
                         const QString &body);
     bool sendUpdate(const QString &accountId, const Incidence::Ptr &invitation, const QString &body);

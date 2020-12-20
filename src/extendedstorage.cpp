@@ -33,11 +33,9 @@
 #include "extendedstorage.h"
 #include "logging_p.h"
 
-#include <exceptions.h>
-#include <calendar.h>
-using namespace KCalCore;
-
-#include <kdebug.h>
+#include <KCalendarCore/Exceptions>
+#include <KCalendarCore/Calendar>
+using namespace KCalendarCore;
 
 #include <QtCore/QUuid>
 
@@ -99,9 +97,9 @@ public:
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
 
-    void setAlarmsForNotebook(const KCalCore::Incidence::List &incidences, const QString &nbuid);
+    void setAlarmsForNotebook(const KCalendarCore::Incidence::List &incidences, const QString &nbuid);
 #if defined(TIMED_SUPPORT)
-    void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const KDateTime &now);
+    void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const QDateTime &now);
     void commitEvents(Timed::Event::List &events);
 #endif
 };
@@ -138,7 +136,7 @@ void ExtendedStorage::clearLoaded()
 }
 
 bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
-                                   KDateTime &loadStart, KDateTime &loadEnd)
+                                   QDateTime &loadStart, QDateTime &loadEnd)
 {
     // Check the need to load from db.
     if (start.isValid() && d->mStart.isValid() && start >= d->mStart &&
@@ -159,8 +157,8 @@ bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
         loadEnd.setDate(end);   // may be null if end is not valid
     }
 
-    loadStart.setTimeSpec(calendar()->timeSpec());
-    loadEnd.setTimeSpec(calendar()->timeSpec());
+    loadStart.setTimeZone(calendar()->timeZone());
+    loadEnd.setTimeZone(calendar()->timeZone());
 
     qCDebug(lcMkcal) << "get load dates" << start << end << loadStart << loadEnd;
 
@@ -555,7 +553,7 @@ void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
 void ExtendedStorage::setAlarms(const Incidence::List &incidences)
 {
 #if defined(TIMED_SUPPORT)
-    const KDateTime now = KDateTime::currentLocalDateTime();
+    const QDateTime now = QDateTime::currentDateTime();
     Timed::Event::List events;
     foreach (const Incidence::Ptr incidence, incidences) {
         // The incidence from the list must be in the calendar and in a notebook.
@@ -599,14 +597,14 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
         // We got a list of all alarm matching UID of this incidence
         // - single event -> delete the alarm
         // - recurring parent event -> the recurs() case, delete if
-        //   recurrenceId attribute is empty (thus invalid KDateTime)
+        //   recurrenceId attribute is empty (thus invalid QDateTime)
         // - recurring exception event -> the hasRecurrenceId() case,
-        //   delete if the recurrenceId attribute is matching in terms of KDateTime.
+        //   delete if the recurrenceId attribute is matching in terms of QDateTime.
         if (incidence->recurs() || incidence->hasRecurrenceId()) {
             QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
             const QMap<QString, QVariant> attributeMap = attributesReply.value();
             const QVariant recurrenceId = attributeMap.value("recurrenceId", QVariant(QString()));
-            KDateTime recid = KDateTime::fromString(recurrenceId.toString(), KDateTime::ISODate);
+            QDateTime recid = QDateTime::fromString(recurrenceId.toString(), Qt::ISODate);
             if (incidence->recurrenceId() != recid) {
                 continue;
             }
@@ -625,7 +623,7 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
 #endif
 }
 
-void ExtendedStorage::clearAlarms(const KCalCore::Incidence::List &incidences)
+void ExtendedStorage::clearAlarms(const KCalendarCore::Incidence::List &incidences)
 {
     foreach (const Incidence::Ptr incidence, incidences) {
         clearAlarms(incidence);
@@ -667,10 +665,10 @@ void ExtendedStorage::clearAlarms(const QString &nb)
 Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
                                            bool loadAlways)
 {
-    KDateTime rid;
+    QDateTime rid;
 
     if (!recurrenceId.isEmpty()) {
-        rid = KDateTime::fromString(recurrenceId);
+        rid = QDateTime::fromString(recurrenceId);
     }
     Incidence::Ptr incidence = calendar()->incidence(uid, rid);
     if (!incidence || loadAlways) {
@@ -710,10 +708,10 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
     return nbDefault;
 }
 
-void ExtendedStorage::Private::setAlarmsForNotebook(const KCalCore::Incidence::List &incidences, const QString &nbuid)
+void ExtendedStorage::Private::setAlarmsForNotebook(const KCalendarCore::Incidence::List &incidences, const QString &nbuid)
 {
 #if defined(TIMED_SUPPORT)
-    const KDateTime now = KDateTime::currentLocalDateTime();
+    const QDateTime now = QDateTime::currentDateTime();
     // list of all timed events
     Timed::Event::List events;
     foreach (const Incidence::Ptr incidence, incidences) {
@@ -730,7 +728,7 @@ void ExtendedStorage::Private::setAlarmsForNotebook(const KCalCore::Incidence::L
 void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
                                          const QString &nbuid,
                                          Timed::Event::List &events,
-                                         const KDateTime &now)
+                                         const QDateTime &now)
 {
     if (incidence->status() == Incidence::StatusCanceled) {
         return;
@@ -742,9 +740,9 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             continue;
         }
 
-        KDateTime preTime = now;
+        QDateTime preTime = now;
         if (incidence->recurs()) {
-            KDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(now);
+            QDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(now);
             if (nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0) {
                 if (now.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
                     preTime = nextRecurrence;
@@ -752,7 +750,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             }
         }
 
-        KDateTime alarmTime = alarm->nextTime(preTime, true);
+        QDateTime alarmTime = alarm->nextTime(preTime, true);
         if (!alarmTime.isValid()) {
             continue;
         }
@@ -767,11 +765,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
         Timed::Event &e = events.append();
         e.setUserModeFlag();
         e.setMaximalTimeoutSnoozeCounter(2);
-        if (alarmTime.isUtc()) {
-            e.setTicker(alarmTime.toTime_t());
-        } else {
-            e.setTicker(alarmTime.toUtc().toTime_t());
-        }
+        e.setTicker(alarmTime.toUTC().toTime_t());
         // The code'll crash (=exception) iff the content is empty. So
         // we have to check here.
         QString s;
@@ -813,7 +807,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             }
             e.setAttribute("type", "todo");
         } else if (incidence->dtStart().isValid()) {
-            KDateTime eventStart;
+            QDateTime eventStart;
 
             if (incidence->recurs()) {
                 // assuming alarms not later than event start

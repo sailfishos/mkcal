@@ -10,7 +10,7 @@ INCLUDEPATH +=  ../src
 QMAKE_LIBDIR += ../src
 
 LIBS += -lmkcal-qt5
-PKGCONFIG += libkcalcoren-qt5 sqlite3 timed-qt5
+PKGCONFIG += KF5CalendarCore sqlite3 timed-qt5
 
 HEADERS += \
     tst_storage.h

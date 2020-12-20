@@ -9,7 +9,7 @@ INCLUDEPATH +=  ../../src
 QMAKE_LIBDIR += ../../src
 
 LIBS += -lmkcal-qt5
-PKGCONFIG += libkcalcoren-qt5
+PKGCONFIG += KF5CalendarCore
 
 
 SOURCES += main.cpp \

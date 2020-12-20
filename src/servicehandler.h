@@ -22,7 +22,7 @@
   Boston, MA 02110-1301, USA.
 */
 
-#include <incidence.h>
+#include <KCalendarCore/Incidence>
 #include <QObject>
 #include "mkcal_export.h"
 #include "notebook.h"
@@ -83,7 +83,7 @@ public:
       @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendInvitation(const KCalCore::Incidence::Ptr &invitation, const QString &body,
+    bool sendInvitation(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
                         const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
                         const Notebook::Ptr &notebook = Notebook::Ptr());
 
@@ -97,7 +97,7 @@ public:
       @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendUpdate(const KCalCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
+    bool sendUpdate(const KCalendarCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
                     const ExtendedStorage::Ptr &storage, const Notebook::Ptr &notebook = Notebook::Ptr());
 
     /** Send the updated invitation to the organiser.
@@ -110,7 +110,7 @@ public:
       @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendResponse(const KCalCore::Incidence::Ptr &invitation, const QString &body,
+    bool sendResponse(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
                       const Notebook::Ptr &notebook = Notebook::Ptr());
 
@@ -166,7 +166,7 @@ public:
       @param uri uri of attachment to be deleted
       @return True if OK, false in case of error
       */
-    bool deleteAttachment(const KCalCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
+    bool deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
                           const ExtendedStorage::Ptr &storage, const QString &uri);
 
     /** Share notebook

@@ -10,7 +10,7 @@ DEFINES += TIMED_SUPPORT
 
 CONFIG += link_pkgconfig create_pc create_prl no_install_prl c++11
 PKGCONFIG += sqlite3 \
-    libkcalcoren-qt5 \
+    KF5CalendarCore \
     timed-qt5
 
 QT += dbus
