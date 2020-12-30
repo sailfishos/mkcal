@@ -579,14 +579,14 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
     Timed::Interface timed;
     if (!timed.isValid()) {
         qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
                            << "alarm interface is not valid" << timed.lastError();
         return;
     }
     QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
     if (!reply.isValid()) {
         qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
                            << timed.lastError();
         return;
     }
@@ -610,11 +610,11 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
             }
         }
         qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
-                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-");
+                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-");
         QDBusReply<bool> reply = timed.cancel_sync(cookie);
         if (!reply.isValid() || !reply.value()) {
             qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
-                               << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString() : "-")
+                               << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
                                << reply.value() << timed.lastError();
         }
     }
@@ -668,7 +668,7 @@ Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &re
     QDateTime rid;
 
     if (!recurrenceId.isEmpty()) {
-        rid = QDateTime::fromString(recurrenceId);
+        rid = QDateTime::fromString(recurrenceId, Qt::ISODate);
     }
     Incidence::Ptr incidence = calendar()->incidence(uid, rid);
     if (!incidence || loadAlways) {
@@ -783,7 +783,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
         Q_ASSERT(!incidence->uid().isEmpty());
         e.setAttribute("uid", incidence->uid());
 #ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
-        e.setAttribute("alarmtime", alarmTime.toString());
+        e.setAttribute("alarmtime", alarmTime.toString(Qt::ISODate));
 #endif
         if (!incidence->location().isEmpty()) {
             e.setAttribute("location", incidence->location());
@@ -803,7 +803,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             Todo::Ptr todo = incidence.staticCast<Todo>();
 
             if (todo->hasDueDate()) {
-                e.setAttribute("time", todo->dtDue(true).toString());
+                e.setAttribute("time", todo->dtDue(true).toString(Qt::ISODate));
             }
             e.setAttribute("type", "todo");
         } else if (incidence->dtStart().isValid()) {
@@ -815,16 +815,16 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             } else {
                 eventStart = incidence->dtStart();
             }
-            e.setAttribute("time", eventStart.toString());
-            e.setAttribute("startDate", eventStart.toString());
+            e.setAttribute("time", eventStart.toString(Qt::ISODate));
+            e.setAttribute("startDate", eventStart.toString(Qt::ISODate));
             if (incidence->endDateForStart(eventStart).isValid()) {
-                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toString());
+                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toString(Qt::ISODate));
             }
             e.setAttribute("type", "event");
         }
 
         if (incidence->hasRecurrenceId()) {
-            e.setAttribute("recurrenceId", incidence->recurrenceId().toString());
+            e.setAttribute("recurrenceId", incidence->recurrenceId().toString(Qt::ISODate));
         }
         e.setAttribute("notebook", nbuid);
 
