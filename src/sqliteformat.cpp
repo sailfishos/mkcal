@@ -263,6 +263,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     QByteArray contact;
     QByteArray attachments;
     QByteArray relatedtouid;
+    QByteArray colorstr;
     QByteArray comments;
     QByteArray resources;
     QDateTime dt;
@@ -456,6 +457,9 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         }
         sqlite3_bind_int(stmt1, index, percentComplete);
         sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted, incidence->allDay());
+
+        colorstr = incidence->color().toUtf8();
+        sqlite3_bind_text(stmt1, index, colorstr.constData(), colorstr.length(), SQLITE_STATIC);
 
         if (dbop == DBUpdate)
             sqlite3_bind_int(stmt1, index, rowid);
@@ -1376,6 +1380,15 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
             if (completed.isValid())
                 todo->setCompleted(completed);
             index += 3;
+        } else {
+            index += 4;
+        }
+
+        index++; //DateDeleted
+
+        QString colorstr = QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++));
+        if (!colorstr.isEmpty()) {
+            incidence->setColor(colorstr);
         }
 //    kDebug() << "loaded component for incidence" << incidence->uid() << "notebook" << notebook;
 

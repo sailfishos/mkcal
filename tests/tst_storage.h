@@ -73,6 +73,7 @@ private slots:
     void tst_loadSeries();
     void tst_url_data();
     void tst_url();
+    void tst_color();
 
 private:
     void openDb(bool clear = false);
