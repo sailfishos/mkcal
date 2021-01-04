@@ -71,6 +71,8 @@ private slots:
     void tst_alarms();
     void tst_load();
     void tst_loadSeries();
+    void tst_url_data();
+    void tst_url();
 
 private:
     void openDb(bool clear = false);

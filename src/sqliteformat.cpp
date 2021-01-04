@@ -259,8 +259,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     QByteArray category;
     QByteArray location;
     QByteArray description;
-    QUrl uristr;
-    QByteArray uri;
+    QByteArray url;
     QByteArray contact;
     QByteArray attachments;
     QByteArray relatedtouid;
@@ -426,9 +425,8 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         relatedtouid = incidence->relatedTo().toUtf8();
         sqlite3_bind_text(stmt1, index, relatedtouid.constData(), relatedtouid.length(), SQLITE_STATIC);
 
-        uristr = incidence->uri();
-        uri = uristr.toString().toUtf8();
-        sqlite3_bind_text(stmt1, index, uri.constData(), uri.length(), SQLITE_STATIC);
+        url = incidence->url().toString().toUtf8();
+        sqlite3_bind_text(stmt1, index, url.constData(), url.length(), SQLITE_STATIC);
 
         uid = incidence->uid().toUtf8();
         sqlite3_bind_text(stmt1, index, uid.constData(), uid.length(), SQLITE_STATIC);
@@ -1353,8 +1351,10 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
         QString relatedtouid = QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++));
         incidence->setRelatedTo(relatedtouid);
 
-        //QString uri = QString::fromUtf8((const char *)sqlite3_column_text(stmt1, index++)); // uri
-        index++;
+        QUrl url(QString::fromUtf8((const char *)sqlite3_column_text(stmt1, index++)));
+        if (url.isValid()) {
+            incidence->setUrl(url);
+        }
 
         // set the real uid to uid
         incidence->setUid(QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++)));
