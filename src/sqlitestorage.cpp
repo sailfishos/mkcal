@@ -2183,6 +2183,13 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     sqlite3_stmt *stmt9 = NULL;
     sqlite3_stmt *stmt10 = NULL;
     sqlite3_stmt *stmt11 = NULL;
+    sqlite3_stmt *stmt21 = NULL;
+    sqlite3_stmt *stmt22 = NULL;
+    sqlite3_stmt *stmt23 = NULL;
+    sqlite3_stmt *stmt24 = NULL;
+    sqlite3_stmt *stmt25 = NULL;
+    sqlite3_stmt *stmt26 = NULL;
+    sqlite3_stmt *stmt27 = NULL;
     const char *tail1 = NULL;
     const char *tail2 = NULL;
     const char *tail3 = NULL;
@@ -2235,6 +2242,30 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     if (query11) {
         sqlite3_prepare_v2(mDatabase, query11, qsize11, &stmt11, &tail11);
     }
+    if (dbop == DBInsert) {
+        const char *q1 = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
+        int s1 = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
+        const char *q2 = DELETE_COMPONENTS;
+        int s2 = sizeof(DELETE_COMPONENTS);
+        const char *q3 = DELETE_CUSTOMPROPERTIES;
+        int s3 = sizeof(DELETE_CUSTOMPROPERTIES);
+        const char *q4 = DELETE_ALARM;
+        int s4 = sizeof(DELETE_ALARM);
+        const char *q5 = DELETE_ATTENDEE;
+        int s5 = sizeof(DELETE_ATTENDEE);
+        const char *q6 = DELETE_RECURSIVE;
+        int s6 = sizeof(DELETE_RECURSIVE);
+        const char *q7 = DELETE_RDATES;
+        int s7 = sizeof(DELETE_RDATES);
+
+        sqlite3_prepare_v2(mDatabase, q1, s1, &stmt21, NULL);
+        sqlite3_prepare_v2(mDatabase, q2, s2, &stmt22, NULL);
+        sqlite3_prepare_v2(mDatabase, q3, s3, &stmt23, NULL);
+        sqlite3_prepare_v2(mDatabase, q4, s4, &stmt24, NULL);
+        sqlite3_prepare_v2(mDatabase, q5, s5, &stmt25, NULL);
+        sqlite3_prepare_v2(mDatabase, q6, s6, &stmt26, NULL);
+        sqlite3_prepare_v2(mDatabase, q7, s7, &stmt27, NULL);
+    }
 
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
         QString notebookUid = mCalendar->notebook(*it);
@@ -2258,8 +2289,15 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
                                        stmt5, stmt6, stmt7, stmt8, stmt9, stmt10, stmt11)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
+        } else  if (dbop == DBInsert) {
+            // Don't leave deleted events with the same UID/recID.
+            if (!mFormat->purgeDeletedComponents(*it,
+                                                 stmt21, stmt22, stmt23, stmt24,
+                                                 stmt25, stmt26, stmt27)) {
+                qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
+                errors += 1;
+            }
         }
-
 
         sqlite3_reset(stmt1);
         sqlite3_reset(stmt2);
@@ -2315,6 +2353,16 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     sqlite3_finalize(stmt10);
     if (stmt11) {
         sqlite3_finalize(stmt11);
+    }
+
+    if (dbop == DBInsert) {
+        sqlite3_finalize(stmt21);
+        sqlite3_finalize(stmt22);
+        sqlite3_finalize(stmt23);
+        sqlite3_finalize(stmt24);
+        sqlite3_finalize(stmt25);
+        sqlite3_finalize(stmt26);
+        sqlite3_finalize(stmt27);
     }
 
     query = COMMIT_TRANSACTION;
