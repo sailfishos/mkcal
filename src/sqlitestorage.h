@@ -591,7 +591,7 @@ public Q_SLOTS:
 #define UPDATE_CALENDARS \
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, Percent=?, extra1=? where ComponentId=?"
+"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, extra1=? where ComponentId=?"
 #define UPDATE_COMPONENTS_AS_DELETED \
 "update Components set DateDeleted=? where ComponentId=?"
 //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
