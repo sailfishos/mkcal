@@ -1749,6 +1749,68 @@ void tst_storage::tst_loadSeries()
     QVERIFY(m_calendar->incidence(single->uid()));
 }
 
+void tst_storage::tst_url_data()
+{
+    QTest::addColumn<QUrl>("url");
+
+    QTest::newRow("no URL")
+        << QUrl();
+    QTest::newRow("simple URL")
+        << QUrl("http://example.org/dav/123-456-789.ics");
+    QTest::newRow("percent encoded URL")
+        << QUrl("https://example.org/dav%20user/123-456-789.ics");
+}
+
+void tst_storage::tst_url()
+{
+    QFETCH(QUrl, url);
+
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2021, 1, 4), QTime(15, 37),
+                                Qt::LocalTime));
+    event->setSummary("URL test event");
+    event->setUrl(url);
+    QCOMPARE(event->url(), url);
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->url(), url);
+}
+
+void tst_storage::tst_color()
+{
+    const QString &red = QString::fromLatin1("red");
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2021, 1, 4), QTime(15, 59),
+                                Qt::LocalTime));
+    event->setSummary("Color test event");
+    event->setColor(red);
+    QCOMPARE(event->color(), red);
+
+    m_calendar->addEvent(event, NotebookId);
+    m_storage->save();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QCOMPARE(fetchEvent->color(), red);
+
+    const QString &green = QString::fromLatin1("green");
+    fetchEvent->setColor(green);
+    QCOMPARE(fetchEvent->color(), green);
+
+    m_storage->save();
+    reloadDb();
+
+    auto updatedEvent = m_calendar->event(event->uid());
+    QVERIFY(updatedEvent);
+    QCOMPARE(updatedEvent->color(), green);
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));
