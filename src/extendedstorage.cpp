@@ -783,7 +783,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
         Q_ASSERT(!incidence->uid().isEmpty());
         e.setAttribute("uid", incidence->uid());
 #ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
-        e.setAttribute("alarmtime", alarmTime.toString(Qt::ISODate));
+        e.setAttribute("alarmtime", alarmTime.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
 #endif
         if (!incidence->location().isEmpty()) {
             e.setAttribute("location", incidence->location());
@@ -803,7 +803,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             Todo::Ptr todo = incidence.staticCast<Todo>();
 
             if (todo->hasDueDate()) {
-                e.setAttribute("time", todo->dtDue(true).toString(Qt::ISODate));
+                e.setAttribute("time", todo->dtDue(true).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             }
             e.setAttribute("type", "todo");
         } else if (incidence->dtStart().isValid()) {
@@ -815,10 +815,10 @@ void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
             } else {
                 eventStart = incidence->dtStart();
             }
-            e.setAttribute("time", eventStart.toString(Qt::ISODate));
-            e.setAttribute("startDate", eventStart.toString(Qt::ISODate));
+            e.setAttribute("time", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
+            e.setAttribute("startDate", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             if (incidence->endDateForStart(eventStart).isValid()) {
-                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toString(Qt::ISODate));
+                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             }
             e.setAttribute("type", "event");
         }
