@@ -113,9 +113,6 @@ public:
     QString mSparql;
 
     int loadIncidences(sqlite3_stmt *stmt1,
-                       const char *query2, int qsize2, const char *query3, int qsize3,
-                       const char *query4, int qsize4, const char *query5, int qsize5,
-                       const char *query6, int qsize6,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
@@ -315,17 +312,7 @@ bool SqliteStorage::load()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -335,23 +322,7 @@ bool SqliteStorage::load()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -370,17 +341,7 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -405,23 +366,8 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
             // is bound, but that doesn't work either
             sqlite3_bind_int64(stmt1, index, 0);
         }
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
 
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                                  query4, qsize4, query5, qsize5, query6, qsize6);
+        count = d->loadIncidences(stmt1);
     }
 error:
     d->mIsLoading = false;
@@ -440,17 +386,7 @@ bool SqliteStorage::loadSeries(const QString &uid)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -465,23 +401,7 @@ bool SqliteStorage::loadSeries(const QString &uid)
         u = uid.toUtf8();
         sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                                  query4, qsize4, query5, qsize5, query6, qsize6);
+        count = d->loadIncidences(stmt1);
     }
 error:
     d->mIsLoading = false;
@@ -517,17 +437,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
 
     if (getLoadDates(start, end, loadStart, loadEnd)) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
 
         sqlite3_stmt *stmt1 = NULL;
         const char *tail1 = NULL;
@@ -561,23 +471,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
             qsize1 = sizeof(SELECT_COMPONENTS_ALL);
             sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
         }
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                                  query4, qsize4, query5, qsize5, query6, qsize6);
+        count = d->loadIncidences(stmt1);
 
         if (count > 0) {
             if (loadStart.isValid() && loadEnd.isValid()) {
@@ -606,17 +500,7 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -631,23 +515,7 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
         u = notebookUid.toUtf8();
         sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                                  query4, qsize4, query5, qsize5, query6, qsize6);
+        count = d->loadIncidences(stmt1);
     }
 error:
     d->mIsLoading = false;
@@ -667,17 +535,7 @@ bool SqliteStorage::loadJournals()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -687,23 +545,7 @@ bool SqliteStorage::loadJournals()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -722,17 +564,7 @@ bool SqliteStorage::loadPlainIncidences()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -742,23 +574,7 @@ bool SqliteStorage::loadPlainIncidences()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -777,17 +593,7 @@ bool SqliteStorage::loadRecurringIncidences()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -797,23 +603,7 @@ bool SqliteStorage::loadRecurringIncidences()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -832,17 +622,7 @@ bool SqliteStorage::loadGeoIncidences()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -852,23 +632,7 @@ bool SqliteStorage::loadGeoIncidences()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -888,17 +652,7 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -913,23 +667,7 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
     sqlite3_bind_int64(stmt1, index, geoLatitude + diffLatitude);
     sqlite3_bind_int64(stmt1, index, geoLongitude + diffLongitude);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -948,17 +686,7 @@ bool SqliteStorage::loadAttendeeIncidences()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -968,23 +696,7 @@ bool SqliteStorage::loadAttendeeIncidences()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
 error:
     d->mIsLoading = false;
@@ -1007,17 +719,7 @@ int SqliteStorage::loadUncompletedTodos()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1027,23 +729,7 @@ int SqliteStorage::loadUncompletedTodos()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
     setIsUncompletedTodosLoaded(count >= 0);
 
@@ -1073,17 +759,7 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1106,24 +782,7 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, hasDate);
+    count = d->loadIncidences(stmt1, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -1151,17 +810,7 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1179,23 +828,7 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3, query4, qsize4, query5, qsize5, query6, qsize6, limit,
-                              last, true);
+    count = d->loadIncidences(stmt1, limit, last, true);
 
     if (count >= 0 && count < limit) {
         setIsJournalsLoaded(true);
@@ -1226,17 +859,7 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1258,24 +881,7 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, hasDate);
+    count = d->loadIncidences(stmt1, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -1306,17 +912,7 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1334,24 +930,7 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, true, true);
+    count = d->loadIncidences(stmt1, limit, last, true, true);
 
     if (count >= 0 && count < limit) {
         setIsFutureDateLoaded(true);
@@ -1383,17 +962,7 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1415,24 +984,7 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, hasDate);
+    count = d->loadIncidences(stmt1, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -1463,17 +1015,7 @@ int SqliteStorage::loadUnreadInvitationIncidences()
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1483,23 +1025,7 @@ int SqliteStorage::loadUnreadInvitationIncidences()
 
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6);
+    count = d->loadIncidences(stmt1);
 
     setIsUnreadIncidencesLoaded(count >= 0);
 
@@ -1524,17 +1050,7 @@ int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1551,24 +1067,7 @@ int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
     sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, false);
+    count = d->loadIncidences(stmt1, limit, last, false);
 
     if (count >= 0 && count < limit) {
         setIsInvitationIncidencesLoaded(true);
@@ -1621,17 +1120,7 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
     d->mIsLoading = true;
 
     const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
     int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
     const char *tail1 = NULL;
@@ -1657,24 +1146,7 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
     }
     sqlite3_bind_int64(stmt1, index, secsStart);
 
-    query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    query3 = SELECT_ATTENDEE_BY_ID;
-    qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    query4 = SELECT_ALARM_BY_ID;
-    qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    query5 = SELECT_RECURSIVE_BY_ID;
-    qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    query6 = SELECT_RDATES_BY_ID;
-    qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    count = d->loadIncidences(stmt1, query2, qsize2, query3, qsize3,
-                              query4, qsize4, query5, qsize5, query6, qsize6,
-                              limit, last, false);
+    count = d->loadIncidences(stmt1, limit, last, false);
 
 error:
     d->mIsLoading = false;
@@ -1700,11 +1172,6 @@ static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const 
 }
 
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
-                                           const char *query2, int qsize2,
-                                           const char *query3, int qsize3,
-                                           const char *query4, int qsize4,
-                                           const char *query5, int qsize5,
-                                           const char *query6, int qsize6,
                                            int limit, QDateTime *last,
                                            bool useDate,
                                            bool ignoreEnd)
@@ -1724,6 +1191,21 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     Incidence::Ptr incidence;
     QDateTime previous, date;
     QString notebookUid;
+
+    const char *query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
+    int qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
+
+    const char *query3 = SELECT_ATTENDEE_BY_ID;
+    int qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
+
+    const char *query4 = SELECT_ALARM_BY_ID;
+    int qsize4 = sizeof(SELECT_ALARM_BY_ID);
+
+    const char *query5 = SELECT_RECURSIVE_BY_ID;
+    int qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
+
+    const char *query6 = SELECT_RDATES_BY_ID;
+    int qsize6 = sizeof(SELECT_RDATES_BY_ID);
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
