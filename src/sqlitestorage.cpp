@@ -123,9 +123,7 @@ public:
                         const char *query9, int qsize9, const char *query10, int qsize10,
                         const char *query11, int qsize11);
     bool selectIncidences(Incidence::List *list,
-                          const char *query1, int qsize1, const char *query2, int qsize2,
-                          const char *query3, int qsize3, const char *query4, int qsize4,
-                          const char *query5, int qsize5, const char *query6, int qsize6,
+                          const char *query1, int qsize1,
                           DBOperation dbop, const QDateTime &after,
                           const QString &notebookUid, const QString &summary = QString());
     int selectCount(const char *query, int qsize);
@@ -1956,11 +1954,6 @@ void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &inci
 //@cond PRIVATE
 bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
                                               const char *query1, int qsize1,
-                                              const char *query2, int qsize2,
-                                              const char *query3, int qsize3,
-                                              const char *query4, int qsize4,
-                                              const char *query5, int qsize5,
-                                              const char *query6, int qsize6,
                                               DBOperation dbop, const QDateTime &after,
                                               const QString &notebookUid, const QString &summary)
 {
@@ -1983,6 +1976,21 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
     Incidence::Ptr incidence;
     sqlite3_int64 secs;
     QString nbook;
+
+    const char *query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
+    int qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
+
+    const char *query3 = SELECT_ATTENDEE_BY_ID;
+    int qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
+
+    const char *query4 = SELECT_ALARM_BY_ID;
+    int qsize4 = sizeof(SELECT_ALARM_BY_ID);
+
+    const char *query5 = SELECT_RECURSIVE_BY_ID;
+    int qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
+
+    const char *query6 = SELECT_RDATES_BY_ID;
+    int qsize6 = sizeof(SELECT_RDATES_BY_ID);
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
@@ -2119,17 +2127,7 @@ bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &a
 {
     if (d->mIsOpened && list && after.isValid()) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
 
         if (!notebookUid.isNull()) {
             query1 = SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK;
@@ -2139,23 +2137,7 @@ bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &a
             qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED);
         }
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        return d->selectIncidences(list, query1, qsize1, query2, qsize2, query3, qsize3,
-                                   query4, qsize4, query5, qsize5, query6, qsize6,
+        return d->selectIncidences(list, query1, qsize1,
                                    DBInsert, after, notebookUid);
     }
     return false;
@@ -2166,17 +2148,7 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
 {
     if (d->mIsOpened && list && after.isValid()) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
 
         if (!notebookUid.isNull()) {
             query1 = SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK;
@@ -2186,24 +2158,7 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
             qsize1 = sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED);
         }
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        return d->selectIncidences(list,
-                                   query1, qsize1, query2, qsize2, query3, qsize3,
-                                   query4, qsize4, query5, qsize5,  query6, qsize6,
+        return d->selectIncidences(list, query1, qsize1,
                                    DBUpdate, after, notebookUid);
     }
     return false;
@@ -2214,17 +2169,7 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
 {
     if (d->mIsOpened && list) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
 
         if (!notebookUid.isNull()) {
             if (after.isValid()) {
@@ -2244,24 +2189,7 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
             }
         }
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        return d->selectIncidences(list,
-                                   query1, qsize1, query2, qsize2, query3, qsize3,
-                                   query4, qsize4, query5, qsize5, query6, qsize6,
+        return d->selectIncidences(list, query1, qsize1,
                                    DBMarkDeleted, after, notebookUid);
     }
     return false;
@@ -2271,17 +2199,7 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
 {
     if (d->mIsOpened && list) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
 
         if (!notebookUid.isNull()) {
             query1 = SELECT_COMPONENTS_BY_NOTEBOOK;
@@ -2291,24 +2209,7 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
             qsize1 = sizeof(SELECT_COMPONENTS_ALL);
         }
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        return d->selectIncidences(list,
-                                   query1, qsize1, query2, qsize2, query3, qsize3,
-                                   query4, qsize4, query5, qsize5, query6, qsize6,
+        return d->selectIncidences(list, query1, qsize1,
                                    DBSelect, QDateTime(), notebookUid);
     }
     return false;
@@ -2319,17 +2220,7 @@ bool SqliteStorage::duplicateIncidences(Incidence::List *list, const Incidence::
 {
     if (d->mIsOpened && list && incidence) {
         const char *query1 = NULL;
-        const char *query2 = NULL;
-        const char *query3 = NULL;
-        const char *query4 = NULL;
-        const char *query5 = NULL;
-        const char *query6 = NULL;
         int qsize1 = 0;
-        int qsize2 = 0;
-        int qsize3 = 0;
-        int qsize4 = 0;
-        int qsize5 = 0;
-        int qsize6 = 0;
         QDateTime dtStart;
 
         if (incidence->dtStart().isValid()) {
@@ -2346,23 +2237,7 @@ bool SqliteStorage::duplicateIncidences(Incidence::List *list, const Incidence::
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DUPLICATE);
         }
 
-        query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-        qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-        query3 = SELECT_ATTENDEE_BY_ID;
-        qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-        query4 = SELECT_ALARM_BY_ID;
-        qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-        query5 = SELECT_RECURSIVE_BY_ID;
-        qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-        query6 = SELECT_RDATES_BY_ID;
-        qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-        return d->selectIncidences(list, query1, qsize1, query2, qsize2, query3, qsize3,
-                                   query4, qsize4, query5, qsize5, query6, qsize6,
+        return d->selectIncidences(list, query1, qsize1,
                                    DBSelect, dtStart, notebookUid, incidence->summary());
     }
     return false;
