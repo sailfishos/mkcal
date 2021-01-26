@@ -1228,23 +1228,29 @@ void tst_storage::tst_deleted()
                                                  0));
     m_storage->addNotebook(notebook);
 
-    KCalendarCore::Event::Ptr event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime::currentDateTimeUtc());
     event->setSummary("Deleted event");
     event->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
     const QString customValue = QLatin1String("A great value");
     event->setNonKDECustomProperty("X-TEST-PROPERTY", customValue);
 
-    KCalendarCore::Event::Ptr event2 = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
-    event->setDtStart(QDateTime::currentDateTimeUtc());
-    event->setSummary("Purged event on save");
-    event->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
+    KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
+    event2->setDtStart(QDateTime::currentDateTimeUtc());
+    event2->setSummary("Purged event on save");
+    event2->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
 
-    QVERIFY(m_calendar->addEvent(event, "123456789-deletion"));
-    QVERIFY(m_calendar->addEvent(event2, "123456789-deletion"));
+    KCalendarCore::Event::Ptr event3(new KCalendarCore::Event);
+    event3->setDtStart(QDateTime::currentDateTimeUtc());
+    event3->setSummary("Re-created event");
+    event3->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
+
+    QVERIFY(m_calendar->addEvent(event, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event2, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event3, notebook->uid()));
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
 
     KCalendarCore::Event::Ptr fetchEvent = m_calendar->event(event->uid());
     QVERIFY(fetchEvent);
@@ -1257,12 +1263,12 @@ void tst_storage::tst_deleted()
     // Deleted events are marked as deleted but remains in the DB
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
 
     KCalendarCore::Incidence::List deleted;
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), "123456789-deletion"));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), notebook->uid()));
     QVERIFY(deleted.isEmpty());
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), "123456789-deletion"));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
     QCOMPARE(deleted.length(), 1);
     QCOMPARE(deleted[0]->uid(), event->uid());
     QCOMPARE(deleted[0]->nonKDECustomProperty("X-TEST-PROPERTY"), customValue);
@@ -1273,20 +1279,38 @@ void tst_storage::tst_deleted()
     // One can purge previously deleted events from DB
     QVERIFY(m_storage->purgeDeletedIncidences(deleted));
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), "123456789-deletion"));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
     QCOMPARE(deleted.length(), 0);
 
     // One can purge deleted events from DB directly when they are
     // removed from a calendar.
-    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
     KCalendarCore::Event::Ptr fetchEvent2 = m_calendar->event(event2->uid());
     QVERIFY(fetchEvent2);
     QVERIFY(m_calendar->deleteIncidence(fetchEvent2));
     QVERIFY(m_storage->save(ExtendedStorage::PurgeDeleted));
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences("123456789-deletion"));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), "123456789-deletion"));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QCOMPARE(deleted.length(), 0);
+
+    // One can re-create event after deletion using the same UID
+    KCalendarCore::Event::Ptr fetchEvent3 = m_calendar->event(event3->uid());
+    QVERIFY(fetchEvent3);
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent3));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    // For instance a sync wants to re-create this because remote override local deletion
+    QVERIFY(m_calendar->addEvent(event3, notebook->uid()));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    fetchEvent3 = m_calendar->event(event3->uid());
+    QVERIFY(fetchEvent3);
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
     QCOMPARE(deleted.length(), 0);
 }
 
