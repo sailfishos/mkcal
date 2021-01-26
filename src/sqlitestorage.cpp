@@ -2682,7 +2682,6 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
 bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &after,
                                       const QString &notebookUid)
 {
-    //if ( d->mIsOpened && list && after.isValid() ) {
     if (d->mIsOpened && list) {
         const char *query1 = NULL;
         const char *query2 = NULL;
@@ -2698,11 +2697,21 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
         int qsize6 = 0;
 
         if (!notebookUid.isNull()) {
-            query1 = SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK);
+            if (after.isValid()) {
+                query1 = SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK;
+                qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK);
+            } else {
+                query1 = SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK;
+                qsize1 = sizeof(SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK);
+            }
         } else {
-            query1 = SELECT_COMPONENTS_BY_DELETED;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED);
+            if (after.isValid()) {
+                query1 = SELECT_COMPONENTS_BY_DELETED;
+                qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED);
+            } else {
+                query1 = SELECT_COMPONENTS_ALL_DELETED;
+                qsize1 = sizeof(SELECT_COMPONENTS_ALL_DELETED);
+            }
         }
 
         query2 = SELECT_CUSTOMPROPERTIES_BY_ID;

@@ -313,7 +313,8 @@ public:
       @copydoc
       ExtendedStorage::deletedIncidences()
     */
-    bool deletedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
+    bool deletedIncidences(KCalendarCore::Incidence::List *list,
+                           const QDateTime &after = QDateTime(),
                            const QString &notebookUid = QString());
 
     /**
@@ -629,6 +630,10 @@ public Q_SLOTS:
 "select * from Components where DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOK \
 "select * from Components where Notebook=? and DateDeleted=0"
+#define SELECT_COMPONENTS_ALL_DELETED \
+"select * from Components where DateDeleted<>0"
+#define SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK \
+"select * from Components where Notebook=? and DateDeleted<>0"
 #define SELECT_COMPONENTS_BY_GEO \
 "select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_GEO_AREA \
