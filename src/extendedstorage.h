@@ -98,7 +98,7 @@ public:
       @param validateNotebooks set to true for loading/saving only those
              incidences that belong to an existing notebook of this storage
 
-      @warning Do not usea storage as a global object, on closing the application
+      @warning Do not use storage as a global object, on closing the application
       it can dead lock. If you do so, be ready to destroy it manually before the
       application closes.
 
@@ -106,7 +106,7 @@ public:
       cannot change. It is possible to do so through the API, but the internal
       hash tables will not be updated and hence the changes will not be tracked.
     */
-    explicit ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks = false);
+    explicit ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks = true);
 
     /**
       Destructor.
