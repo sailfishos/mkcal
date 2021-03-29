@@ -1873,12 +1873,10 @@ bool SqliteStorage::close()
             d->mWatcher = NULL;
         }
         d->mChanged.close();
+        delete d->mFormat;
+        d->mFormat = 0;
         sqlite3_close(d->mDatabase);
         d->mDatabase = 0;
-        if (d->mFormat) {
-            delete d->mFormat;
-            d->mFormat = 0;
-        }
         d->mIsOpened = false;
     }
     return true;
