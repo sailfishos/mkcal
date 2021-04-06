@@ -72,7 +72,7 @@ public:
     */
     explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
                            const QString &databaseName,
-                           bool validateNotebooks = false);
+                           bool validateNotebooks = true);
 
     /**
       Destructor.
