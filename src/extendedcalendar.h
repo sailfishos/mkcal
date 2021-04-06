@@ -242,6 +242,12 @@ public:
 
     /**
       @copydoc
+      Calendar::~Calendar()
+     */
+    ~ExtendedCalendar();
+
+    /**
+      @copydoc
       Calendar::reload()
     */
     bool reload();

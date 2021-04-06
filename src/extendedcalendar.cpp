@@ -143,6 +143,11 @@ ExtendedCalendar::ExtendedCalendar(const QByteArray &timeZoneId)
 {
 }
 
+ExtendedCalendar::~ExtendedCalendar()
+{
+    delete d;
+}
+
 bool ExtendedCalendar::reload()
 {
     // Doesn't belong here.
