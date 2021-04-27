@@ -2528,7 +2528,9 @@ QDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, const QByteArray 
 {
     QDateTime dt;
 
-    if (!zonename.isEmpty()) {
+    if (zonename == "UTC") {
+        dt = d->mOriginTime.addSecs(seconds).toUTC();
+    } else if (!zonename.isEmpty()) {
         // First try system zones.
         const QTimeZone timezone(zonename);
         if (timezone.isValid()) {
