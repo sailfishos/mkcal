@@ -112,6 +112,7 @@ public:
     QDateTime mPreWatcherDbTime;
     QString mSparql;
 
+    bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
@@ -1169,6 +1170,40 @@ static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const 
     return false;
 }
 
+bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
+{
+    bool added = true;
+    bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
+    // Cannot use .contains(incidence->uid(), incidence) here, like
+    // in the rest of the file, since incidence here is a new one
+    // returned by the selectComponents() that cannot by design be already
+    // in the multihash tables.
+    if (isContaining(mIncidencesToInsert, incidence) ||
+        isContaining(mIncidencesToUpdate, incidence) ||
+        isContaining(mIncidencesToDelete, incidence) ||
+        (mStorage->validateNotebooks() && !hasNotebook)) {
+        qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
+                           << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
+        added = false;
+    } else {
+        Incidence::Ptr old(mCalendar->incidence(incidence->uid(), incidence->recurrenceId()));
+        if (old) {
+            if (incidence->revision() > old->revision()) {
+                mCalendar->deleteIncidence(old);   // move old to deleted
+                // and replace it with the new one.
+            } else {
+                added = false;
+            }
+        }
+    }
+    if (added && !mCalendar->addIncidence(incidence, notebookUid)) {
+        added = false;
+        qCWarning(lcMkcal) << "cannot add incidence" << incidence->uid() << "to notebook" << notebookUid;
+    }
+
+    return added;
+}
+
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            int limit, QDateTime *last,
                                            bool useDate,
@@ -1218,137 +1253,21 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
 
     while ((incidence =
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, notebookUid))) {
-        bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
-        bool added = true;
-        // Cannot use .contains(incidence->uid(), incidence) here, like
-        // in the rest of the file, since incidence here is a new one
-        // returned by the selectComponents() that cannot by design be already
-        // in the multihash tables.
-        if (isContaining(mIncidencesToInsert, incidence) ||
-                isContaining(mIncidencesToUpdate, incidence) ||
-                isContaining(mIncidencesToDelete, incidence) ||
-                (mStorage->validateNotebooks() && !hasNotebook)) {
-            qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
-                       << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
-        } else {
-            if (incidence->type() == Incidence::TypeEvent) {
-                Event::Ptr event = incidence.staticCast<Event>();
-                Event::Ptr old;
-                if (!event->hasRecurrenceId()) {
-                    old = mCalendar->event(event->uid());
-                } else {
-                    old = mCalendar->event(event->uid(), event->recurrenceId());
-                }
-                if (old) {
-                    if (event->revision() > old->revision()) {
-//            qCDebug(lcMkcal) << "updating event" << event->uid()
-//                     << event->dtStart() << event->dtEnd()
-//                     << "in calendar";
-                        mCalendar->deleteEvent(old);   // move old to deleted
-                        mCalendar->addEvent(event, notebookUid);   // and replace it with this one
-                    } else {
-                        event = old;
-                    }
-                } else {
-//          qCDebug(lcMkcal) << "adding event" << event->uid()
-//                   << event->dtStart() << event->dtEnd()
-//                   << "in calendar";
-                    mCalendar->addEvent(event, notebookUid);
-                }
-                if (event != old) {
-                    count++; // added into calendar
-                } else {
-                    added = false;
-                }
-                if (useDate && !ignoreEnd && event->dtEnd().isValid()) {
-                    date = event->dtEnd();
-                } else if (useDate && event->dtStart().isValid()) {
-                    date = event->dtStart();
-                } else {
-                    date = event->created();
-                }
-            } else if (incidence->type() == Incidence::TypeTodo) {
-                Todo::Ptr todo = incidence.staticCast<Todo>();
-                Todo::Ptr old;
-                if (!todo->hasRecurrenceId()) {
-                    old = mCalendar->todo(todo->uid());
-                } else {
-                    old = mCalendar->todo(todo->uid(), todo->recurrenceId());
-                }
-                if (old) {
-                    if (todo->revision() > old->revision()) {
-                        qCDebug(lcMkcal) << "updating todo" << todo->uid()
-                                 << todo->dtDue() << todo->created()
-                                 << "in calendar";
-                        mCalendar->deleteTodo(old);   // move old to deleted
-                        mCalendar->addTodo(todo, notebookUid);   // and replace it with this one
-                    } else {
-                        todo = old;
-                    }
-                } else {
-//          qCDebug(lcMkcal) << "adding todo" << todo->uid()
-//                   << todo->dtDue() << todo->created()
-//                   << "in calendar";
-                    mCalendar->addTodo(todo, notebookUid);
-                }
-                if (todo != old) {
-                    count++; // added into calendar
-                } else {
-                    added = false;
-                }
-                if (useDate && todo->dtDue().isValid()) {
-                    date = todo->dtDue();
-                } else if (useDate && todo->dtStart().isValid()) {
-                    date = todo->dtStart();
-                } else {
-                    date = todo->created();
-                }
-            } else if (incidence->type() == Incidence::TypeJournal) {
-                Journal::Ptr journal = incidence.staticCast<Journal>();
-                Journal::Ptr old;
-                if (!journal->hasRecurrenceId()) {
-                    old = mCalendar->journal(journal->uid());
-                } else {
-                    old = mCalendar->journal(journal->uid(), journal->recurrenceId());
-                }
-                if (old) {
-                    if (journal->revision() > old->revision()) {
-//            qCDebug(lcMkcal) << "updating journal" << journal->uid()
-//                     << journal->dtStart() << journal->created()
-//                     << "in calendar";
-                        mCalendar->deleteJournal(old);   // move old to deleted
-                        mCalendar->addJournal(journal, notebookUid);   // and replace it with this one
-                    } else {
-                        journal = old;
-                    }
-                } else {
-//          qCDebug(lcMkcal) << "adding journal" << journal->uid()
-//                   << journal->dtStart() << journal->created()
-//                   << "in calendar";
-                    mCalendar->addJournal(journal, notebookUid);
-                }
-                if (journal != old) {
-                    count++; // added into calendar
-                } else {
-                    added = false;
-                }
-
-                if (useDate && journal->dateTime(Incidence::RoleEnd).isValid()) {
-                    // TODO_ALVARO: journals don't have dtEnd, bug ?
-                    date = journal->dateTime(Incidence::RoleEnd);
-                } else if (useDate && journal->dtStart().isValid()) {
-                    date = journal->dtStart();
-                } else {
-                    date = journal->created();
-                }
-            }
-        }
         sqlite3_reset(stmt2);
         sqlite3_reset(stmt3);
         sqlite3_reset(stmt4);
         sqlite3_reset(stmt5);
         sqlite3_reset(stmt6);
 
+        const QDateTime endDateTime(incidence->dateTime(Incidence::RoleEnd));
+        if (useDate && endDateTime.isValid()
+            && (!ignoreEnd || incidence->type() != Incidence::TypeEvent)) {
+            date = endDateTime;
+        } else if (useDate && incidence->dtStart().isValid()) {
+            date = incidence->dtStart();
+        } else {
+            date = incidence->created();
+        }
         if (previous != date) {
             if (!previous.isValid() || limit <= 0 || count <= limit) {
                 // If we don't have previous date, or we're within limits,
@@ -1357,19 +1276,20 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
             } else {
                 // Move back to old date
                 date = previous;
-                // Delete the incidence from calendar
-                if (added)
-                    mCalendar->deleteIncidence(incidence);
-                // And break out of loop
                 break;
             }
+        }
+        if (addIncidence(incidence, notebookUid)) {
+            // qCDebug(lcMkcal) << "updating incidence" << incidence->uid()
+            //                  << incidence->dtStart() << endDateTime
+            //                  << "in calendar";
+            count += 1;
         }
     }
     if (last) {
         *last = date;
     }
 
-    sqlite3_reset(stmt1);
     sqlite3_finalize(stmt1);
     sqlite3_finalize(stmt2);
     sqlite3_finalize(stmt3);
@@ -2050,60 +1970,29 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             }
         }
     }
-    if (query2) {
-        sqlite3_prepare_v2(mDatabase, query2, qsize2, &stmt2, &tail2);
-    }
-    if (query3) {
-        sqlite3_prepare_v2(mDatabase, query3, qsize3, &stmt3, &tail3);
-    }
-    if (query4) {
-        sqlite3_prepare_v2(mDatabase, query4, qsize4, &stmt4, &tail4);
-    }
-    if (query5) {
-        sqlite3_prepare_v2(mDatabase, query5, qsize5, &stmt5, &tail5);
-    }
-    if (query6) {
-        sqlite3_prepare_v2(mDatabase, query6, qsize6, &stmt6, &tail6);
-    }
+    sqlite3_prepare_v2(mDatabase, query2, qsize2, &stmt2, &tail2);
+    sqlite3_prepare_v2(mDatabase, query3, qsize3, &stmt3, &tail3);
+    sqlite3_prepare_v2(mDatabase, query4, qsize4, &stmt4, &tail4);
+    sqlite3_prepare_v2(mDatabase, query5, qsize5, &stmt5, &tail5);
+    sqlite3_prepare_v2(mDatabase, query6, qsize6, &stmt6, &tail6);
 
     while ((incidence =
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, nbook))) {
         qCDebug(lcMkcal) << "adding incidence" << incidence->uid() << "into list"
                  << incidence->created() << incidence->lastModified();
         list->append(incidence);
-        if (stmt2) {
-            sqlite3_reset(stmt2);
-        }
-        if (stmt3) {
-            sqlite3_reset(stmt3);
-        }
-        if (stmt4) {
-            sqlite3_reset(stmt4);
-        }
-        if (stmt5) {
-            sqlite3_reset(stmt5);
-        }
-        if (stmt6) {
-            sqlite3_reset(stmt6);
-        }
+        sqlite3_reset(stmt2);
+        sqlite3_reset(stmt3);
+        sqlite3_reset(stmt4);
+        sqlite3_reset(stmt5);
+        sqlite3_reset(stmt6);
     }
-    sqlite3_reset(stmt1);
     sqlite3_finalize(stmt1);
-    if (stmt2) {
-        sqlite3_finalize(stmt2);
-    }
-    if (stmt3) {
-        sqlite3_finalize(stmt3);
-    }
-    if (stmt4) {
-        sqlite3_finalize(stmt4);
-    }
-    if (stmt5) {
-        sqlite3_finalize(stmt5);
-    }
-    if (stmt6) {
-        sqlite3_finalize(stmt6);
-    }
+    sqlite3_finalize(stmt2);
+    sqlite3_finalize(stmt3);
+    sqlite3_finalize(stmt4);
+    sqlite3_finalize(stmt5);
+    sqlite3_finalize(stmt6);
 
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
