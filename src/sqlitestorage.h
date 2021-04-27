@@ -122,6 +122,12 @@ public:
 
     /**
       @copydoc
+      ExtendedStorage::loadIncidenceInstance(const QString &)
+    */
+    bool loadIncidenceInstance(const QString &instanceIdentifier);
+
+    /**
+      @copydoc
       ExtendedStorage::loadNotebookIncidences(const QString &)
     */
     bool loadNotebookIncidences(const QString &notebookUid);
