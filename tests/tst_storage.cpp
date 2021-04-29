@@ -55,6 +55,7 @@ void tst_storage::cleanupTestCase()
 
 void tst_storage::init()
 {
+    openDb(true);
 }
 
 void tst_storage::cleanup()
