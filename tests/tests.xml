@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testdefinition version="1.0">
+  <suite name="mkcal-qt5" domain="mw">
+    <set name="unit-tests" feature="mkcal">
+       <case manual="false" name="tst_storage">
+         <step>SQLITESTORAGEDB=testdb /opt/tests/mkcal/tst_storage</step>
+       </case>
+     </set>
+  </suite>
+</testdefinition>
+

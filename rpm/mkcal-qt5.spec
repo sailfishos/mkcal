@@ -75,3 +75,4 @@ mv %{buildroot}%{_libdir}/pkgconfig/{,lib}%{name}.pc
 %files tests
 %defattr(-,root,root,-)
 /opt/tests/mkcal/tst_storage
+/opt/tests/mkcal/tests.xml

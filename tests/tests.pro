@@ -20,4 +20,8 @@ SOURCES += \
 
 target.path = /opt/tests/mkcal/
 
-INSTALLS += target
+xml.files = tests.xml
+xml.path = /opt/tests/mkcal/
+
+INSTALLS += target xml
+
