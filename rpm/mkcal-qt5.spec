@@ -24,6 +24,7 @@ Extended KDE kcal calendar library port for Maemo
 %package devel
 Summary:    Development files for mkcal
 Requires:   %{name} = %{version}-%{release}
+Requires:   pkgconfig(KF5CalendarCore)
 
 %description devel
 This package contains the files necessary to develop
