@@ -1841,6 +1841,34 @@ void tst_storage::tst_color()
     QCOMPARE(updatedEvent->color(), green);
 }
 
+void tst_storage::tst_addIncidence()
+{
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2021, 5, 4), QTime(14, 54),
+                                Qt::LocalTime));
+    event->setSummary("testing generic addIncidence for events.");
+    QVERIFY(m_calendar->addIncidence(event, NotebookId));
+
+    auto todo = KCalendarCore::Todo::Ptr(new KCalendarCore::Todo);
+    todo->setDtStart(QDateTime(QDate(2021, 5, 4), QTime(14, 55),
+                                Qt::LocalTime));
+    todo->setSummary("testing generic addIncidence for todos.");
+    QVERIFY(m_calendar->addIncidence(todo, NotebookId));
+
+    auto journal = KCalendarCore::Journal::Ptr(new KCalendarCore::Journal);
+    journal->setDtStart(QDateTime(QDate(2021, 5, 4), QTime(14, 56),
+                                  Qt::LocalTime));
+    journal->setSummary("testing generic addIncidence for journals.");
+    QVERIFY(m_calendar->addIncidence(journal, NotebookId));
+
+    m_storage->save();
+    reloadDb();
+
+    QVERIFY(m_calendar->event(event->uid()));
+    QVERIFY(m_calendar->todo(todo->uid()));
+    QVERIFY(m_calendar->journal(journal->uid()));
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));
