@@ -295,6 +295,17 @@ public:
 
     /**
       @copydoc
+      Calendar::addIncidence()
+
+      @param notebookUid The notebook uid where you want to add the incidence to.
+
+      @warning There is no check if the notebookUid is valid or not. If it is not
+      valid you can corrupt the DB. Check before with storage::isValidNotebook()
+    */
+    bool addIncidence(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebookUid);
+
+    /**
+      @copydoc
       Calendar::deleteIncidence()
     */
     bool deleteIncidence(const KCalendarCore::Incidence::Ptr &incidence);

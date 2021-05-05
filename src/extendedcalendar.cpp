@@ -268,6 +268,25 @@ bool ExtendedCalendar::addIncidence(const Incidence::Ptr &incidence)
     return Calendar::addIncidence(incidence);
 }
 
+bool ExtendedCalendar::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
+{
+    if (!incidence) {
+        return false;
+    }
+
+    switch (incidence->type()) {
+    case IncidenceBase::TypeEvent:
+        return addEvent(incidence.staticCast<Event>(), notebookUid);
+    case IncidenceBase::TypeTodo:
+        return addTodo(incidence.staticCast<Todo>(), notebookUid);
+    case IncidenceBase::TypeJournal:
+        return addJournal(incidence.staticCast<Journal>(), notebookUid);
+    default:
+        qCWarning(lcMkcal) << "Unsupported type in addIncidence().";
+    }
+    return false;
+}
+
 bool ExtendedCalendar::deleteIncidence(const Incidence::Ptr &incidence)
 {
     // Need to by-pass the override done in MemoryCalendar to get back

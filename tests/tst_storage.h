@@ -74,6 +74,7 @@ private slots:
     void tst_url_data();
     void tst_url();
     void tst_color();
+    void tst_addIncidence();
 
 private:
     void openDb(bool clear = false);
