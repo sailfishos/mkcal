@@ -930,7 +930,6 @@ bool SqliteFormat::Private::modifyAttendees(Incidence::Ptr incidence, int rowid,
     if (success && dbop != DBDelete) {
         // FIXME: this doesn't fully save and restore attendees as they were set.
         // e.g. has constraints that every attendee must have email and they need to be unique among the attendees.
-        // also this forces attendee list to include the organizer.
         QString organizerEmail;
         if (!incidence->organizer().isEmpty()) {
             organizerEmail = incidence->organizer().email();
@@ -1891,16 +1890,17 @@ bool SqliteFormat::Private::selectAttendees(Incidence::Ptr incidence, int rowid,
             QString email = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
             QString name = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 2));
             bool isOrganizer = (bool)sqlite3_column_int(stmt, 3);
-            Attendee::Role role = (Attendee::Role)sqlite3_column_int(stmt, 4);
-            Attendee::PartStat status = (Attendee::PartStat)sqlite3_column_int(stmt, 5);
-            bool rsvp = (bool)sqlite3_column_int(stmt, 6);
             if (isOrganizer) {
                 incidence->setOrganizer(Person(name, email));
+            } else {
+                Attendee::Role role = (Attendee::Role)sqlite3_column_int(stmt, 4);
+                Attendee::PartStat status = (Attendee::PartStat)sqlite3_column_int(stmt, 5);
+                bool rsvp = (bool)sqlite3_column_int(stmt, 6);
+                Attendee attendee(name, email, rsvp, status, role);
+                attendee.setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7)));
+                attendee.setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 8)));
+                incidence->addAttendee(attendee, false);
             }
-            Attendee attendee(name, email, rsvp, status, role);
-            attendee.setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7)));
-            attendee.setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 8)));
-            incidence->addAttendee(attendee, false);
         }
     } while (rv != SQLITE_DONE);
 
