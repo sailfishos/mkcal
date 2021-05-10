@@ -522,6 +522,33 @@ error:
     return count >= 0;
 }
 
+bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
+{
+    QString uid;
+    QDateTime recId;
+    // At the moment, from KCalendarCore, if the instance is an exception,
+    // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
+    // This is tested in tst_loadIncidenceInstance() to ensure that any
+    // future breakage would be properly detected.
+    if (instanceIdentifier.endsWith('Z')) {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
+        recId = QDateTime::fromString(instanceIdentifier.right(20), Qt::ISODate);
+    } else if (instanceIdentifier.length() > 19
+               && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
+        recId = QDateTime::fromString(instanceIdentifier.right(19), Qt::ISODate);
+    } else if (instanceIdentifier.length() > 25
+               && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
+        recId = QDateTime::fromString(instanceIdentifier.right(25), Qt::ISODate);
+    }
+    if (!recId.isValid()) {
+        uid = instanceIdentifier;
+    }
+
+    return load(uid, recId);
+}
+
 bool SqliteStorage::loadJournals()
 {
 
@@ -2528,7 +2555,9 @@ QDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, const QByteArray 
 {
     QDateTime dt;
 
-    if (!zonename.isEmpty()) {
+    if (zonename == "UTC") {
+        dt = d->mOriginTime.addSecs(seconds).toUTC();
+    } else if (!zonename.isEmpty()) {
         // First try system zones.
         const QTimeZone timezone(zonename);
         if (timezone.isValid()) {

@@ -1779,6 +1779,61 @@ void tst_storage::tst_loadSeries()
     QVERIFY(m_calendar->incidence(single->uid()));
 }
 
+void tst_storage::tst_loadIncidenceInstance()
+{
+    mKCal::Notebook::Ptr notebook =
+        mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-loadIncidenceInstance",
+                                                 "test notebook",
+                                                 QLatin1String(""),
+                                                 "#001122",
+                                                 false, // Not shared.
+                                                 true, // Is master.
+                                                 false, // Not synced to Ovi.
+                                                 false, // Writable.
+                                                 true, // Visible.
+                                                 QLatin1String(""),
+                                                 QLatin1String(""),
+                                                 0));
+    m_storage->addNotebook(notebook);
+
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2021, 4, 26), QTime(16, 49), Qt::UTC));
+    event->setSummary("Parent event");
+    event->setCreated(event->dtStart().addSecs(-3));
+    event->recurrence()->setDaily(1);
+    KCalendarCore::Event::Ptr occurrence(event->clone());
+    occurrence->clearRecurrence();
+    occurrence->setDtStart(event->dtStart().addDays(1).addSecs(3600));
+    occurrence->setRecurrenceId(event->dtStart().addDays(1));
+    occurrence->setSummary("Exception occurrence");
+    event->recurrence()->addExDateTime(occurrence->recurrenceId());
+    KCalendarCore::Event::Ptr single(new KCalendarCore::Event);
+    single->setDtStart(QDateTime(QDate(2021, 4, 26), QTime(17, 26), QTimeZone("Europe/Paris")));
+    single->setSummary("Single event");
+
+    QVERIFY(m_calendar->addEvent(event, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(occurrence, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(single, notebook->uid()));
+    QVERIFY(m_storage->save());
+
+    m_storage.clear();
+    m_calendar.clear();
+    m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));
+    m_storage = m_calendar->defaultStorage(m_calendar);
+    m_storage->open();
+
+    QVERIFY(m_calendar->events().isEmpty());
+
+    QVERIFY(m_storage->loadIncidenceInstance(occurrence->instanceIdentifier()));
+    QVERIFY(m_calendar->instance(occurrence->instanceIdentifier()));
+
+    QVERIFY(m_storage->loadIncidenceInstance(event->instanceIdentifier()));
+    QVERIFY(m_calendar->instance(event->instanceIdentifier()));
+
+    QVERIFY(m_storage->loadIncidenceInstance(single->instanceIdentifier()));
+    QVERIFY(m_calendar->instance(single->instanceIdentifier()));
+}
+
 void tst_storage::tst_url_data()
 {
     QTest::addColumn<QUrl>("url");

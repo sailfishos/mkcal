@@ -71,6 +71,7 @@ private slots:
     void tst_alarms();
     void tst_load();
     void tst_loadSeries();
+    void tst_loadIncidenceInstance();
     void tst_url_data();
     void tst_url();
     void tst_color();

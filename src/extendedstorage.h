@@ -160,6 +160,16 @@ public:
     virtual bool loadSeries(const QString &uid) = 0;
 
     /**
+      Load the incidence matching the given identifier. This method may be
+      more fragile than load(uid, recid) though since the instanceIdentifier
+      is not saved as is in the database.
+
+      @param instanceIdentifier is an identifier returned by Incidence::instanceIdentifier()
+      @return true if the load was successful; false otherwise.
+    */
+    virtual bool loadIncidenceInstance(const QString &instanceIdentifier) = 0;
+
+    /**
       Load incidences of one notebook into the memory.
 
       @param notebookUid is uid of notebook
