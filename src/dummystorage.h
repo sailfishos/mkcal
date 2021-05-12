@@ -116,6 +116,10 @@ public:
     {
         return true;
     }
+    bool loadIncidenceInstance(const QString &)
+    {
+        return true;
+    }
     bool loadNotebookIncidences(const QString &)
     {
         return true;
