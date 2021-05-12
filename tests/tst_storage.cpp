@@ -44,6 +44,10 @@ tst_storage::tst_storage(QObject *parent)
 
 void tst_storage::initTestCase()
 {
+    ExtendedCalendar::Ptr dummyCal(new ExtendedCalendar(QTimeZone::systemTimeZone()));
+    DummyStorage dummy(dummyCal);
+    QVERIFY(dummy.open());
+
     openDb(true);
 }
 
