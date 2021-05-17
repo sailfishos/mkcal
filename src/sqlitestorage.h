@@ -476,6 +476,16 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
+#define sqlite3_bind_blob( stmt, index, value, size, desc )           \
+{                                                                     \
+  rv = sqlite3_bind_blob( (stmt), (index), (value), (size), (desc) ); \
+  if ( rv ) {                                                         \
+    qCWarning(lcMkcal) << "sqlite3_bind_blob error:" << rv << "on index and value:" << index << value; \
+    goto error;                                                       \
+  }                                                                   \
+  index++;                                                            \
+}
+
 #define sqlite3_bind_int( stmt, index, value )                        \
 {                                                                     \
   rv = sqlite3_bind_int( (stmt), (index), (value) );                  \
@@ -544,6 +554,8 @@ public Q_SLOTS:
   "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, Offset INTEGER, Relation TEXT, DateTrigger INTEGER, DateTriggerLocal INTEGER, triggerTimeZone TEXT, Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
 #define CREATE_ATTENDEE \
 "CREATE TABLE IF NOT EXISTS Attendee(ComponentId INTEGER, Email TEXT, Name TEXT, IsOrganizer INTEGER, Role INTEGER, PartStat INTEGER, Rsvp INTEGER, DelegatedTo TEXT, DelegatedFrom TEXT)"
+#define CREATE_ATTACHMENTS \
+"CREATE TABLE IF NOT EXISTS Attachments(ComponentId INTEGER, Data BLOB, Uri TEXT, MimeType TEXT, ShowInLine INTEGER, Label TEXT, Local INTEGER)"
 #define CREATE_CALENDARPROPERTIES \
   "CREATE TABLE IF NOT EXISTS Calendarproperties(CalendarId REFERENCES Calendars(CalendarId) ON DELETE CASCADE, Name TEXT NOT NULL, Value TEXT, UNIQUE (CalendarId, Name))"
 
@@ -567,6 +579,8 @@ public Q_SLOTS:
 "CREATE INDEX IF NOT EXISTS IDX_ALARM on Alarm(ComponentId)"
 #define INDEX_ATTENDEE \
 "CREATE UNIQUE INDEX IF NOT EXISTS IDX_ATTENDEE on Attendee(ComponentId, Email)"
+#define INDEX_ATTACHMENTS \
+"CREATE INDEX IF NOT EXISTS IDX_ATTACHMENTS on Attachments(ComponentId)"
 #define INDEX_CALENDARPROPERTIES \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDARPROPERTIES on Calendarproperties(CalendarId)"
 
@@ -592,6 +606,8 @@ public Q_SLOTS:
 "insert into Alarm values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_ATTENDEE \
 "insert into Attendee values (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+#define INSERT_ATTACHMENTS \
+"insert into Attachments values (?, ?, ?, ?, ?, ?, ?)"
 
 #define UPDATE_TIMEZONES \
 "update Timezones set ICalData=? where TzId=1"
@@ -623,6 +639,8 @@ public Q_SLOTS:
 "delete from Alarm where ComponentId=?"
 #define DELETE_ATTENDEE \
 "delete from Attendee where ComponentId=?"
+#define DELETE_ATTACHMENTS \
+"delete from Attachments where ComponentId=?"
 
 #define SELECT_VERSION \
 "select * from Version"
@@ -708,6 +726,8 @@ public Q_SLOTS:
 "select * from Alarm where ComponentId=?"
 #define SELECT_ATTENDEE_BY_ID \
 "select * from Attendee where ComponentId=?"
+#define SELECT_ATTACHMENTS_BY_ID \
+"select * from Attachments where ComponentId=?"
 #define SELECT_CALENDARPROPERTIES_BY_ID \
 "select * from Calendarproperties where CalendarId=?"
 #define SELECT_COMPONENTS_BY_DUPLICATE \
