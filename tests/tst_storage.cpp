@@ -1928,6 +1928,47 @@ void tst_storage::tst_addIncidence()
     QVERIFY(m_calendar->journal(journal->uid()));
 }
 
+void tst_storage::tst_attachments()
+{
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setSummary("testing attachments.");
+    KCalendarCore::Attachment uriAttach(QString::fromUtf8("http://example.org/foo.png"),
+                                        QString::fromUtf8("image/png"));
+    uriAttach.setLabel(QString::fromUtf8("Foo image"));
+    uriAttach.setShowInline(true);
+    uriAttach.setLocal(false);
+    event->addAttachment(uriAttach);
+    KCalendarCore::Attachment binAttach(QByteArray("qwertyuiop").toBase64(),
+                                        QString::fromUtf8("audio/ogg"));
+    binAttach.setShowInline(false);
+    binAttach.setLocal(true);
+    event->addAttachment(binAttach);
+    QVERIFY(m_calendar->addIncidence(event, NotebookId));
+
+    auto without = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    without->setSummary("testing events without attachment.");
+    QVERIFY(m_calendar->addIncidence(without, NotebookId));
+
+    auto another = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    another->setSummary("testing another event with an attachment.");
+    another->addAttachment(uriAttach);
+    QVERIFY(m_calendar->addIncidence(another, NotebookId));
+
+    m_storage->save();
+    reloadDb();
+
+    KCalendarCore::Event::Ptr fetched = m_calendar->event(event->uid());
+    QVERIFY(fetched);
+    const KCalendarCore::Attachment::List attachments = fetched->attachments();
+    QCOMPARE(attachments.length(), 2);
+    QCOMPARE(attachments[0], uriAttach);
+    QCOMPARE(attachments[1], binAttach);
+
+    fetched = m_calendar->event(without->uid());
+    QVERIFY(fetched);
+    QVERIFY(fetched->attachments().isEmpty());
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));

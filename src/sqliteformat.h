@@ -102,19 +102,22 @@ public:
       @param stmt2 prepared sqlite statement for customproperties table
       @param stmt3 prepared sqlite statement for attendee table
       @param stmt4 prepared sqlite statement for alarm table
+      @param delAttachmentStmt prepared sqlite statement to delete entries from the attachment table
+      @param insAttachmentStmt prepared sqlite statement to insert entries into the attachment table
       @return true if the operation was successful; false otherwise.
     */
     bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
                           DBOperation dbop, sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                           sqlite3_stmt *stmt3, sqlite3_stmt *stmt4, sqlite3_stmt *stmt5,
                           sqlite3_stmt *stmt6, sqlite3_stmt *stmt7, sqlite3_stmt *stmt8,
-                          sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11);
+                          sqlite3_stmt *stmt9, sqlite3_stmt *stmt10, sqlite3_stmt *stmt11,
+                          sqlite3_stmt *delAttachmentStmt, sqlite3_stmt *insAttachmentStmt);
 
     bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence,
                                 sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                 sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                 sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
-                                sqlite3_stmt *stmt7);
+                                sqlite3_stmt *stmt7, sqlite3_stmt *attachmentStmt);
 
     /**
       Select incidences from Components  table.
@@ -124,12 +127,15 @@ public:
       @param stmt3 prepared sqlite statement for attendee table
       @param stmt4 prepared sqlite statement for alarm table
       @param stmt5 prepared sqlite statement for recursive table
+      @param stmt6 prepared sqlite statement for rdates table
+      @param attachmentStmt prepared sqlite statement for attachments table
       @param notebook notebook of incidence
       @return the queried incidence.
     */
     KCalendarCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                               sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                               sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
+                                              sqlite3_stmt *attachmentStmt,
                                               QString &notebook);
 
     /**

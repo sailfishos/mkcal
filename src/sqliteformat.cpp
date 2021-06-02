@@ -72,6 +72,7 @@ public:
     bool selectAlarms(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     bool selectAttendees(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     bool selectRdates(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
+    bool selectAttachments(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt);
     bool selectCalendarProperties(Notebook::Ptr notebook);
     bool modifyCustomproperties(Incidence::Ptr incidence, int rowid, DBOperation dbop,
                                 sqlite3_stmt *stmt1, sqlite3_stmt *stmt2);
@@ -81,6 +82,8 @@ public:
                          sqlite3_stmt *stmt1, sqlite3_stmt *stmt2);
     bool modifyAttendee(int rowid, const Attendee &attendee, DBOperation dbop, sqlite3_stmt *stmt,
                         bool isOrganizer);
+    bool modifyAttachments(Incidence::Ptr incidence, int rowid, DBOperation dbop,
+                           sqlite3_stmt *deleteStatement, sqlite3_stmt *insertStatement);
     bool modifyAlarms(Incidence::Ptr incidence, int rowid, DBOperation dbop, sqlite3_stmt *stmt1,
                       sqlite3_stmt *stmt2);
     bool modifyAlarm(int rowid, Alarm::Ptr alarm, DBOperation dbop, sqlite3_stmt *stmt);
@@ -165,7 +168,7 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &i
                                           sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                           sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                           sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
-                                          sqlite3_stmt *stmt7)
+                                          sqlite3_stmt *stmt7, sqlite3_stmt *attachmentStmt)
 {
     int rv;
     int index = 1;
@@ -199,6 +202,9 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &i
 
         if (!d->modifyRdates(incidence, rowid, DBDelete, stmt7, NULL))
             qCWarning(lcMkcal) << "failed to delete rdates for incidence" << u;
+
+        if (!d->modifyAttachments(incidence, rowid, DBDelete, attachmentStmt, NULL))
+            qCWarning(lcMkcal) << "failed to delete attachments for incidence" << u;
 
         sqlite3_step(stmt1);
     }
@@ -248,7 +254,8 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
                                     sqlite3_stmt *stmt1, sqlite3_stmt *stmt2, sqlite3_stmt *stmt3,
                                     sqlite3_stmt *stmt4, sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
                                     sqlite3_stmt *stmt7, sqlite3_stmt *stmt8, sqlite3_stmt *stmt9,
-                                    sqlite3_stmt *stmt10, sqlite3_stmt *stmt11)
+                                    sqlite3_stmt *stmt10, sqlite3_stmt *stmt11,
+                                    sqlite3_stmt *delAttachmentStmt, sqlite3_stmt *insAttachmentStmt)
 {
     int rv = 0;
     int index = 1;
@@ -261,7 +268,6 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     QByteArray description;
     QByteArray url;
     QByteArray contact;
-    QByteArray attachments;
     QByteArray relatedtouid;
     QByteArray colorstr;
     QByteArray comments;
@@ -403,15 +409,8 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         comments = incidence->comments().join(" ").toUtf8();
         sqlite3_bind_text(stmt1, index, comments.constData(), comments.length(), SQLITE_STATIC);
 
-        QStringList atts;
-        const Attachment::List &list = incidence->attachments();
-        Attachment::List::ConstIterator it;
-        for (it = list.begin(); it != list.end(); ++it) {
-            atts << it->uri();
-        }
-
-        attachments = atts.join(" ").toUtf8();
-        sqlite3_bind_text(stmt1, index, attachments.constData(), attachments.length(), SQLITE_STATIC);
+        // Attachments are now stored in a dedicated table.
+        sqlite3_bind_text(stmt1, index, nullptr, 0, SQLITE_STATIC);
 
         contact = incidence->contacts().join(" ").toUtf8();
         sqlite3_bind_text(stmt1, index, contact.constData(), contact.length(), SQLITE_STATIC);
@@ -484,6 +483,9 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
     if (stmt10 && !d->modifyRdates(incidence, rowid, dbop, stmt10, stmt11))
         qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence->uid();
+
+    if (delAttachmentStmt && !d->modifyAttachments(incidence, rowid, dbop, delAttachmentStmt, insAttachmentStmt))
+        qCWarning(lcMkcal) << "failed to modify attachments for incidence" << incidence->uid();
 
     return true;
 
@@ -1006,6 +1008,69 @@ error:
     return success;
 }
 
+bool SqliteFormat::Private::modifyAttachments(Incidence::Ptr incidence,
+                                              int rowid, DBOperation dbop,
+                                              sqlite3_stmt *deleteStatement,
+                                              sqlite3_stmt *insertStatement)
+{
+    bool success = true;
+
+    if (dbop == DBUpdate || dbop == DBDelete) {
+        int rv = 0;
+        int index = 1;
+        // In Update always delete all first then insert all
+        // In Delete delete with uid at once
+        sqlite3_bind_int(deleteStatement, index, rowid);
+        sqlite3_step(deleteStatement);
+        sqlite3_reset(deleteStatement);
+    }
+
+    if (dbop != DBDelete) {
+        const Attachment::List &list = incidence->attachments();
+        Attachment::List::ConstIterator it;
+        for (it = list.begin(); it != list.end(); ++it) {
+            int rv = 0;
+            int index = 1;
+
+            sqlite3_bind_int(insertStatement, index, rowid);
+            if (it->isBinary()) {
+                sqlite3_bind_blob(insertStatement, index, it->decodedData().constData(), it->size(), SQLITE_STATIC);
+                sqlite3_bind_text(insertStatement, index, nullptr, 0, SQLITE_STATIC);
+            } else if (it->isUri()) {
+                const QByteArray uri = it->uri().toUtf8();
+                sqlite3_bind_blob(insertStatement, index, nullptr, 0, SQLITE_STATIC);
+                sqlite3_bind_text(insertStatement, index, uri.constData(), uri.length(), SQLITE_STATIC);
+            } else {
+                continue;
+            }
+            const QByteArray mime = it->mimeType().toUtf8();
+            sqlite3_bind_text(insertStatement, index, mime.constData(), mime.length(), SQLITE_STATIC);
+            sqlite3_bind_int(insertStatement, index, (it->showInline() ? 1 : 0));
+            const QByteArray label = it->label().toUtf8();
+            sqlite3_bind_text(insertStatement, index, label.constData(), label.length(), SQLITE_STATIC);
+            sqlite3_bind_int(insertStatement, index, (it->isLocal() ? 1 : 0));
+            sqlite3_step(insertStatement);
+            sqlite3_reset(insertStatement);
+        }
+    }
+
+    return success;
+
+error:
+    if (!success) {
+        qCWarning(lcMkcal) << "cannot modify attachment for incidence" << incidence->instanceIdentifier();
+        qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(mDatabase);
+    }
+    if (deleteStatement) {
+        sqlite3_reset(deleteStatement);
+    }
+    if (insertStatement) {
+        sqlite3_reset(insertStatement);
+    }
+
+    return false;
+}
+
 bool SqliteFormat::Private::modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop)
 {
     QByteArray id(notebook->uid().toUtf8());
@@ -1181,6 +1246,7 @@ static QDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
 Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt *stmt2,
                                               sqlite3_stmt *stmt3, sqlite3_stmt *stmt4,
                                               sqlite3_stmt *stmt5, sqlite3_stmt *stmt6,
+                                              sqlite3_stmt *attachmentStmt,
                                               QString &notebook)
 {
     int rv = 0;
@@ -1330,13 +1396,8 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
             }
         }
 
+        // Old way to store attachment, deprecated.
         QString Att = QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++));
-        if (!Att.isEmpty()) {
-            QStringList AttL = Att.split(' ');
-            for (QStringList::Iterator it = AttL.begin(); it != AttL.end(); ++it) {
-                incidence->addAttachment(Attachment(*it));
-            }
-        }
 
         incidence->addContact(
             QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++)));
@@ -1406,6 +1467,16 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
         }
         if (stmt6 && !d->selectRdates(incidence, rowid, stmt6)) {
             qCWarning(lcMkcal) << "failed to get rdates for incidence" << incidence->uid() << "notebook" << notebook;
+        }
+        if (attachmentStmt && !d->selectAttachments(incidence, rowid, attachmentStmt)) {
+            qCWarning(lcMkcal) << "failed to get attachments for incidence" << incidence->uid() << "notebook" << notebook;
+        }
+        // Backward compatibility with the old attachment storage.
+        if (!Att.isEmpty() && incidence->attachments().isEmpty()) {
+            QStringList AttL = Att.split(' ');
+            for (QStringList::Iterator it = AttL.begin(); it != AttL.end(); ++it) {
+                incidence->addAttachment(Attachment(*it));
+            }
         }
     }
 
@@ -1830,6 +1901,47 @@ bool SqliteFormat::Private::selectAttendees(Incidence::Ptr incidence, int rowid,
             attendee.setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7)));
             attendee.setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 8)));
             incidence->addAttendee(attendee, false);
+        }
+    } while (rv != SQLITE_DONE);
+
+    return true;
+
+error:
+    return false;
+}
+
+bool SqliteFormat::Private::selectAttachments(Incidence::Ptr incidence, int rowid, sqlite3_stmt *stmt)
+{
+    int rv = 0;
+    int index = 1;
+
+    sqlite3_bind_int(stmt, index, rowid);
+
+    do {
+        sqlite3_step(stmt);
+
+        if (rv == SQLITE_ROW) {
+            Attachment attach;
+
+            QByteArray data = QByteArray((const char *)sqlite3_column_blob(stmt, 1),
+                                         sqlite3_column_bytes(stmt, 1));
+            if (!data.isEmpty()) {
+                attach.setDecodedData(data);
+            } else {
+                QString uri = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 2));
+                if (!uri.isEmpty()) {
+                    attach.setUri(uri);
+                }
+            }
+            if (!attach.isEmpty()) {
+                attach.setMimeType(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 3)));
+                attach.setShowInline(sqlite3_column_int(stmt, 4) != 0);
+                attach.setLabel(QString::fromUtf8((const char *)sqlite3_column_text(stmt, 5)));
+                attach.setLocal(sqlite3_column_int(stmt, 6) != 0);
+                incidence->addAttachment(attach);
+            } else {
+                qCWarning(lcMkcal) << "Empty attachment for incidence" << incidence->instanceIdentifier();
+            }
         }
     } while (rv != SQLITE_DONE);
 
