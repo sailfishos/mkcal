@@ -52,23 +52,6 @@ using namespace KCalendarCore;
 // #ifdef to control expensive/spammy debug stmts
 #undef DEBUG_EXPANSION
 
-namespace {
-    // QDateTime::toClockTime() has the semantic that the input is first
-    // converted to the local system timezone, before having its timezone
-    // information stripped.
-    // In many cases in mkcal, we use clock-time to mean "floating"
-    // i.e. irrespective of timezone, and thus when converting to or from
-    // clock time, we don't want any conversion to the local system timezone
-    // to occur as part of that operation.
-    QDateTime kdatetimeAsTimeSpec(const QDateTime &input, const QTimeZone &tz) {
-        if (input.timeSpec() == Qt::LocalTime) {
-            return QDateTime(input.date(), input.time(), tz);
-        } else {
-            return input.toTimeZone(tz);
-        }
-    }
-}
-
 using namespace mKCal;
 /**
   Private class that helps to provide binary compatibility between releases.
@@ -249,15 +232,6 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
                         recId.time().second()));
     newInc->setRecurrenceId(recId);
 
-    recur = incidence->recurrence();
-    if (recur) {
-        if (incidence->allDay()) {
-            recur->addExDate(dateTime.date());
-        } else {
-            recur->addExDateTime(dateTime);
-        }
-    }
-
     return newInc;
 }
 
@@ -402,69 +376,6 @@ void ExtendedCalendar::incidenceUpdated(const QString &uid, const QDateTime &rec
 
     d->addIncidenceToLists(incidence);
     MemoryCalendar::incidenceUpdated(uid, recurrenceId);
-}
-
-ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::rawExpandedEvents(const QDate &start, const QDate &end,
-                                                                            bool startInclusive, bool endInclusive,
-                                                                            const QTimeZone &timeZone) const
-{
-    ExpandedIncidenceList eventList;
-
-    const QTimeZone &tz = timeZone.isValid() ? timeZone : this->timeZone();
-    QDateTime ksdt(start, QTime(0, 0, 0), tz);
-    QDateTime kedt = QDateTime(end.addDays(1), QTime(0, 0, 0), tz);
-
-    // Iterate over all events. Look for recurring events that occur on this date
-    const Event::List events(rawEvents());
-    for (const Event::Ptr &ev: events) {
-        if (isVisible(ev)) {
-            const bool asClockTime = ev->dtStart().timeSpec() == Qt::LocalTime;
-            const QDateTime startTime = ev->dtStart();
-            const QDateTime endTime = ev->dtEnd();
-            const QDateTime rangeStartTime = (ev->allDay() && asClockTime)
-                                           ? QDateTime(start, QTime()) : ksdt;
-            const QDateTime rangeEndTime = (ev->allDay() && asClockTime)
-                                         ? QDateTime(kedt.date(), QTime()) : kedt;
-            const QDateTime tsRangeStartTime = kdatetimeAsTimeSpec(rangeStartTime, tz);
-            const QDateTime tsRangeEndTime = kdatetimeAsTimeSpec(rangeEndTime, tz);
-            if (ev->recurs()) {
-                int extraDays = (ev->isMultiDay() && !startInclusive)
-                              ? startTime.date().daysTo(endTime.date())
-                              : (ev->allDay() ? 1 : 0);
-                const QDateTime tsAdjustedRangeStartTime(tsRangeStartTime.addDays(-extraDays));
-                const DateTimeList times = ev->recurrence()->timesInInterval(tsAdjustedRangeStartTime, tsRangeEndTime);
-                for (const QDateTime &timeInInterval : times) {
-                    const QDateTime tsStartTime = kdatetimeAsTimeSpec(timeInInterval, tz);
-                    const QDateTime tsEndTime = Duration(startTime, endTime).end(tsStartTime);
-                    if (tsStartTime >= tsRangeEndTime
-                            || tsEndTime <= tsAdjustedRangeStartTime
-                            || (endInclusive && (tsEndTime > tsRangeEndTime))) {
-                        continue;
-                    }
-                    ExpandedIncidenceValidity eiv = {tsStartTime, tsEndTime};
-                    eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
-                }
-            } else {
-                const QDateTime tsStartTime = kdatetimeAsTimeSpec(startTime, tz);
-                const QDateTime tsEndTime = kdatetimeAsTimeSpec(endTime, tz);
-                if (ev->isMultiDay()) {
-                    if ((startInclusive == false || tsStartTime >= tsRangeStartTime) &&
-                            tsStartTime <= tsRangeEndTime && tsEndTime >= tsRangeStartTime &&
-                            (endInclusive == false || tsEndTime <= tsRangeEndTime)) {
-                        ExpandedIncidenceValidity eiv = {tsStartTime, tsEndTime};
-                        eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
-                    }
-                } else {
-                    if (tsStartTime >= tsRangeStartTime && tsStartTime <= tsRangeEndTime) {
-                        ExpandedIncidenceValidity eiv = {tsStartTime, tsEndTime};
-                        eventList.append(qMakePair(eiv, ev.dynamicCast<Incidence>()));
-                    }
-                }
-            }
-        }
-    }
-
-    return eventList;
 }
 
 QDate ExtendedCalendar::nextEventsDate(const QDate &date, const QTimeZone &timeZone)
