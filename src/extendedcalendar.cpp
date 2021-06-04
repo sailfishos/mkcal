@@ -168,69 +168,38 @@ void ExtendedCalendar::close()
 Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr &incidence,
                                                             const QDateTime &dateTime)
 {
-    if (!incidence || !incidence->recurs()) {
+    if (!incidence) {
         return Incidence::Ptr();
     }
 
-    if (!incidence->allDay()) {
-        if (!incidence->recursAt(dateTime)) {
-            return Incidence::Ptr();
-        }
-    } else {
-        if (!incidence->recursOn(dateTime.date(), dateTime.timeZone())) {
-            return Incidence::Ptr();
-        }
-    }
-
-    Incidence::Ptr newInc = Incidence::Ptr(incidence->clone());
-    QDateTime nowUTC = QDateTime::currentDateTimeUtc();
-    newInc->setCreated(nowUTC);
-    newInc->setSchedulingID(QString());
-    incidence->setLastModified(nowUTC);
-
-    Recurrence *recur = newInc->recurrence();
-    if (recur)
-        newInc->clearRecurrence();
-
-    // Adjust the date of the incidence
-    if (incidence->type() == Incidence::TypeEvent) {
-        Event::Ptr ev = newInc.staticCast<Event>();
-        QDateTime start(ev->dtStart());
-        qint64 secsTo = start.secsTo(dateTime);
-        ev->setDtStart(start.addSecs(secsTo));
-        ev->setDtEnd(ev->dtEnd().addSecs(secsTo));
-    } else if (incidence->type() == Incidence::TypeTodo) {
-        Todo::Ptr td = newInc.staticCast<Todo>();
-        bool haveOffset = false;
-        qint64 secsTo = 0;
-        if (td->hasDueDate()) {
-            QDateTime due(td->dtDue());
-            secsTo = due.secsTo(dateTime);
-            td->setDtDue(due.addSecs(secsTo), true);
-            haveOffset = true;
-        }
-        if (td->hasStartDate()) {
-            QDateTime start(td->dtStart());
-            if (!haveOffset) {
-                secsTo = start.secsTo(dateTime);
-            }
-            td->setDtStart(start.addSecs(secsTo));
-            haveOffset = true;
-        }
-    } else if (incidence->type() == Incidence::TypeJournal) {
-        Journal::Ptr jr = newInc.staticCast<Journal>();
-        QDateTime start(jr->dtStart());
-        qint64 secsTo = start.secsTo(dateTime);
-        jr->setDtStart(start.addSecs(secsTo));
-    }
-
-    // set recurrenceId for new incidence
     // Don't save milliseconds
     QDateTime recId(dateTime);
     recId.setTime(QTime(recId.time().hour(),
                         recId.time().minute(),
                         recId.time().second()));
-    newInc->setRecurrenceId(recId);
+
+    if (!incidence->allDay()) {
+        if (!incidence->recursAt(recId)) {
+            return Incidence::Ptr();
+        }
+    } else {
+        if (!incidence->recursOn(recId.date(), recId.timeZone())) {
+            return Incidence::Ptr();
+        }
+    }
+    const Incidence::List exceptions = instances(incidence);
+    for (const Incidence::Ptr &exception : exceptions) {
+        if (exception->recurrenceId() == dateTime) {
+            qCWarning(lcMkcal) << "Exception already exists, cannot dissociate.";
+            return Incidence::Ptr();
+        }
+    }
+
+    Incidence::Ptr newInc = Calendar::createException(incidence, recId);
+    if (newInc) {
+        newInc->setSchedulingID(QString());
+        incidence->setLastModified(newInc->created());
+    }
 
     return newInc;
 }
