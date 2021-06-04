@@ -6,7 +6,9 @@ SUBDIRS = src tests tools
 SUBDIRS += plugins
 plugins.depends = src
 
-include(doc/doc.pro)
+build_doc {
+  include(doc/doc.pro)
+}
 
 CONFIG += ordered
 
