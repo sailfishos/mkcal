@@ -9,6 +9,8 @@ Source0:    %{name}-%{version}.tar.bz2
 Source1:    %{name}.privileges
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
+BuildRequires:  cmake
+BuildRequires:  extra-cmake-modules >= 5.75.0
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
@@ -43,18 +45,15 @@ This package contains unit tests for extended KDE kcal calendar library.
 %setup -q -n %{name}-%{version}
 
 %build
-%qmake5 VERSION=`echo %{version} | sed 's/+.*//'`
+%cmake -DINSTALL_TESTS=ON
 make %{?_smp_mflags}
 
 %install
 rm -rf %{buildroot}
-%qmake5_install
+%make_install
 
 mkdir -p %{buildroot}%{_datadir}/mapplauncherd/privileges.d
 install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
-
-# Sailfish uses pkconfig(libmkcal-qt5)
-mv %{buildroot}%{_libdir}/pkgconfig/{,lib}%{name}.pc
 
 %post -p /sbin/ldconfig
 

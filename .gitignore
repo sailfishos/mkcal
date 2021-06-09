@@ -11,3 +11,4 @@ doxygen.*
 *~
 *.so*
 plugins/defaultinvitationplugin/libdefaultinvitationplugin.so
+build
