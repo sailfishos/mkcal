@@ -16,6 +16,7 @@ target_link_libraries(tst_storage
 	mkcal-qt5)
 
 add_test(tst_storage tst_storage)
+add_definitions(-DTIMED_SUPPORT)
 
 if(INSTALL_TESTS)
 	install(TARGETS tst_storage
