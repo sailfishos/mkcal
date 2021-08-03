@@ -1741,7 +1741,8 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
         QString notebookUid = mCalendar->notebook(*it);
-        if (!mStorage->isValidNotebook(notebookUid)) {
+        if ((dbop == DBInsert || dbop == DBUpdate)
+            && !mStorage->isValidNotebook(notebookUid)) {
             qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
             continue;
         } else {
