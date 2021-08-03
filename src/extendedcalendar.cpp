@@ -41,6 +41,7 @@
 #include "logging_p.h"
 
 #include <KCalendarCore/CalFilter>
+#include <KCalendarCore/CalFormat>
 #include <KCalendarCore/Sorting>
 using namespace KCalendarCore;
 
@@ -310,7 +311,10 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
         return false;
     }
 
-    if (MemoryCalendar::event(aEvent->uid(), aEvent->recurrenceId())) {
+    if (aEvent->uid().isEmpty()) {
+        qCWarning(lcMkcal) << "adding an event without uid, creating one.";
+        aEvent->setUid(CalFormat::createUniqueId());
+    } else if (MemoryCalendar::event(aEvent->uid(), aEvent->recurrenceId())) {
         qCDebug(lcMkcal) << "Duplicate found, event was not added";
         return false;
     }
@@ -350,13 +354,18 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
         return false;
     }
 
-    Todo::Ptr old = MemoryCalendar::todo(aTodo->uid(), aTodo->recurrenceId());
-    if (old) {
-        if (aTodo->revision() > old->revision()) {
-            deleteTodo(old);   // move old to deleted
-        } else {
-            qCDebug(lcMkcal) << "Duplicate found, todo was not added";
-            return false;
+    if (aTodo->uid().isEmpty()) {
+        qCWarning(lcMkcal) << "adding a todo without uid, creating one.";
+        aTodo->setUid(CalFormat::createUniqueId());
+    } else {
+        Todo::Ptr old = MemoryCalendar::todo(aTodo->uid(), aTodo->recurrenceId());
+        if (old) {
+            if (aTodo->revision() > old->revision()) {
+                deleteTodo(old);   // move old to deleted
+            } else {
+                qCDebug(lcMkcal) << "Duplicate found, todo was not added";
+                return false;
+            }
         }
     }
 
@@ -597,13 +606,18 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
         return false;
     }
 
-    Journal::Ptr old = journal(aJournal->uid(), aJournal->recurrenceId());
-    if (old) {
-        if (aJournal->revision() > old->revision()) {
-            deleteJournal(old);   // move old to deleted
-        } else {
-            qCDebug(lcMkcal) << "Duplicate found, journal was not added";
-            return false;
+    if (aJournal->uid().isEmpty()) {
+        qCWarning(lcMkcal) << "adding a journal without uid, creating one.";
+        aJournal->setUid(CalFormat::createUniqueId());
+    } else {
+        Journal::Ptr old = journal(aJournal->uid(), aJournal->recurrenceId());
+        if (old) {
+            if (aJournal->revision() > old->revision()) {
+                deleteJournal(old);   // move old to deleted
+            } else {
+                qCDebug(lcMkcal) << "Duplicate found, journal was not added";
+                return false;
+            }
         }
     }
 
