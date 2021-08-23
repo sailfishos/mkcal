@@ -39,7 +39,7 @@ set_target_properties(mkcal-qt5 PROPERTIES
 	VERSION ${PROJECT_VERSION})
 
 add_definitions(-fvisibility=hidden -fvisibility-inlines-hidden)
-add_definitions(-DMKCALPLUGINDIR="${CMAKE_INSTALL_LIBDIR}/mkcalplugins")
+add_definitions(-DMKCALPLUGINDIR="${CMAKE_INSTALL_FULL_LIBDIR}/mkcalplugins")
 add_definitions(-DTIMED_SUPPORT)
 
 # Install the library
