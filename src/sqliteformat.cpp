@@ -1492,7 +1492,6 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     const char *query = NULL;
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
 
     QByteArray u;
     qint64 secsRecurId;
@@ -1501,7 +1500,7 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     query = SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID;
     qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID);
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
     u = incidence->uid().toUtf8();
     sqlite3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
     if (incidence->recurrenceId().isValid()) {
