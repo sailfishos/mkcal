@@ -1780,29 +1780,17 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     sqlite3_finalize(stmt1);
     sqlite3_finalize(stmt2);
-    if (stmt3) {
-        sqlite3_finalize(stmt3);
-    }
+    sqlite3_finalize(stmt3);
     sqlite3_finalize(stmt4);
-    if (stmt5) {
-        sqlite3_finalize(stmt5);
-    }
+    sqlite3_finalize(stmt5);
     sqlite3_finalize(stmt6);
-    if (stmt7) {
-        sqlite3_finalize(stmt7);
-    }
+    sqlite3_finalize(stmt7);
     sqlite3_finalize(stmt8);
-    if (stmt9) {
-        sqlite3_finalize(stmt9);
-    }
+    sqlite3_finalize(stmt9);
     sqlite3_finalize(stmt10);
-    if (stmt11) {
-        sqlite3_finalize(stmt11);
-    }
+    sqlite3_finalize(stmt11);
     sqlite3_finalize(stmt12);
-    if (stmt13) {
-        sqlite3_finalize(stmt13);
-    }
+    sqlite3_finalize(stmt13);
 
     if (dbop == DBInsert) {
         sqlite3_finalize(stmt21);
