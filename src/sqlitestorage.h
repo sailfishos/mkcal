@@ -434,7 +434,7 @@ public Q_SLOTS:
     void queryFinished();
 };
 
-#define sqlite3_exec( db )                                    \
+#define SL3_exec( db )                                        \
 {                                                             \
  /* kDebug() << "SQL query:" << query;    */                  \
   rv = sqlite3_exec( (db), query, NULL, 0, &errmsg );         \
@@ -455,7 +455,7 @@ public Q_SLOTS:
   }                                                           \
 }
 
-#define sqlite3_prepare_v2( db, query, qsize, stmt, tail )            \
+#define SL3_prepare_v2( db, query, qsize, stmt, tail )                \
 {                                                                     \
  /* kDebug() << "SQL query:" << query;     */                         \
   rv = sqlite3_prepare_v2( (db), (query), (qsize), (stmt), (tail) );  \
@@ -466,7 +466,7 @@ public Q_SLOTS:
   }                                                                   \
 }
 
-#define sqlite3_bind_text( stmt, index, value, size, desc )           \
+#define SL3_bind_text( stmt, index, value, size, desc )               \
 {                                                                     \
   rv = sqlite3_bind_text( (stmt), (index), (value), (size), (desc) ); \
   if ( rv ) {                                                         \
@@ -476,7 +476,7 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
-#define sqlite3_bind_blob( stmt, index, value, size, desc )           \
+#define SL3_bind_blob( stmt, index, value, size, desc )               \
 {                                                                     \
   rv = sqlite3_bind_blob( (stmt), (index), (value), (size), (desc) ); \
   if ( rv ) {                                                         \
@@ -486,7 +486,7 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
-#define sqlite3_bind_int( stmt, index, value )                        \
+#define SL3_bind_int( stmt, index, value )                            \
 {                                                                     \
   rv = sqlite3_bind_int( (stmt), (index), (value) );                  \
   if ( rv ) {                                                         \
@@ -496,7 +496,7 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
-#define sqlite3_bind_int64( stmt, index, value )                      \
+#define SL3_bind_int64( stmt, index, value )                          \
 {                                                                     \
   rv = sqlite3_bind_int64( (stmt), (index), (value) );                \
   if ( rv ) {                                                         \
@@ -506,7 +506,7 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
-#define sqlite3_bind_double( stmt, index, value )                     \
+#define SL3_bind_double( stmt, index, value )                         \
 {                                                                     \
   rv = sqlite3_bind_double( (stmt), (index), (value) );               \
   if ( rv ) {                                                         \
@@ -516,7 +516,7 @@ public Q_SLOTS:
   index++;                                                            \
 }
 
-#define sqlite3_step( stmt )                            \
+#define SL3_step( stmt )                                \
 {                                                       \
   rv = sqlite3_step( (stmt) );                          \
   if ( rv && rv != SQLITE_DONE && rv != SQLITE_ROW ) {  \

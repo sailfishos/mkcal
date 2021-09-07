@@ -1611,14 +1611,11 @@ void tst_storage::tst_calendarProperties()
     const char *query = SELECT_CALENDARPROPERTIES_BY_ID;
     int qsize = sizeof(SELECT_CALENDARPROPERTIES_BY_ID);
     sqlite3_stmt *stmt = NULL;
-#undef sqlite3_prepare_v2
     rv = sqlite3_prepare_v2(database, query, qsize, &stmt, NULL);
     QCOMPARE(rv, 0);
     const QByteArray id(uid.toUtf8());
-#undef sqlite3_bind_text
     rv = sqlite3_bind_text(stmt, 1, id.constData(), id.length(), SQLITE_STATIC);
     QCOMPARE(rv, 0);
-#undef sqlite3_step
     rv = sqlite3_step(stmt);
     QCOMPARE(rv, SQLITE_DONE);
     sqlite3_close(database);
