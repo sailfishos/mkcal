@@ -189,77 +189,77 @@ bool SqliteStorage::open()
 
     /* Create Calendars, Components, etc. tables */
     query = CREATE_VERSION;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_TIMEZONES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
     // Create a global empty entry.
     query = INSERT_TIMEZONES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_CALENDARS;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_COMPONENTS;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_RDATES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_CUSTOMPROPERTIES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_RECURSIVE;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_ALARM;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_ATTENDEE;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_ATTACHMENTS;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = CREATE_CALENDARPROPERTIES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     /* Create index on frequently used columns */
     query = INDEX_CALENDAR;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_COMPONENT;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_COMPONENT_UID;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_COMPONENT_NOTEBOOK;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_RDATES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_CUSTOMPROPERTIES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_RECURSIVE;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_ALARM;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_ATTENDEE;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_ATTACHMENTS;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = INDEX_CALENDARPROPERTIES;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     query = "PRAGMA foreign_keys = ON";
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
     if (!d->mChanged.open(QIODevice::Append)) {
         qCWarning(lcMkcal) << "cannot open changed file for" << d->mDatabaseName;
@@ -321,12 +321,11 @@ bool SqliteStorage::load()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_ALL;
     qsize1 = sizeof(SELECT_COMPONENTS_ALL);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -350,7 +349,6 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     QByteArray u;
     qint64 secsRecurId;
@@ -359,18 +357,18 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
         query1 = SELECT_COMPONENTS_BY_UID_AND_RECURID;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_UID_AND_RECURID);
 
-        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
         u = uid.toUtf8();
-        sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
         if (recurrenceId.isValid()) {
             secsRecurId = toOriginTime(recurrenceId);
-            sqlite3_bind_int64(stmt1, index, secsRecurId);
+            SL3_bind_int64(stmt1, index, secsRecurId);
         } else {
             // no recurrenceId, bind NULL
             // note that sqlite3_bind_null doesn't seem to work here
             // also note that sqlite should bind NULL automatically if nothing
             // is bound, but that doesn't work either
-            sqlite3_bind_int64(stmt1, index, 0);
+            SL3_bind_int64(stmt1, index, 0);
         }
 
         count = d->loadIncidences(stmt1);
@@ -395,7 +393,6 @@ bool SqliteStorage::loadSeries(const QString &uid)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     QByteArray u;
 
@@ -403,9 +400,9 @@ bool SqliteStorage::loadSeries(const QString &uid)
         query1 = SELECT_COMPONENTS_BY_UID;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_UID);
 
-        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
         u = uid.toUtf8();
-        sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
 
         count = d->loadIncidences(stmt1);
     }
@@ -446,7 +443,6 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
         int qsize1 = 0;
 
         sqlite3_stmt *stmt1 = NULL;
-        const char *tail1 = NULL;
         int index = 1;
         qint64 secsStart;
         qint64 secsEnd;
@@ -455,27 +451,27 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
         if (loadStart.isValid() && loadEnd.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_BOTH;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_BOTH);
-            sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+            SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
             secsStart = toOriginTime(loadStart);
             secsEnd = toOriginTime(loadEnd);
-            sqlite3_bind_int64(stmt1, index, secsEnd);
-            sqlite3_bind_int64(stmt1, index, secsStart);
+            SL3_bind_int64(stmt1, index, secsEnd);
+            SL3_bind_int64(stmt1, index, secsStart);
         } else if (loadStart.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_START;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_START);
-            sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+            SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
             secsStart = toOriginTime(loadStart);
-            sqlite3_bind_int64(stmt1, index, secsStart);
+            SL3_bind_int64(stmt1, index, secsStart);
         } else if (loadEnd.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_END;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_END);
-            sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+            SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
             secsEnd = toOriginTime(loadEnd);
-            sqlite3_bind_int64(stmt1, index, secsEnd);
+            SL3_bind_int64(stmt1, index, secsEnd);
         } else {
             query1 = SELECT_COMPONENTS_ALL;
             qsize1 = sizeof(SELECT_COMPONENTS_ALL);
-            sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+            SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
         }
         count = d->loadIncidences(stmt1);
 
@@ -509,7 +505,6 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     QByteArray u;
 
@@ -517,9 +512,9 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
         query1 = SELECT_COMPONENTS_BY_NOTEBOOKUID;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_NOTEBOOKUID);
 
-        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
         u = notebookUid.toUtf8();
-        sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
 
         count = d->loadIncidences(stmt1);
     }
@@ -571,12 +566,11 @@ bool SqliteStorage::loadJournals()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_JOURNAL;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_JOURNAL);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -600,12 +594,11 @@ bool SqliteStorage::loadPlainIncidences()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_PLAIN;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_PLAIN);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -629,12 +622,11 @@ bool SqliteStorage::loadRecurringIncidences()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_RECURSIVE;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_RECURSIVE);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -658,12 +650,11 @@ bool SqliteStorage::loadGeoIncidences()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_GEO;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_GEO);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -688,17 +679,16 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
 
     query1 = SELECT_COMPONENTS_BY_GEO_AREA;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_GEO_AREA);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, geoLatitude - diffLatitude);
-    sqlite3_bind_int64(stmt1, index, geoLongitude - diffLongitude);
-    sqlite3_bind_int64(stmt1, index, geoLatitude + diffLatitude);
-    sqlite3_bind_int64(stmt1, index, geoLongitude + diffLongitude);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, geoLatitude - diffLatitude);
+    SL3_bind_int64(stmt1, index, geoLongitude - diffLongitude);
+    SL3_bind_int64(stmt1, index, geoLatitude + diffLatitude);
+    SL3_bind_int64(stmt1, index, geoLongitude + diffLongitude);
 
     count = d->loadIncidences(stmt1);
 
@@ -722,12 +712,11 @@ bool SqliteStorage::loadAttendeeIncidences()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_ATTENDEE;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_ATTENDEE);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -755,12 +744,11 @@ int SqliteStorage::loadUncompletedTodos()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -795,7 +783,6 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -812,8 +799,8 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
         query1 = SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_CREATED;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_CREATED);
     }
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, hasDate);
 
@@ -846,7 +833,6 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -858,8 +844,8 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     query1 = SELECT_COMPONENTS_BY_JOURNAL_DATE;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_JOURNAL_DATE);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, true);
 
@@ -895,7 +881,6 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -911,8 +896,8 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
         query1 = SELECT_COMPONENTS_BY_CREATED_SMART;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED_SMART);
     }
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, hasDate);
 
@@ -948,7 +933,6 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -960,8 +944,8 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     query1 = SELECT_COMPONENTS_BY_FUTURE_DATE_SMART;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_FUTURE_DATE_SMART);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, true, true);
 
@@ -998,7 +982,6 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -1014,8 +997,8 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
         query1 = SELECT_COMPONENTS_BY_GEO_AND_CREATED;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_GEO_AND_CREATED);
     }
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, hasDate);
 
@@ -1051,12 +1034,11 @@ int SqliteStorage::loadUnreadInvitationIncidences()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_COMPONENTS_BY_INVITATION_UNREAD;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_INVITATION_UNREAD);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     count = d->loadIncidences(stmt1);
 
@@ -1086,7 +1068,6 @@ int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart;
 
@@ -1097,8 +1078,8 @@ int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
     } else {
         secsStart = LLONG_MAX; // largest time
     }
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, false);
 
@@ -1127,12 +1108,11 @@ Person::List SqliteStorage::loadContacts()
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     query1 = SELECT_ATTENDEE_AND_COUNT;
     qsize1 = sizeof(SELECT_ATTENDEE_AND_COUNT);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
     list = d->mFormat->selectContacts(stmt1);
 
@@ -1156,7 +1136,6 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
     int qsize1 = 0;
 
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
     int index = 1;
     qint64 secsStart = 0;
     QByteArray email;
@@ -1165,19 +1144,19 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
         email = person.email().toUtf8();
         query1 = SELECT_COMPONENTS_BY_ATTENDEE_EMAIL_AND_CREATED;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_ATTENDEE_EMAIL_AND_CREATED);
-        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
-        sqlite3_bind_text(stmt1, index, email, email.length(), SQLITE_STATIC);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+        SL3_bind_text(stmt1, index, email, email.length(), SQLITE_STATIC);
     } else {
         query1 = SELECT_COMPONENTS_BY_ATTENDEE_AND_CREATED;
         qsize1 = sizeof(SELECT_COMPONENTS_BY_ATTENDEE_AND_CREATED);
-        sqlite3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, &tail1);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     }
     if (last->isValid()) {
         secsStart = toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
-    sqlite3_bind_int64(stmt1, index, secsStart);
+    SL3_bind_int64(stmt1, index, secsStart);
 
     count = d->loadIncidences(stmt1, limit, last, false);
 
@@ -1278,12 +1257,12 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
         return false;
     }
 
-    sqlite3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
-    sqlite3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
-    sqlite3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
-    sqlite3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
-    sqlite3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
-    sqlite3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
+    SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
+    SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
+    SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
+    SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
+    SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
+    SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
 
     while ((incidence =
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, stmt7, notebookUid))) {
@@ -1394,16 +1373,16 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
     const char *query = NULL;
 
     query = BEGIN_TRANSACTION;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
-    sqlite3_prepare_v2(d->mDatabase, query1, size1, &stmt1, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query2, size2, &stmt2, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query3, size3, &stmt3, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query4, size4, &stmt4, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query5, size5, &stmt5, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query6, size6, &stmt6, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query7, size7, &stmt7, NULL);
-    sqlite3_prepare_v2(d->mDatabase, query8, size8, &stmt8, NULL);
+    SL3_prepare_v2(d->mDatabase, query1, size1, &stmt1, NULL);
+    SL3_prepare_v2(d->mDatabase, query2, size2, &stmt2, NULL);
+    SL3_prepare_v2(d->mDatabase, query3, size3, &stmt3, NULL);
+    SL3_prepare_v2(d->mDatabase, query4, size4, &stmt4, NULL);
+    SL3_prepare_v2(d->mDatabase, query5, size5, &stmt5, NULL);
+    SL3_prepare_v2(d->mDatabase, query6, size6, &stmt6, NULL);
+    SL3_prepare_v2(d->mDatabase, query7, size7, &stmt7, NULL);
+    SL3_prepare_v2(d->mDatabase, query8, size8, &stmt8, NULL);
 
     error = 0;
     for (const KCalendarCore::Incidence::Ptr &incidence: list) {
@@ -1424,7 +1403,7 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
     sqlite3_finalize(stmt8);
 
     query = COMMIT_TRANSACTION;
-    sqlite3_exec(d->mDatabase);
+    SL3_exec(d->mDatabase);
 
  error:
     if (!d->mSem.release()) {
@@ -1653,17 +1632,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     sqlite3_stmt *stmt26 = NULL;
     sqlite3_stmt *stmt27 = NULL;
     sqlite3_stmt *stmt28 = NULL;
-    const char *tail1 = NULL;
-    const char *tail2 = NULL;
-    const char *tail3 = NULL;
-    const char *tail4 = NULL;
-    const char *tail5 = NULL;
-    const char *tail6 = NULL;
-    const char *tail7 = NULL;
-    const char *tail8 = NULL;
-    const char *tail9 = NULL;
-    const char *tail10 = NULL;
-    const char *tail11 = NULL;
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
     QHash<QString, Incidence::Ptr>::const_iterator it;
@@ -1672,44 +1640,44 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     QVector<Incidence::Ptr> validIncidences;
 
     query = BEGIN_TRANSACTION;
-    sqlite3_exec(mDatabase);
+    SL3_exec(mDatabase);
 
-    sqlite3_prepare_v2(mDatabase, query1, qsize1, &stmt1, &tail1);
+    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
     if (query2) {
-        sqlite3_prepare_v2(mDatabase, query2, qsize2, &stmt2, &tail2);
+        SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, NULL);
     }
     if (query3) {
-        sqlite3_prepare_v2(mDatabase, query3, qsize3, &stmt3, &tail3);
+        SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, NULL);
     }
     if (query4) {
-        sqlite3_prepare_v2(mDatabase, query4, qsize4, &stmt4, &tail4);
+        SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, NULL);
     }
     if (query5) {
-        sqlite3_prepare_v2(mDatabase, query5, qsize5, &stmt5, &tail5);
+        SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, NULL);
     }
     if (query6) {
-        sqlite3_prepare_v2(mDatabase, query6, qsize6, &stmt6, &tail6);
+        SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, NULL);
     }
     if (query7) {
-        sqlite3_prepare_v2(mDatabase, query7, qsize7, &stmt7, &tail7);
+        SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, NULL);
     }
     if (query8) {
-        sqlite3_prepare_v2(mDatabase, query8, qsize8, &stmt8, &tail8);
+        SL3_prepare_v2(mDatabase, query8, qsize8, &stmt8, NULL);
     }
     if (query9) {
-        sqlite3_prepare_v2(mDatabase, query9, qsize9, &stmt9, &tail9);
+        SL3_prepare_v2(mDatabase, query9, qsize9, &stmt9, NULL);
     }
     if (query10) {
-        sqlite3_prepare_v2(mDatabase, query10, qsize10, &stmt10, &tail10);
+        SL3_prepare_v2(mDatabase, query10, qsize10, &stmt10, NULL);
     }
     if (query11) {
-        sqlite3_prepare_v2(mDatabase, query11, qsize11, &stmt11, &tail11);
+        SL3_prepare_v2(mDatabase, query11, qsize11, &stmt11, NULL);
     }
     if (query12) {
-        sqlite3_prepare_v2(mDatabase, query12, qsize12, &stmt12, nullptr);
+        SL3_prepare_v2(mDatabase, query12, qsize12, &stmt12, nullptr);
     }
     if (query13) {
-        sqlite3_prepare_v2(mDatabase, query13, qsize13, &stmt13, nullptr);
+        SL3_prepare_v2(mDatabase, query13, qsize13, &stmt13, nullptr);
     }
     if (dbop == DBInsert) {
         const char *q1 = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
@@ -1729,14 +1697,14 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         const char *q8 = DELETE_ATTACHMENTS;
         int s8 = sizeof(DELETE_ATTACHMENTS);
 
-        sqlite3_prepare_v2(mDatabase, q1, s1, &stmt21, NULL);
-        sqlite3_prepare_v2(mDatabase, q2, s2, &stmt22, NULL);
-        sqlite3_prepare_v2(mDatabase, q3, s3, &stmt23, NULL);
-        sqlite3_prepare_v2(mDatabase, q4, s4, &stmt24, NULL);
-        sqlite3_prepare_v2(mDatabase, q5, s5, &stmt25, NULL);
-        sqlite3_prepare_v2(mDatabase, q6, s6, &stmt26, NULL);
-        sqlite3_prepare_v2(mDatabase, q7, s7, &stmt27, NULL);
-        sqlite3_prepare_v2(mDatabase, q8, s8, &stmt28, NULL);
+        SL3_prepare_v2(mDatabase, q1, s1, &stmt21, NULL);
+        SL3_prepare_v2(mDatabase, q2, s2, &stmt22, NULL);
+        SL3_prepare_v2(mDatabase, q3, s3, &stmt23, NULL);
+        SL3_prepare_v2(mDatabase, q4, s4, &stmt24, NULL);
+        SL3_prepare_v2(mDatabase, q5, s5, &stmt25, NULL);
+        SL3_prepare_v2(mDatabase, q6, s6, &stmt26, NULL);
+        SL3_prepare_v2(mDatabase, q7, s7, &stmt27, NULL);
+        SL3_prepare_v2(mDatabase, q8, s8, &stmt28, NULL);
     }
 
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
@@ -1812,29 +1780,17 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     sqlite3_finalize(stmt1);
     sqlite3_finalize(stmt2);
-    if (stmt3) {
-        sqlite3_finalize(stmt3);
-    }
+    sqlite3_finalize(stmt3);
     sqlite3_finalize(stmt4);
-    if (stmt5) {
-        sqlite3_finalize(stmt5);
-    }
+    sqlite3_finalize(stmt5);
     sqlite3_finalize(stmt6);
-    if (stmt7) {
-        sqlite3_finalize(stmt7);
-    }
+    sqlite3_finalize(stmt7);
     sqlite3_finalize(stmt8);
-    if (stmt9) {
-        sqlite3_finalize(stmt9);
-    }
+    sqlite3_finalize(stmt9);
     sqlite3_finalize(stmt10);
-    if (stmt11) {
-        sqlite3_finalize(stmt11);
-    }
+    sqlite3_finalize(stmt11);
     sqlite3_finalize(stmt12);
-    if (stmt13) {
-        sqlite3_finalize(stmt13);
-    }
+    sqlite3_finalize(stmt13);
 
     if (dbop == DBInsert) {
         sqlite3_finalize(stmt21);
@@ -1848,7 +1804,7 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     }
 
     query = COMMIT_TRANSACTION;
-    sqlite3_exec(mDatabase);
+    SL3_exec(mDatabase);
 
     mIsSaved = true;
 
@@ -1995,7 +1951,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
         return false;
     }
 
-    sqlite3_prepare_v2(mDatabase, query1, qsize1, &stmt1, nullptr);
+    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, nullptr);
 
     qCDebug(lcMkcal) << "incidences"
              << (dbop == DBInsert ? "inserted" :
@@ -2008,54 +1964,54 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             if (dbop == DBInsert) {
                 index = 1;
                 secs = mStorage->toOriginTime(after);
-                sqlite3_bind_int64(stmt1, index, secs);
+                SL3_bind_int64(stmt1, index, secs);
                 if (!notebookUid.isNull()) {
                     index = 2;
                     n = notebookUid.toUtf8();
-                    sqlite3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
                 }
             }
             if (dbop == DBUpdate || dbop == DBMarkDeleted) {
                 index = 1;
                 secs = mStorage->toOriginTime(after);
-                sqlite3_bind_int64(stmt1, index, secs);
+                SL3_bind_int64(stmt1, index, secs);
                 index = 2;
-                sqlite3_bind_int64(stmt1, index, secs);
+                SL3_bind_int64(stmt1, index, secs);
                 if (!notebookUid.isNull()) {
                     index = 3;
                     n = notebookUid.toUtf8();
-                    sqlite3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
                 }
             }
             if (dbop == DBSelect) {
                 index = 1;
                 secs = mStorage->toOriginTime(after);
                 qCDebug(lcMkcal) << "QUERY FROM" << secs;
-                sqlite3_bind_int64(stmt1, index, secs);
+                SL3_bind_int64(stmt1, index, secs);
                 index = 2;
                 s = summary.toUtf8();
-                sqlite3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
+                SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
                 if (!notebookUid.isNull()) {
                     qCDebug(lcMkcal) << "notebook" << notebookUid.toUtf8().constData();
                     index = 3;
                     n = notebookUid.toUtf8();
-                    sqlite3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
                 }
             }
         } else {
             if (!notebookUid.isNull()) {
                 index = 1;
                 n = notebookUid.toUtf8();
-                sqlite3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+                SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
             }
         }
     }
-    sqlite3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
-    sqlite3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
-    sqlite3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
-    sqlite3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
-    sqlite3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
-    sqlite3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
+    SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
+    SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
+    SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
+    SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
+    SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
+    SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
 
     while ((incidence =
                 mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, stmt7, nbook))) {
@@ -2227,15 +2183,15 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     sqlite3_stmt *stmt = NULL;
     const char *tail = NULL;
 
-    sqlite3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
     index = 1;
     u = incidence->uid().toUtf8();
-    sqlite3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
+    SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
     if (incidence->hasRecurrenceId()) {
         qint64 secsRecurId = toOriginTime(incidence->recurrenceId());
-        sqlite3_bind_int64(stmt, index, secsRecurId);
+        SL3_bind_int64(stmt, index, secsRecurId);
     } else {
-        sqlite3_bind_int64(stmt, index, 0);
+        SL3_bind_int64(stmt, index, 0);
     }
 
     if (!d->mSem.acquire()) {
@@ -2243,7 +2199,7 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
         return deletionDate;
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
         date = sqlite3_column_int64(stmt, 1);
         deletionDate = d->mStorage->fromOriginTime(date);
@@ -2272,8 +2228,8 @@ int SqliteStorage::Private::selectCount(const char *query, int qsize)
         return count;
     }
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-    sqlite3_step(stmt);
+    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+    SL3_step(stmt);
     if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
         count = sqlite3_column_int(stmt, 0);
     }
@@ -2331,7 +2287,7 @@ bool SqliteStorage::loadNotebooks()
 
     d->mIsLoading = true;
 
-    sqlite3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
     while ((nb = d->mFormat->selectCalendars(stmt))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
@@ -2408,7 +2364,7 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
             return false;
         }
 
-        sqlite3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+        SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
         if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
@@ -2447,8 +2403,8 @@ bool SqliteStorage::Private::checkVersion()
     int major = 0;
     int minor = 0;
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-    sqlite3_step(stmt);
+    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+    SL3_step(stmt);
     if (rv == SQLITE_ROW) {
         major = sqlite3_column_int(stmt, 0);
         minor = sqlite3_column_int(stmt, 1);
@@ -2461,10 +2417,10 @@ bool SqliteStorage::Private::checkVersion()
         minor = VersionMinor;
         query = INSERT_VERSION;
         qsize = sizeof(INSERT_VERSION);
-        sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-        sqlite3_bind_int(stmt, index, major);
-        sqlite3_bind_int(stmt, index, minor);
-        sqlite3_step(stmt);
+        SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+        SL3_bind_int(stmt, index, major);
+        SL3_bind_int(stmt, index, minor);
+        SL3_step(stmt);
         qCDebug(lcMkcal) << "inserting version" << major << "." << minor << "in database";
         sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
@@ -2493,7 +2449,6 @@ bool SqliteStorage::Private::saveTimezones()
     const char *query1 = UPDATE_TIMEZONES;
     int qsize1 = sizeof(UPDATE_TIMEZONES);
     sqlite3_stmt *stmt1 = NULL;
-    const char *tail1 = NULL;
 
     const QTimeZone &zone = mCalendar->timeZone();
     if (zone.isValid()) {
@@ -2502,9 +2457,9 @@ bool SqliteStorage::Private::saveTimezones()
         QByteArray data = ical.toString(temp, QString()).toUtf8();
 
         // Semaphore is already locked here.
-        sqlite3_prepare_v2(mDatabase, query1, qsize1, &stmt1, &tail1);
-        sqlite3_bind_text(stmt1, index, data, data.length(), SQLITE_STATIC);
-        sqlite3_step(stmt1);
+        SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
+        SL3_bind_text(stmt1, index, data, data.length(), SQLITE_STATIC);
+        SL3_step(stmt1);
         success = true;
         mIsSaved = true;
         qCDebug(lcMkcal) << "updated timezones in database";
@@ -2530,14 +2485,14 @@ bool SqliteStorage::Private::loadTimezones()
     sqlite3_stmt *stmt = NULL;
     const char *tail = NULL;
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return false;
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     if (rv == SQLITE_ROW) {
         QString zoneData = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
         if (!zoneData.isEmpty()) {

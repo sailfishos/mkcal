@@ -129,30 +129,30 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
     sqlite3_int64  secs;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
 
     if (dbop == DBInsert || dbop == DBUpdate) {
-        sqlite3_bind_text(stmt, index, name, name.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, description, description.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, color, color.length(), SQLITE_STATIC);
-        sqlite3_bind_int(stmt, index, notebook->flags());
+        SL3_bind_text(stmt, index, name, name.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, description, description.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, color, color.length(), SQLITE_STATIC);
+        SL3_bind_int(stmt, index, notebook->flags());
         secs = d->mStorage->toOriginTime(notebook->syncDate().toUTC());
-        sqlite3_bind_int64(stmt, index, secs);
-        sqlite3_bind_text(stmt, index, plugin, plugin.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, account, account.length(), SQLITE_STATIC);
-        sqlite3_bind_int64(stmt, index, notebook->attachmentSize());
+        SL3_bind_int64(stmt, index, secs);
+        SL3_bind_text(stmt, index, plugin, plugin.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, account, account.length(), SQLITE_STATIC);
+        SL3_bind_int64(stmt, index, notebook->attachmentSize());
         secs = d->mStorage->toOriginTime(notebook->modifiedDate().toUTC());
-        sqlite3_bind_int64(stmt, index, secs);
-        sqlite3_bind_text(stmt, index, sharedWith, sharedWith.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, syncProfile, syncProfile.length(), SQLITE_STATIC);
+        SL3_bind_int64(stmt, index, secs);
+        SL3_bind_text(stmt, index, sharedWith, sharedWith.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, syncProfile, syncProfile.length(), SQLITE_STATIC);
         secs = d->mStorage->toOriginTime(notebook->creationDate().toUTC());
-        sqlite3_bind_int64(stmt, index, secs);
+        SL3_bind_int64(stmt, index, secs);
 
         if (dbop == DBUpdate)
-            sqlite3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
+            SL3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
 
     if (!d->modifyCalendarProperties(notebook, dbop)) {
         qCWarning(lcMkcal) << "failed to modify calendarproperties for notebook" << uid;
@@ -176,16 +176,16 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &i
     qint64 secsRecurId = incidence->hasRecurrenceId()
         ? d->mStorage->toOriginTime(incidence->recurrenceId()) : 0;
 
-    sqlite3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
-    sqlite3_bind_int64(stmt1, index, secsRecurId);
+    SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
+    SL3_bind_int64(stmt1, index, secsRecurId);
 
-    sqlite3_step(stmt1);
+    SL3_step(stmt1);
     while (rv == SQLITE_ROW) {
         int rowid = sqlite3_column_int(stmt1, 0);
 
         int index2 = 1;
-        sqlite3_bind_int(stmt2, index2, rowid);
-        sqlite3_step(stmt2);
+        SL3_bind_int(stmt2, index2, rowid);
+        SL3_step(stmt2);
         sqlite3_reset(stmt2);
 
         if (!d->modifyCustomproperties(incidence, rowid, DBDelete, stmt3, NULL))
@@ -206,7 +206,7 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &i
         if (!d->modifyAttachments(incidence, rowid, DBDelete, attachmentStmt, NULL))
             qCWarning(lcMkcal) << "failed to delete attachments for incidence" << u;
 
-        sqlite3_step(stmt1);
+        SL3_step(stmt1);
     }
 
     sqlite3_reset(stmt1);
@@ -224,26 +224,26 @@ static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, 
 
     if (dateTime.isValid()) {
         secs = storage->toOriginTime(dateTime);
-        sqlite3_bind_int64(stmt, index, secs);
+        SL3_bind_int64(stmt, index, secs);
         secs = storage->toLocalOriginTime(dateTime);
-        sqlite3_bind_int64(stmt, index, secs);
+        SL3_bind_int64(stmt, index, secs);
         if (allDay) {
             tz = FLOATING_DATE;
         } else {
             tz = dateTime.timeZone().id();
         }
-        sqlite3_bind_text(stmt, index, tz.constData(), tz.length(), SQLITE_TRANSIENT);
+        SL3_bind_text(stmt, index, tz.constData(), tz.length(), SQLITE_TRANSIENT);
     } else {
-        sqlite3_bind_int(stmt, index, 0);
-        sqlite3_bind_int(stmt, index, 0);
-        sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
+        SL3_bind_int(stmt, index, 0);
+        SL3_bind_int(stmt, index, 0);
+        SL3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
     }
     return true;
  error:
     return false;
 }
 
-#define sqlite3_bind_date_time( storage, stmt, index, dt, allDay)      \
+#define SL3_bind_date_time( storage, stmt, index, dt, allDay)          \
     {                                                                  \
         if (!setDateTime(storage, stmt, index, dt, allDay))            \
             goto error;                                                \
@@ -285,18 +285,18 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     }
 
     if (dbop == DBDelete) {
-        sqlite3_bind_int(stmt1, index, rowid);
+        SL3_bind_int(stmt1, index, rowid);
     }
 
     if (dbop == DBMarkDeleted) {
         secs = d->mStorage->toOriginTime(QDateTime::currentDateTimeUtc());
-        sqlite3_bind_int64(stmt1, index, secs);
-        sqlite3_bind_int(stmt1, index, rowid);
+        SL3_bind_int64(stmt1, index, secs);
+        SL3_bind_int(stmt1, index, rowid);
     }
 
     if (dbop == DBInsert || dbop == DBUpdate) {
         notebook = nbook.toUtf8();
-        sqlite3_bind_text(stmt1, index, notebook.constData(), notebook.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, notebook.constData(), notebook.length(), SQLITE_STATIC);
 
         switch (incidence->type()) {
         case Incidence::TypeEvent:
@@ -314,20 +314,20 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         case Incidence::TypeUnknown:
             goto error;
         }
-        sqlite3_bind_text(stmt1, index, type.constData(), type.length(), SQLITE_STATIC);   // NOTE
+        SL3_bind_text(stmt1, index, type.constData(), type.length(), SQLITE_STATIC);   // NOTE
 
         summary = incidence->summary().toUtf8();
-        sqlite3_bind_text(stmt1, index, summary.constData(), summary.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, summary.constData(), summary.length(), SQLITE_STATIC);
 
         category = incidence->categoriesStr().toUtf8();
-        sqlite3_bind_text(stmt1, index, category.constData(), category.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, category.constData(), category.length(), SQLITE_STATIC);
 
         if ((incidence->type() == Incidence::TypeEvent) ||
                 (incidence->type() == Incidence::TypeJournal)) {
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->dtStart(), incidence->allDay());
+            SL3_bind_date_time(d->mStorage, stmt1, index, incidence->dtStart(), incidence->allDay());
 
             // set HasDueDate to false
-            sqlite3_bind_int(stmt1, index, 0);
+            SL3_bind_int(stmt1, index, 0);
 
             QDateTime effectiveDtEnd;
             if (incidence->type() == Incidence::TypeEvent) {
@@ -342,103 +342,103 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
                     }
                 }
             }
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd, incidence->allDay());
+            SL3_bind_date_time(d->mStorage, stmt1, index, effectiveDtEnd, incidence->allDay());
         } else if (incidence->type() == Incidence::TypeTodo) {
             Todo::Ptr todo = incidence.staticCast<Todo>();
-            sqlite3_bind_date_time(d->mStorage, stmt1, index,
+            SL3_bind_date_time(d->mStorage, stmt1, index,
                                    todo->hasStartDate() ? todo->dtStart(true) : QDateTime(), todo->allDay());
 
-            sqlite3_bind_int(stmt1, index, (int) todo->hasDueDate());
+            SL3_bind_int(stmt1, index, (int) todo->hasDueDate());
 
-            sqlite3_bind_date_time(d->mStorage, stmt1, index, todo->hasDueDate() ? todo->dtDue(true) : QDateTime(), todo->allDay());
+            SL3_bind_date_time(d->mStorage, stmt1, index, todo->hasDueDate() ? todo->dtDue(true) : QDateTime(), todo->allDay());
         }
 
         if (incidence->type() != Incidence::TypeJournal) {
-            sqlite3_bind_int(stmt1, index, incidence->duration().asSeconds()); // NOTE
+            SL3_bind_int(stmt1, index, incidence->duration().asSeconds()); // NOTE
         } else {
-            sqlite3_bind_int(stmt1, index, 0);
+            SL3_bind_int(stmt1, index, 0);
         }
 
-        sqlite3_bind_int(stmt1, index, incidence->secrecy()); // NOTE
+        SL3_bind_int(stmt1, index, incidence->secrecy()); // NOTE
 
         if (incidence->type() != Incidence::TypeJournal) {
             location = incidence->location().toUtf8();
-            sqlite3_bind_text(stmt1, index, location.constData(), location.length(), SQLITE_STATIC);
+            SL3_bind_text(stmt1, index, location.constData(), location.length(), SQLITE_STATIC);
         } else {
-            sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
+            SL3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
 
         description = incidence->description().toUtf8();
-        sqlite3_bind_text(stmt1, index, description.constData(), description.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, description.constData(), description.length(), SQLITE_STATIC);
 
-        sqlite3_bind_int(stmt1, index, incidence->status()); // NOTE
+        SL3_bind_int(stmt1, index, incidence->status()); // NOTE
 
         if (incidence->type() != Incidence::TypeJournal) {
             if (incidence->hasGeo()) {
-                sqlite3_bind_double(stmt1, index, incidence->geoLatitude());
-                sqlite3_bind_double(stmt1, index, incidence->geoLongitude());
+                SL3_bind_double(stmt1, index, incidence->geoLatitude());
+                SL3_bind_double(stmt1, index, incidence->geoLongitude());
             } else {
-                sqlite3_bind_double(stmt1, index, INVALID_LATLON);
-                sqlite3_bind_double(stmt1, index, INVALID_LATLON);
+                SL3_bind_double(stmt1, index, INVALID_LATLON);
+                SL3_bind_double(stmt1, index, INVALID_LATLON);
             }
 
-            sqlite3_bind_int(stmt1, index, incidence->priority());
+            SL3_bind_int(stmt1, index, incidence->priority());
 
             resources = incidence->resources().join(" ").toUtf8();
-            sqlite3_bind_text(stmt1, index, resources.constData(), resources.length(), SQLITE_STATIC);
+            SL3_bind_text(stmt1, index, resources.constData(), resources.length(), SQLITE_STATIC);
         } else {
-            sqlite3_bind_double(stmt1, index, INVALID_LATLON);
-            sqlite3_bind_double(stmt1, index, INVALID_LATLON);
-            sqlite3_bind_int(stmt1, index, 0);
-            sqlite3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
+            SL3_bind_double(stmt1, index, INVALID_LATLON);
+            SL3_bind_double(stmt1, index, INVALID_LATLON);
+            SL3_bind_int(stmt1, index, 0);
+            SL3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
 
         if (dbop == DBInsert && incidence->created().isNull())
             incidence->setCreated(QDateTime::currentDateTimeUtc());
         secs = d->mStorage->toOriginTime(incidence->created());
-        sqlite3_bind_int64(stmt1, index, secs);
+        SL3_bind_int64(stmt1, index, secs);
 
         secs = d->mStorage->toOriginTime(QDateTime::currentDateTimeUtc());
-        sqlite3_bind_int64(stmt1, index, secs);   // datestamp
+        SL3_bind_int64(stmt1, index, secs);   // datestamp
 
         secs = d->mStorage->toOriginTime(incidence->lastModified());
-        sqlite3_bind_int64(stmt1, index, secs);
+        SL3_bind_int64(stmt1, index, secs);
 
-        sqlite3_bind_int(stmt1, index, incidence->revision());
+        SL3_bind_int(stmt1, index, incidence->revision());
 
         comments = incidence->comments().join(" ").toUtf8();
-        sqlite3_bind_text(stmt1, index, comments.constData(), comments.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, comments.constData(), comments.length(), SQLITE_STATIC);
 
         // Attachments are now stored in a dedicated table.
-        sqlite3_bind_text(stmt1, index, nullptr, 0, SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, nullptr, 0, SQLITE_STATIC);
 
         contact = incidence->contacts().join(" ").toUtf8();
-        sqlite3_bind_text(stmt1, index, contact.constData(), contact.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, contact.constData(), contact.length(), SQLITE_STATIC);
 
-        sqlite3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
+        SL3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
 
         // Never save recurrenceId as FLOATING_DATE, because the time of a
         // floating date is not guaranteed on read and recurrenceId is used
         // for date-time comparisons.
-        sqlite3_bind_date_time(d->mStorage, stmt1, index, incidence->recurrenceId(), false);
+        SL3_bind_date_time(d->mStorage, stmt1, index, incidence->recurrenceId(), false);
 
         relatedtouid = incidence->relatedTo().toUtf8();
-        sqlite3_bind_text(stmt1, index, relatedtouid.constData(), relatedtouid.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, relatedtouid.constData(), relatedtouid.length(), SQLITE_STATIC);
 
         url = incidence->url().toString().toUtf8();
-        sqlite3_bind_text(stmt1, index, url.constData(), url.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, url.constData(), url.length(), SQLITE_STATIC);
 
         uid = incidence->uid().toUtf8();
-        sqlite3_bind_text(stmt1, index, uid.constData(), uid.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, uid.constData(), uid.length(), SQLITE_STATIC);
 
         if (incidence->type() == Incidence::TypeEvent) {
             Event::Ptr event = incidence.staticCast<Event>();
-            sqlite3_bind_int(stmt1, index, (int)event->transparency());
+            SL3_bind_int(stmt1, index, (int)event->transparency());
         } else {
-            sqlite3_bind_int(stmt1, index, 0);
+            SL3_bind_int(stmt1, index, 0);
         }
 
-        sqlite3_bind_int(stmt1, index, (int) incidence->localOnly());
+        SL3_bind_int(stmt1, index, (int) incidence->localOnly());
 
         int percentComplete = 0;
         QDateTime effectiveDtCompleted;
@@ -454,17 +454,17 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
                 effectiveDtCompleted = todo->completed();
             }
         }
-        sqlite3_bind_int(stmt1, index, percentComplete);
-        sqlite3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted, incidence->allDay());
+        SL3_bind_int(stmt1, index, percentComplete);
+        SL3_bind_date_time(d->mStorage, stmt1, index, effectiveDtCompleted, incidence->allDay());
 
         colorstr = incidence->color().toUtf8();
-        sqlite3_bind_text(stmt1, index, colorstr.constData(), colorstr.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt1, index, colorstr.constData(), colorstr.length(), SQLITE_STATIC);
 
         if (dbop == DBUpdate)
-            sqlite3_bind_int(stmt1, index, rowid);
+            SL3_bind_int(stmt1, index, rowid);
     }
 
-    sqlite3_step(stmt1);
+    SL3_step(stmt1);
 
     if (dbop == DBInsert)
         rowid = sqlite3_last_insert_rowid(d->mDatabase);
@@ -535,18 +535,18 @@ bool SqliteFormat::Private::modifyCustomproperty(int rowid, const QByteArray &ke
     QByteArray parametersba;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_int(stmt, index, rowid);
+        SL3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
-        sqlite3_bind_text(stmt, index, key.constData(), key.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, key.constData(), key.length(), SQLITE_STATIC);
         valueba = value.toUtf8();
-        sqlite3_bind_text(stmt, index, valueba.constData(), valueba.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, valueba.constData(), valueba.length(), SQLITE_STATIC);
 
         parametersba = parameters.toUtf8();
-        sqlite3_bind_text(stmt, index, parametersba.constData(), parametersba.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, parametersba.constData(), parametersba.length(), SQLITE_STATIC);
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -631,14 +631,14 @@ bool SqliteFormat::Private::modifyRdate(int rowid, int type, const QDateTime &da
     bool success = false;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_int(stmt, index, rowid);
+        SL3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
-        sqlite3_bind_int(stmt, index, type);
-        sqlite3_bind_date_time(mStorage, stmt, index, date, allDay);
+        SL3_bind_int(stmt, index, type);
+        SL3_bind_date_time(mStorage, stmt, index, date, allDay);
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -689,7 +689,7 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
     QByteArray properties;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_int(stmt, index, rowid);
+        SL3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
         int action = 0; // default Alarm::Invalid
@@ -728,40 +728,40 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
             break;
         }
 
-        sqlite3_bind_int(stmt, index, action);
+        SL3_bind_int(stmt, index, action);
 
         if (alarm->repeatCount()) {
-            sqlite3_bind_int(stmt, index, alarm->repeatCount());
-            sqlite3_bind_int(stmt, index, alarm->snoozeTime().asSeconds());
+            SL3_bind_int(stmt, index, alarm->repeatCount());
+            SL3_bind_int(stmt, index, alarm->snoozeTime().asSeconds());
         } else {
-            sqlite3_bind_int(stmt, index, 0);
-            sqlite3_bind_int(stmt, index, 0);
+            SL3_bind_int(stmt, index, 0);
+            SL3_bind_int(stmt, index, 0);
         }
 
         if (alarm->hasStartOffset()) {
-            sqlite3_bind_int(stmt, index, alarm->startOffset().asSeconds());
+            SL3_bind_int(stmt, index, alarm->startOffset().asSeconds());
             relation = QString("startTriggerRelation").toUtf8();
-            sqlite3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
-            sqlite3_bind_int(stmt, index, 0); // time
-            sqlite3_bind_int(stmt, index, 0); // localtime
-            sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
+            SL3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
+            SL3_bind_int(stmt, index, 0); // time
+            SL3_bind_int(stmt, index, 0); // localtime
+            SL3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
         } else if (alarm->hasEndOffset()) {
-            sqlite3_bind_int(stmt, index, alarm->endOffset().asSeconds());
+            SL3_bind_int(stmt, index, alarm->endOffset().asSeconds());
             relation = QString("endTriggerRelation").toUtf8();
-            sqlite3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
-            sqlite3_bind_int(stmt, index, 0); // time
-            sqlite3_bind_int(stmt, index, 0); // localtime
-            sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
+            SL3_bind_text(stmt, index, relation.constData(), relation.length(), SQLITE_STATIC);
+            SL3_bind_int(stmt, index, 0); // time
+            SL3_bind_int(stmt, index, 0); // localtime
+            SL3_bind_text(stmt, index, "", 0, SQLITE_STATIC);
         } else {
-            sqlite3_bind_int(stmt, index, 0); // offset
-            sqlite3_bind_text(stmt, index, "", 0, SQLITE_STATIC); // relation
-            sqlite3_bind_date_time(mStorage, stmt, index, alarm->time(), false);
+            SL3_bind_int(stmt, index, 0); // offset
+            SL3_bind_text(stmt, index, "", 0, SQLITE_STATIC); // relation
+            SL3_bind_date_time(mStorage, stmt, index, alarm->time(), false);
         }
 
-        sqlite3_bind_text(stmt, index, description.constData(), description.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, attachment.constData(), attachment.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, summary.constData(), summary.length(), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, index, addresses.constData(), addresses.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, description.constData(), description.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, attachment.constData(), attachment.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, summary.constData(), summary.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, addresses.constData(), addresses.length(), SQLITE_STATIC);
 
         QStringList list;
         const QMap<QByteArray, QString> custom = alarm->customProperties();
@@ -772,11 +772,11 @@ bool SqliteFormat::Private::modifyAlarm(int rowid, Alarm::Ptr alarm,
         if (!list.isEmpty())
             properties = list.join("\r\n").toUtf8();
 
-        sqlite3_bind_text(stmt, index, properties.constData(), properties.length(), SQLITE_STATIC);
-        sqlite3_bind_int(stmt, index, (int)alarm->enabled());
+        SL3_bind_text(stmt, index, properties.constData(), properties.length(), SQLITE_STATIC);
+        SL3_bind_int(stmt, index, (int)alarm->enabled());
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -839,18 +839,18 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
     QByteArray bySetPos;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_int(stmt, index, rowid);
+        SL3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
-        sqlite3_bind_int(stmt, index, type);
+        SL3_bind_int(stmt, index, type);
 
-        sqlite3_bind_int(stmt, index, (int)rule->recurrenceType()); // frequency
+        SL3_bind_int(stmt, index, (int)rule->recurrenceType()); // frequency
 
-        sqlite3_bind_date_time(mStorage, stmt, index, rule->endDt(), rule->allDay());
+        SL3_bind_date_time(mStorage, stmt, index, rule->endDt(), rule->allDay());
 
-        sqlite3_bind_int(stmt, index, rule->duration());  // count
+        SL3_bind_int(stmt, index, rule->duration());  // count
 
-        sqlite3_bind_int(stmt, index, (int)rule->frequency()); // interval
+        SL3_bind_int(stmt, index, (int)rule->frequency()); // interval
 
         QString number;
         QStringList byL;
@@ -865,7 +865,7 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
       byL << number;                            \
     }                                   \
     listname = byL.join(" ").toUtf8();                  \
-    sqlite3_bind_text(stmt, index, listname.constData(), listname.length(), SQLITE_STATIC);
+    SL3_bind_text(stmt, index, listname.constData(), listname.length(), SQLITE_STATIC);
 
         // BYSECOND, MINUTE and HOUR, MONTHDAY, YEARDAY, WEEKNUMBER, MONTH
         // and SETPOS are standard int lists, so we can treat them with the
@@ -883,7 +883,7 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
             byL << number;
         }
         byDays =  byL.join(" ").toUtf8();
-        sqlite3_bind_text(stmt, index, byDays.constData(), byDays.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, byDays.constData(), byDays.length(), SQLITE_STATIC);
 
         byL.clear();
         for (j = wdList.begin(); j != wdList.end(); ++j) {
@@ -891,7 +891,7 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
             byL << number;
         }
         byDayPoss =  byL.join(" ").toUtf8();
-        sqlite3_bind_text(stmt, index, byDayPoss.constData(), byDayPoss.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, byDayPoss.constData(), byDayPoss.length(), SQLITE_STATIC);
 
         writeSetByList(byMonthDays);
         writeSetByList(byYearDays);
@@ -901,10 +901,10 @@ bool SqliteFormat::Private::modifyRecursive(int rowid, RecurrenceRule *rule, DBO
 
 #undef writeSetByList
 
-        sqlite3_bind_int(stmt, index, rule->weekStart());
+        SL3_bind_int(stmt, index, rule->weekStart());
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -972,31 +972,31 @@ bool SqliteFormat::Private::modifyAttendee(int rowid, const Attendee &attendee, 
     QByteArray delegator;
 
     if (dbop == DBInsert || dbop == DBDelete)
-        sqlite3_bind_int(stmt, index, rowid);
+        SL3_bind_int(stmt, index, rowid);
 
     if (dbop == DBInsert) {
         email = attendee.email().toUtf8();
-        sqlite3_bind_text(stmt, index, email.constData(), email.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, email.constData(), email.length(), SQLITE_STATIC);
 
         name = attendee.name().toUtf8();
-        sqlite3_bind_text(stmt, index, name.constData(), name.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, name.constData(), name.length(), SQLITE_STATIC);
 
-        sqlite3_bind_int(stmt, index, (int)isOrganizer);
+        SL3_bind_int(stmt, index, (int)isOrganizer);
 
-        sqlite3_bind_int(stmt, index, (int)attendee.role());
+        SL3_bind_int(stmt, index, (int)attendee.role());
 
-        sqlite3_bind_int(stmt, index, (int)attendee.status());
+        SL3_bind_int(stmt, index, (int)attendee.status());
 
-        sqlite3_bind_int(stmt, index, (int)attendee.RSVP());
+        SL3_bind_int(stmt, index, (int)attendee.RSVP());
 
         delegate = attendee.delegate().toUtf8();
-        sqlite3_bind_text(stmt, index, delegate.constData(), delegate.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, delegate.constData(), delegate.length(), SQLITE_STATIC);
 
         delegator = attendee.delegator().toUtf8();
-        sqlite3_bind_text(stmt, index, delegator.constData(), delegator.length(), SQLITE_STATIC);
+        SL3_bind_text(stmt, index, delegator.constData(), delegator.length(), SQLITE_STATIC);
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -1020,8 +1020,8 @@ bool SqliteFormat::Private::modifyAttachments(Incidence::Ptr incidence,
         int index = 1;
         // In Update always delete all first then insert all
         // In Delete delete with uid at once
-        sqlite3_bind_int(deleteStatement, index, rowid);
-        sqlite3_step(deleteStatement);
+        SL3_bind_int(deleteStatement, index, rowid);
+        SL3_step(deleteStatement);
         sqlite3_reset(deleteStatement);
     }
 
@@ -1032,24 +1032,24 @@ bool SqliteFormat::Private::modifyAttachments(Incidence::Ptr incidence,
             int rv = 0;
             int index = 1;
 
-            sqlite3_bind_int(insertStatement, index, rowid);
+            SL3_bind_int(insertStatement, index, rowid);
             if (it->isBinary()) {
-                sqlite3_bind_blob(insertStatement, index, it->decodedData().constData(), it->size(), SQLITE_STATIC);
-                sqlite3_bind_text(insertStatement, index, nullptr, 0, SQLITE_STATIC);
+                SL3_bind_blob(insertStatement, index, it->decodedData().constData(), it->size(), SQLITE_STATIC);
+                SL3_bind_text(insertStatement, index, nullptr, 0, SQLITE_STATIC);
             } else if (it->isUri()) {
                 const QByteArray uri = it->uri().toUtf8();
-                sqlite3_bind_blob(insertStatement, index, nullptr, 0, SQLITE_STATIC);
-                sqlite3_bind_text(insertStatement, index, uri.constData(), uri.length(), SQLITE_STATIC);
+                SL3_bind_blob(insertStatement, index, nullptr, 0, SQLITE_STATIC);
+                SL3_bind_text(insertStatement, index, uri.constData(), uri.length(), SQLITE_STATIC);
             } else {
                 continue;
             }
             const QByteArray mime = it->mimeType().toUtf8();
-            sqlite3_bind_text(insertStatement, index, mime.constData(), mime.length(), SQLITE_STATIC);
-            sqlite3_bind_int(insertStatement, index, (it->showInline() ? 1 : 0));
+            SL3_bind_text(insertStatement, index, mime.constData(), mime.length(), SQLITE_STATIC);
+            SL3_bind_int(insertStatement, index, (it->showInline() ? 1 : 0));
             const QByteArray label = it->label().toUtf8();
-            sqlite3_bind_text(insertStatement, index, label.constData(), label.length(), SQLITE_STATIC);
-            sqlite3_bind_int(insertStatement, index, (it->isLocal() ? 1 : 0));
-            sqlite3_step(insertStatement);
+            SL3_bind_text(insertStatement, index, label.constData(), label.length(), SQLITE_STATIC);
+            SL3_bind_int(insertStatement, index, (it->isLocal() ? 1 : 0));
+            SL3_step(insertStatement);
             sqlite3_reset(insertStatement);
         }
     }
@@ -1104,9 +1104,9 @@ bool SqliteFormat::Private::deleteCalendarProperties(const QByteArray &id)
     int qsize = sizeof(DELETE_CALENDARPROPERTIES);
     sqlite3_stmt *stmt = NULL;
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
-    sqlite3_bind_text(stmt, index, id.constData(), id.length(), SQLITE_STATIC);
-    sqlite3_step(stmt);
+    SL3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
+    SL3_bind_text(stmt, index, id.constData(), id.length(), SQLITE_STATIC);
+    SL3_step(stmt);
     success = true;
 
 error:
@@ -1126,13 +1126,13 @@ bool SqliteFormat::Private::insertCalendarProperty(const QByteArray &id,
     if (!mInsertCalProps) {
         const char *query = INSERT_CALENDARPROPERTIES;
         int qsize = sizeof(INSERT_CALENDARPROPERTIES);
-        sqlite3_prepare_v2(mDatabase, query, qsize, &mInsertCalProps, NULL);
+        SL3_prepare_v2(mDatabase, query, qsize, &mInsertCalProps, NULL);
     }
 
-    sqlite3_bind_text(mInsertCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
-    sqlite3_bind_text(mInsertCalProps, index, key.constData(), key.length(), SQLITE_STATIC);
-    sqlite3_bind_text(mInsertCalProps, index, value.constData(), value.length(), SQLITE_STATIC);
-    sqlite3_step(mInsertCalProps);
+    SL3_bind_text(mInsertCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
+    SL3_bind_text(mInsertCalProps, index, key.constData(), key.length(), SQLITE_STATIC);
+    SL3_bind_text(mInsertCalProps, index, value.constData(), value.length(), SQLITE_STATIC);
+    SL3_step(mInsertCalProps);
     success = true;
 
 error:
@@ -1151,7 +1151,7 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
     QDateTime modifiedDate = QDateTime();
     QDateTime creationDate = QDateTime();
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
 
     if (rv == SQLITE_ROW) {
         QString id = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 0));
@@ -1256,7 +1256,7 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, sqlite3_stmt 
     QString timezone;
     int rowid;
 
-    sqlite3_step(stmt1);
+    SL3_step(stmt1);
 
     if (rv == SQLITE_ROW) {
 
@@ -1492,7 +1492,6 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     const char *query = NULL;
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
 
     QByteArray u;
     qint64 secsRecurId;
@@ -1501,17 +1500,17 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     query = SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID;
     qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID);
 
-    sqlite3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
     u = incidence->uid().toUtf8();
-    sqlite3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
+    SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
     if (incidence->recurrenceId().isValid()) {
         secsRecurId = mStorage->toOriginTime(incidence->recurrenceId());
-        sqlite3_bind_int64(stmt, index, secsRecurId);
+        SL3_bind_int64(stmt, index, secsRecurId);
     } else {
-        sqlite3_bind_int64(stmt, index, 0);
+        SL3_bind_int64(stmt, index, 0);
     }
 
-    sqlite3_step(stmt);
+    SL3_step(stmt);
 
     if (rv == SQLITE_ROW) {
         rowid = sqlite3_column_int(stmt, 0);
@@ -1531,12 +1530,12 @@ bool SqliteFormat::Private::selectCustomproperties(Incidence::Ptr incidence, int
     int index = 1;
     QMap<QByteArray, QString> map;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     map.clear();
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             // Set Incidence data customproperties
@@ -1562,10 +1561,10 @@ bool SqliteFormat::Private::selectRdates(Incidence::Ptr incidence, int rowid, sq
     QString   timezone;
     QDateTime kdt;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             // Set Incidence data rdates
@@ -1603,10 +1602,10 @@ bool SqliteFormat::Private::selectRecursives(Incidence::Ptr incidence, int rowid
     QDateTime kdt;
     QDateTime dt;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             // Set Incidence data from recursive
@@ -1757,10 +1756,10 @@ bool SqliteFormat::Private::selectAlarms(Incidence::Ptr incidence, int rowid, sq
     QDateTime kdt;
     QDateTime dt;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             // Set Incidence data from alarm
@@ -1882,10 +1881,10 @@ bool SqliteFormat::Private::selectAttendees(Incidence::Ptr incidence, int rowid,
     int rv = 0;
     int index = 1;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             QString email = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
@@ -1915,10 +1914,10 @@ bool SqliteFormat::Private::selectAttachments(Incidence::Ptr incidence, int rowi
     int rv = 0;
     int index = 1;
 
-    sqlite3_bind_int(stmt, index, rowid);
+    SL3_bind_int(stmt, index, rowid);
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             Attachment attach;
@@ -1958,7 +1957,7 @@ Person::List SqliteFormat::selectContacts(sqlite3_stmt *stmt)
     QHash<QString, Person> hash;
 
     do {
-        sqlite3_step(stmt);
+        SL3_step(stmt);
 
         if (rv == SQLITE_ROW) {
             QString name = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
@@ -1984,12 +1983,12 @@ bool SqliteFormat::Private::selectCalendarProperties(Notebook::Ptr notebook)
     if (!mSelectCalProps) {
         const char *query = SELECT_CALENDARPROPERTIES_BY_ID;
         int qsize = sizeof(SELECT_CALENDARPROPERTIES_BY_ID);
-        sqlite3_prepare_v2(mDatabase, query, qsize, &mSelectCalProps, NULL);
+        SL3_prepare_v2(mDatabase, query, qsize, &mSelectCalProps, NULL);
     }
 
-    sqlite3_bind_text(mSelectCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
+    SL3_bind_text(mSelectCalProps, index, id.constData(), id.length(), SQLITE_STATIC);
     do {
-        sqlite3_step(mSelectCalProps);
+        SL3_step(mSelectCalProps);
         if (rv == SQLITE_ROW) {
             const QByteArray name = (const char *)sqlite3_column_text(mSelectCalProps, 1);
             const QString value = QString::fromUtf8((const char *)sqlite3_column_text(mSelectCalProps, 2));
