@@ -77,6 +77,7 @@ private slots:
     void tst_color();
     void tst_addIncidence();
     void tst_attachments();
+    void tst_populateFromIcsData();
 
 private:
     void openDb(bool clear = false);

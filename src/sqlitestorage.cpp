@@ -1848,7 +1848,23 @@ void SqliteStorage::calendarModified(bool modified, Calendar *calendar)
 
 void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
 {
-    if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence) && !d->mIsLoading) {
+    if (d->mIsLoading) {
+        return;
+    }
+
+    QMultiHash<QString, KCalendarCore::Incidence::Ptr>::Iterator deleted =
+        d->mIncidencesToDelete.find(incidence->uid());
+    if (deleted != d->mIncidencesToDelete.end()) {
+        qCDebug(lcMkcal) << "removing incidence from deleted" << incidence->uid();
+        while (deleted != d->mIncidencesToDelete.end()) {
+            if ((*deleted)->recurrenceId() == incidence->recurrenceId()) {
+                deleted = d->mIncidencesToDelete.erase(deleted);
+                calendarIncidenceChanged(incidence);
+            } else {
+                ++deleted;
+            }
+        }
+    } else if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence)) {
 
         QString uid = incidence->uid();
 

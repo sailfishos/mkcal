@@ -1993,6 +1993,31 @@ void tst_storage::tst_attachments()
     QVERIFY(fetched->attachments().isEmpty());
 }
 
+void tst_storage::tst_populateFromIcsData()
+{
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setSummary("testing fromIcsData.");
+    event->setDtStart(QDateTime(QDate(2021, 9, 23), QTime(15, 29)));
+
+    KCalendarCore::ICalFormat icalFormat;
+    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8()));
+    QVERIFY(m_calendar->incidence(event->uid()));
+    QVERIFY(m_storage->save());
+
+    reloadDb();
+    QVERIFY(m_calendar->incidence(event->uid()));
+
+    event->setRevision(event->revision() + 1);
+    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8()));
+    QVERIFY(m_calendar->incidence(event->uid()));
+    QCOMPARE(m_calendar->incidence(event->uid())->revision(), event->revision());
+    m_storage->save();
+
+    reloadDb();
+    QVERIFY(m_calendar->incidence(event->uid()));
+    QCOMPARE(m_calendar->incidence(event->uid())->revision(), event->revision());
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));
