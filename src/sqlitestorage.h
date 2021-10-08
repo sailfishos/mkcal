@@ -41,9 +41,6 @@
 
 namespace mKCal {
 
-const int VersionMajor = 11; // Major version, if different than stored in database, open fails
-const int VersionMinor = 0; // Minor version, if different than stored in database, open warning
-
 /**
   @brief
   This class provides a calendar storage as an sqlite database.
@@ -527,8 +524,6 @@ public Q_SLOTS:
   }                                                     \
 }
 
-#define CREATE_VERSION \
-  "CREATE TABLE IF NOT EXISTS Version(Major INTEGER, Minor INTEGER)"
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
@@ -584,8 +579,6 @@ public Q_SLOTS:
 #define INDEX_CALENDARPROPERTIES \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDARPROPERTIES on Calendarproperties(CalendarId)"
 
-#define INSERT_VERSION \
-"insert into Version values (?, ?)"
 #define INSERT_TIMEZONES \
 "insert into Timezones values (1, '')"
 #define INSERT_CALENDARS \
@@ -642,8 +635,6 @@ public Q_SLOTS:
 #define DELETE_ATTACHMENTS \
 "delete from Attachments where ComponentId=?"
 
-#define SELECT_VERSION \
-"select * from Version"
 #define SELECT_TIMEZONES \
 "select * from Timezones where TzId=1"
 #define SELECT_CALENDARS_ALL \
