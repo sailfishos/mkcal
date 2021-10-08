@@ -56,7 +56,37 @@ using namespace std;
 
 using namespace mKCal;
 
-const QString gChanged(QLatin1String(".changed"));
+static const QString gChanged(QLatin1String(".changed"));
+
+static const char *createStatements[] =
+{
+    CREATE_TIMEZONES,
+    // Create a global empty entry.
+    INSERT_TIMEZONES,
+    CREATE_CALENDARS,
+    CREATE_COMPONENTS,
+    CREATE_RDATES,
+    CREATE_CUSTOMPROPERTIES,
+    CREATE_RECURSIVE,
+    CREATE_ALARM,
+    CREATE_ATTENDEE,
+    CREATE_ATTACHMENTS,
+    CREATE_CALENDARPROPERTIES,
+    /* Create index on frequently used columns */
+    INDEX_CALENDAR,
+    INDEX_COMPONENT,
+    INDEX_COMPONENT_UID,
+    INDEX_COMPONENT_NOTEBOOK,
+    INDEX_RDATES,
+    INDEX_CUSTOMPROPERTIES,
+    INDEX_RECURSIVE,
+    INDEX_ALARM,
+    INDEX_ATTENDEE,
+    INDEX_ATTACHMENTS,
+    INDEX_CALENDARPROPERTIES,
+    "PRAGMA foreign_keys = ON"
+};
+
 /**
   Private class that helps to provide binary compatibility between releases.
   @internal
@@ -186,76 +216,10 @@ bool SqliteStorage::open()
     // Set one and half second busy timeout for waiting for internal sqlite locks
     sqlite3_busy_timeout(d->mDatabase, 1500);
 
-    /* Create Calendars, Components, etc. tables */
-    query = CREATE_TIMEZONES;
-    SL3_exec(d->mDatabase);
-    // Create a global empty entry.
-    query = INSERT_TIMEZONES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CALENDARS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_COMPONENTS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_RDATES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CUSTOMPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_RECURSIVE;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ALARM;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ATTENDEE;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ATTACHMENTS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CALENDARPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    /* Create index on frequently used columns */
-    query = INDEX_CALENDAR;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT_UID;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT_NOTEBOOK;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_RDATES;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_CUSTOMPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_RECURSIVE;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ALARM;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ATTENDEE;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ATTACHMENTS;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_CALENDARPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = "PRAGMA foreign_keys = ON";
-    SL3_exec(d->mDatabase);
+    for (unsigned int i = 0; i < (sizeof(createStatements)/sizeof(createStatements[0])); i++) {
+         query = createStatements[i];
+         SL3_exec(d->mDatabase);
+    }
 
     if (!d->mChanged.open(QIODevice::Append)) {
         qCWarning(lcMkcal) << "cannot open changed file for" << d->mDatabaseName;
