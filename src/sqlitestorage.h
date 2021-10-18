@@ -41,9 +41,6 @@
 
 namespace mKCal {
 
-const int VersionMajor = 11; // Major version, if different than stored in database, open fails
-const int VersionMinor = 0; // Minor version, if different than stored in database, open warning
-
 /**
   @brief
   This class provides a calendar storage as an sqlite database.
@@ -527,8 +524,6 @@ public Q_SLOTS:
   }                                                     \
 }
 
-#define CREATE_VERSION \
-  "CREATE TABLE IF NOT EXISTS Version(Major INTEGER, Minor INTEGER)"
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
@@ -561,8 +556,6 @@ public Q_SLOTS:
 
 #define INDEX_CALENDAR \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDAR on Calendars(CalendarId)"
-#define INDEX_INVITATION \
-"CREATE INDEX IF NOT EXISTS IDX_INVITATION on Invitations(InvitationId)"
 #define INDEX_COMPONENT \
 "CREATE INDEX IF NOT EXISTS IDX_COMPONENT on Components(ComponentId, Notebook, DateStart, DateEndDue, DateDeleted)"
 #define INDEX_COMPONENT_UID \
@@ -584,14 +577,10 @@ public Q_SLOTS:
 #define INDEX_CALENDARPROPERTIES \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDARPROPERTIES on Calendarproperties(CalendarId)"
 
-#define INSERT_VERSION \
-"insert into Version values (?, ?)"
 #define INSERT_TIMEZONES \
 "insert into Timezones values (1, '')"
 #define INSERT_CALENDARS \
 "insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
-#define INSERT_INVITATIONS \
-"insert into Invitations values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 #define INSERT_COMPONENTS \
 "insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0)"
 #define INSERT_CUSTOMPROPERTIES \
@@ -619,12 +608,8 @@ public Q_SLOTS:
 "update Components set DateDeleted=? where ComponentId=?"
 //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
 
-#define DELETE_TIMEZONES \
-"delete from Timezones where TzId=1"
 #define DELETE_CALENDARS \
 "delete from Calendars where CalendarId=?"
-#define DELETE_INVITATIONS \
-"delete from Invitations where InvitationId=?"
 #define DELETE_COMPONENTS \
 "delete from Components where ComponentId=?"
 #define DELETE_RDATES \
@@ -642,14 +627,10 @@ public Q_SLOTS:
 #define DELETE_ATTACHMENTS \
 "delete from Attachments where ComponentId=?"
 
-#define SELECT_VERSION \
-"select * from Version"
 #define SELECT_TIMEZONES \
 "select * from Timezones where TzId=1"
 #define SELECT_CALENDARS_ALL \
 "select * from Calendars order by Name"
-#define SELECT_INVITATIONS_ALL \
-"select * from Invitations"
 #define SELECT_COMPONENTS_ALL \
 "select * from Components where DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOK \

@@ -56,7 +56,37 @@ using namespace std;
 
 using namespace mKCal;
 
-const QString gChanged(QLatin1String(".changed"));
+static const QString gChanged(QLatin1String(".changed"));
+
+static const char *createStatements[] =
+{
+    CREATE_TIMEZONES,
+    // Create a global empty entry.
+    INSERT_TIMEZONES,
+    CREATE_CALENDARS,
+    CREATE_COMPONENTS,
+    CREATE_RDATES,
+    CREATE_CUSTOMPROPERTIES,
+    CREATE_RECURSIVE,
+    CREATE_ALARM,
+    CREATE_ATTENDEE,
+    CREATE_ATTACHMENTS,
+    CREATE_CALENDARPROPERTIES,
+    /* Create index on frequently used columns */
+    INDEX_CALENDAR,
+    INDEX_COMPONENT,
+    INDEX_COMPONENT_UID,
+    INDEX_COMPONENT_NOTEBOOK,
+    INDEX_RDATES,
+    INDEX_CUSTOMPROPERTIES,
+    INDEX_RECURSIVE,
+    INDEX_ALARM,
+    INDEX_ATTENDEE,
+    INDEX_ATTACHMENTS,
+    INDEX_CALENDARPROPERTIES,
+    "PRAGMA foreign_keys = ON"
+};
+
 /**
   Private class that helps to provide binary compatibility between releases.
   @internal
@@ -129,7 +159,6 @@ public:
                           DBOperation dbop, const QDateTime &after,
                           const QString &notebookUid, const QString &summary = QString());
     int selectCount(const char *query, int qsize);
-    bool checkVersion();
     bool saveTimezones();
     bool loadTimezones();
 };
@@ -187,79 +216,10 @@ bool SqliteStorage::open()
     // Set one and half second busy timeout for waiting for internal sqlite locks
     sqlite3_busy_timeout(d->mDatabase, 1500);
 
-    /* Create Calendars, Components, etc. tables */
-    query = CREATE_VERSION;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_TIMEZONES;
-    SL3_exec(d->mDatabase);
-    // Create a global empty entry.
-    query = INSERT_TIMEZONES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CALENDARS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_COMPONENTS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_RDATES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CUSTOMPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_RECURSIVE;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ALARM;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ATTENDEE;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_ATTACHMENTS;
-    SL3_exec(d->mDatabase);
-
-    query = CREATE_CALENDARPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    /* Create index on frequently used columns */
-    query = INDEX_CALENDAR;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT_UID;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_COMPONENT_NOTEBOOK;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_RDATES;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_CUSTOMPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_RECURSIVE;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ALARM;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ATTENDEE;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_ATTACHMENTS;
-    SL3_exec(d->mDatabase);
-
-    query = INDEX_CALENDARPROPERTIES;
-    SL3_exec(d->mDatabase);
-
-    query = "PRAGMA foreign_keys = ON";
-    SL3_exec(d->mDatabase);
+    for (unsigned int i = 0; i < (sizeof(createStatements)/sizeof(createStatements[0])); i++) {
+         query = createStatements[i];
+         SL3_exec(d->mDatabase);
+    }
 
     if (!d->mChanged.open(QIODevice::Append)) {
         qCWarning(lcMkcal) << "cannot open changed file for" << d->mDatabaseName;
@@ -272,10 +232,6 @@ bool SqliteStorage::open()
             this, SLOT(fileChanged(const QString &)));
 
     d->mFormat = new SqliteFormat(this, d->mDatabase);
-
-    if (!d->checkVersion()) {
-        goto error;
-    }
 
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
@@ -2404,55 +2360,6 @@ error:
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
-    return false;
-}
-
-bool SqliteStorage::Private::checkVersion()
-{
-    int rv = 0;
-    int index = 1;
-    bool success = false;
-    sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
-    const char *query = SELECT_VERSION;
-    int qsize = sizeof(SELECT_VERSION);
-    int major = 0;
-    int minor = 0;
-
-    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-    SL3_step(stmt);
-    if (rv == SQLITE_ROW) {
-        major = sqlite3_column_int(stmt, 0);
-        minor = sqlite3_column_int(stmt, 1);
-    }
-    sqlite3_reset(stmt);
-    sqlite3_finalize(stmt);
-
-    if (major == 0) {
-        major = VersionMajor;
-        minor = VersionMinor;
-        query = INSERT_VERSION;
-        qsize = sizeof(INSERT_VERSION);
-        SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-        SL3_bind_int(stmt, index, major);
-        SL3_bind_int(stmt, index, minor);
-        SL3_step(stmt);
-        qCDebug(lcMkcal) << "inserting version" << major << "." << minor << "in database";
-        sqlite3_reset(stmt);
-        sqlite3_finalize(stmt);
-    }
-
-    if (major != VersionMajor) {
-        qCWarning(lcMkcal) << "database major version changed, new database has to be created";
-    } else {
-        success = true;
-        if (minor != VersionMinor) {
-            qCWarning(lcMkcal) << "database version changed";
-        }
-    }
-    return success;
-
-error:
     return false;
 }
 
