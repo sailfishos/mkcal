@@ -4,7 +4,7 @@ Summary:    Extended KDE kcal calendar library port for Maemo
 Version:    0.5.45
 Release:    1
 License:    LGPLv2+
-URL:        https://github.com/mer-packages/mkcal
+URL:        https://github.com/sailfishos/mkcal
 Source0:    %{name}-%{version}.tar.bz2
 Source1:    %{name}.privileges
 Requires(post): /sbin/ldconfig
@@ -61,6 +61,7 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE.LGPL2
 %{_libdir}/lib%{name}.so.*
 %{_libdir}/mkcalplugins/*.so
 %{_bindir}/mkcaltool
