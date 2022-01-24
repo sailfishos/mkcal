@@ -134,7 +134,6 @@ public:
     QMultiHash<QString, Incidence::Ptr> mIncidencesToInsert;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
-    QHash<QString, QString> mUidMappings;
     bool mIsLoading;
     bool mIsOpened;
     bool mIsSaved;
@@ -1448,16 +1447,8 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
             incidence->setUid(suuid.mid(1, suuid.length() - 2));
         }
 
-        if (d->mUidMappings.contains(uid)) {
-            incidence->setUid(d->mUidMappings.value(incidence->uid()));
-            qCDebug(lcMkcal) << "mapping" << uid << "to" << incidence->uid();
-        }
-
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
         d->mIncidencesToInsert.insert(incidence->uid(), incidence);
-//    if ( !uid.isEmpty() ) {
-//      d->mUidMappings.insert( uid, incidence->uid() );
-//    }
     }
 }
 
@@ -1468,7 +1459,6 @@ void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
             !d->mIsLoading) {
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database update";
         d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
-        d->mUidMappings.insert(incidence->uid(), incidence->uid());
     }
 }
 
