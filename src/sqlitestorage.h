@@ -524,6 +524,15 @@ public Q_SLOTS:
   }                                                     \
 }
 
+#define SL3_reset( stmt )                               \
+{                                                       \
+  rv = sqlite3_reset( (stmt) );                         \
+  if ( rv && rv != SQLITE_OK ) {                        \
+    qCWarning(lcMkcal) << "sqlite3_reset error:" << rv; \
+    goto error;                                         \
+  }                                                     \
+}
+
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
