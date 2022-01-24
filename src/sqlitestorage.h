@@ -427,8 +427,6 @@ private:
 
 public Q_SLOTS:
     void fileChanged(const QString &path);
-
-    void queryFinished();
 };
 
 #define SL3_exec( db )                                        \
