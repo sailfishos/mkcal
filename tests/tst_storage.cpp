@@ -121,6 +121,7 @@ void tst_storage::tst_allday_data()
 
     // DST changes according to finnish timezone
     // normal 1 day events
+    QTest::newRow("out of range") << QDate(2011, 10, 10) << 0;
     QTest::newRow("normal") << QDate(2013, 10, 10) << 0;
     QTest::newRow("to non-DST") << QDate(2013, 10, 27) << 0;
     QTest::newRow("to DST") << QDate(2013, 3, 31) << 0;
@@ -160,25 +161,30 @@ void tst_storage::tst_allday()
     m_calendar->addEvent(event, NotebookId);
     m_storage->save();
     QString uid = event->uid();
-    reloadDb(QDate(2012, 1, 1), QDate(2014, 1, 1));
+    const QDate from(2012, 1, 1);
+    reloadDb(from, QDate(2014, 1, 1));
 
     auto fetchedEvent = m_calendar->event(uid);
-    QVERIFY(fetchedEvent.data());
-    QCOMPARE(fetchedEvent->allDay(), true);
-    QCOMPARE(fetchedEvent->dtStart().date(), startDate);
-    QTime time = fetchedEvent->dtStart().time();
-    QVERIFY(time == QTime() || time == QTime(0, 0));
+    if (startDate >= from) {
+        QVERIFY(fetchedEvent.data());
+        QCOMPARE(fetchedEvent->allDay(), true);
+        QCOMPARE(fetchedEvent->dtStart().date(), startDate);
+        QTime time = fetchedEvent->dtStart().time();
+        QVERIFY(time == QTime() || time == QTime(0, 0));
 
-    QTime localTime = fetchedEvent->dtStart().toTimeSpec(Qt::LocalTime).time();
-    QVERIFY(localTime == QTime() || localTime == QTime(0, 0));
+        QTime localTime = fetchedEvent->dtStart().toTimeSpec(Qt::LocalTime).time();
+        QVERIFY(localTime == QTime() || localTime == QTime(0, 0));
 
-    if (days) {
-        QCOMPARE(fetchedEvent->dateEnd(), startDate.addDays(days));
-        QCOMPARE(fetchedEvent->hasEndDate(), true);
-        QVERIFY(event->dateEnd() > event->dtStart().date());
+        if (days) {
+            QCOMPARE(fetchedEvent->dateEnd(), startDate.addDays(days));
+            QCOMPARE(fetchedEvent->hasEndDate(), true);
+            QVERIFY(event->dateEnd() > event->dtStart().date());
+        } else {
+            QCOMPARE(fetchedEvent->dateEnd(), startDate);
+            QCOMPARE(fetchedEvent->hasEndDate(), false);
+        }
     } else {
-        QCOMPARE(fetchedEvent->dateEnd(), startDate);
-        QCOMPARE(fetchedEvent->hasEndDate(), false);
+        QVERIFY(fetchedEvent.isNull());
     }
 }
 
