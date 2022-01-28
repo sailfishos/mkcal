@@ -376,7 +376,7 @@ public:
       @copydoc
       CalStorage::close()
     */
-    virtual bool close() = 0;
+    virtual bool close();
 
     // Internal Calendar Listener Methods //
 

@@ -1793,7 +1793,7 @@ bool SqliteStorage::close()
         d->mDatabase = 0;
         d->mIsOpened = false;
     }
-    return true;
+    return ExtendedStorage::close();
 }
 
 void SqliteStorage::calendarModified(bool modified, Calendar *calendar)
