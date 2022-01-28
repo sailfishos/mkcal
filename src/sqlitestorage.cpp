@@ -317,7 +317,11 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
         u = uid.toUtf8();
         SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
         if (recurrenceId.isValid()) {
-            secsRecurId = toOriginTime(recurrenceId);
+            if (recurrenceId.timeSpec() == Qt::LocalTime) {
+                secsRecurId = toLocalOriginTime(recurrenceId);
+            } else {
+                secsRecurId = toOriginTime(recurrenceId);
+            }
             SL3_bind_int64(stmt1, index, secsRecurId);
         } else {
             // no recurrenceId, bind NULL
@@ -2165,7 +2169,12 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     u = incidence->uid().toUtf8();
     SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
     if (incidence->hasRecurrenceId()) {
-        qint64 secsRecurId = toOriginTime(incidence->recurrenceId());
+        qint64 secsRecurId;
+        if (incidence->recurrenceId().timeSpec() == Qt::LocalTime) {
+            secsRecurId = toLocalOriginTime(incidence->recurrenceId());
+        } else {
+            secsRecurId = toOriginTime(incidence->recurrenceId());
+        }
         SL3_bind_int64(stmt, index, secsRecurId);
     } else {
         SL3_bind_int64(stmt, index, 0);

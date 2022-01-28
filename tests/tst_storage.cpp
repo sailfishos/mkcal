@@ -393,7 +393,10 @@ void tst_storage::tst_recurrenceExpansion()
     QFETCH(QStringList, expectedEvents);
 
     const QByteArray TZenv(qgetenv("TZ"));
-    qputenv("TZ", expansionTimeZone);
+    // Ensure testing of the creation of the event
+    // is done in a timezone different from the event
+    // time zone and from the expansionTimeZone.
+    qputenv("TZ", "UTC");
 
     // Create an event which occurs every weekday of every week,
     // starting from Friday the 8th of November, from 2 am until 3 am.
@@ -443,6 +446,7 @@ void tst_storage::tst_recurrenceExpansion()
 
     m_storage->save();
     const QString uid = event->uid();
+    qputenv("TZ", expansionTimeZone);
     reloadDb();
 
     auto fetchEvent = m_calendar->event(uid);

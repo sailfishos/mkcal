@@ -173,8 +173,13 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &i
     int rv;
     int index = 1;
     const QByteArray u(incidence->uid().toUtf8());
-    qint64 secsRecurId = incidence->hasRecurrenceId()
-        ? d->mStorage->toOriginTime(incidence->recurrenceId()) : 0;
+    qint64 secsRecurId = 0;
+
+    if (incidence->hasRecurrenceId() && incidence->recurrenceId().timeSpec() == Qt::LocalTime) {
+        secsRecurId = d->mStorage->toLocalOriginTime(incidence->recurrenceId());
+    } else if (incidence->hasRecurrenceId()) {
+        secsRecurId = d->mStorage->toOriginTime(incidence->recurrenceId());
+    }
 
     SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
     SL3_bind_int64(stmt1, index, secsRecurId);
@@ -223,13 +228,14 @@ static bool setDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int &index, 
     QByteArray tz;
 
     if (dateTime.isValid()) {
-        secs = storage->toOriginTime(dateTime);
+        secs = (dateTime.timeSpec() == Qt::LocalTime || allDay)
+            ? storage->toLocalOriginTime(dateTime) : storage->toOriginTime(dateTime);
         SL3_bind_int64(stmt, index, secs);
         secs = storage->toLocalOriginTime(dateTime);
         SL3_bind_int64(stmt, index, secs);
         if (allDay) {
             tz = FLOATING_DATE;
-        } else {
+        } else if (dateTime.timeSpec() != Qt::LocalTime) {
             tz = dateTime.timeZone().id();
         }
         SL3_bind_text(stmt, index, tz.constData(), tz.length(), SQLITE_TRANSIENT);
@@ -1208,8 +1214,8 @@ static QDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
         date = sqlite3_column_int64(stmt, index + 1);
         if (date || sqlite3_column_int64(stmt, index)) {
             dateTime = storage->fromOriginTime(date);
+            dateTime.setTimeSpec(Qt::LocalTime);
         }
-        dateTime.setTimeSpec(Qt::LocalTime);
         if (isDate) {
             // This is a workaround, for wrongly stored date
             // as a date and time and not as a floating date.
@@ -1504,7 +1510,11 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     u = incidence->uid().toUtf8();
     SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
     if (incidence->recurrenceId().isValid()) {
-        secsRecurId = mStorage->toOriginTime(incidence->recurrenceId());
+        if (incidence->recurrenceId().timeSpec() == Qt::LocalTime) {
+            secsRecurId = mStorage->toLocalOriginTime(incidence->recurrenceId());
+        } else {
+            secsRecurId = mStorage->toOriginTime(incidence->recurrenceId());
+        }
         SL3_bind_int64(stmt, index, secsRecurId);
     } else {
         SL3_bind_int64(stmt, index, 0);
