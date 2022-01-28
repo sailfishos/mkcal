@@ -1472,16 +1472,16 @@ void tst_storage::tst_icalAllDay_data()
         << QStringLiteral("14B902BC-8D24-4A97-8541-63DF7FD41A70")
         << QStringLiteral("BEGIN:VEVENT\n"
                           "DTSTART:20190607T000000\n"
-                          "DTEND:20190607T000000\n"
+                          "DTEND:20190608T000000\n"
                           "UID:14B902BC-8D24-4A97-8541-63DF7FD41A70\n"
                           "SUMMARY:Test03\n"
                           "END:VEVENT")
-        << true;
+        << false;
     QTest::newRow("UTC")
         << QStringLiteral("14B902BC-8D24-4A97-8541-63DF7FD41A71")
         << QStringLiteral("BEGIN:VEVENT\n"
                           "DTSTART:20190607T000000Z\n"
-                          "DTEND:20190607T000000Z\n"
+                          "DTEND:20190608T000000Z\n"
                           "UID:14B902BC-8D24-4A97-8541-63DF7FD41A71\n"
                           "SUMMARY:Test03\n"
                           "END:VEVENT")
@@ -1491,11 +1491,11 @@ void tst_storage::tst_icalAllDay_data()
         << QStringLiteral("14B902BC-8D24-4A97-8541-63DF7FD41A72")
         << QStringLiteral("BEGIN:VEVENT\n"
                           "DTSTART;TZID=%1:20190607T000000\n"
-                          "DTEND;TZID=%1:20190607T000000\n"
+                          "DTEND;TZID=%1:20190608T000000\n"
                           "UID:14B902BC-8D24-4A97-8541-63DF7FD41A72\n"
                           "SUMMARY:Test03\n"
                           "END:VEVENT").arg(zid)
-        << false; // TODO: FIXME: MR#17 addresses this issue.
+        << false;
     QTest::newRow("floating date")
         << QStringLiteral("14B902BC-8D24-4A97-8541-63DF7FD41A73")
         << QStringLiteral("BEGIN:VEVENT\n"
@@ -1521,6 +1521,7 @@ void tst_storage::tst_icalAllDay()
     QVERIFY(format.fromString(m_calendar, icsData));
     KCalendarCore::Event::Ptr event = m_calendar->event(uid);
     QVERIFY(event);
+    QCOMPARE(event->allDay(), allDay);
 
     m_storage->save();
     reloadDb();

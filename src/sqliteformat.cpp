@@ -1217,13 +1217,7 @@ static QDateTime getDateTime(SqliteStorage *storage, sqlite3_stmt *stmt, int ind
             dateTime.setTimeSpec(Qt::LocalTime);
         }
         if (isDate) {
-            // This is a workaround, for wrongly stored date
-            // as a date and time and not as a floating date.
-            QTime localTime(dateTime.time());
-            *isDate = dateTime.isValid() &&
-                localTime.hour() == 0 &&
-                localTime.minute() == 0 &&
-                localTime.second() == 0;
+            *isDate = false;
         }
     } else if (timezone == QStringLiteral(FLOATING_DATE)) {
         date = sqlite3_column_int64(stmt, index + 1);
