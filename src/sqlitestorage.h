@@ -654,7 +654,7 @@ public Q_SLOTS:
 #define SELECT_COMPONENTS_BY_ATTENDEE \
 "select * from components where ComponentId in (select DISTINCT ComponentId from attendee) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_BOTH \
-"select * from Components where DateStart<=? and (DateEndDue>=? or DateEndDue=0) and DateDeleted=0"
+"select * from Components where DateStart<=? and (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_START \
 "select * from Components where DateEndDue>=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_END \
