@@ -427,8 +427,6 @@ private:
 
 public Q_SLOTS:
     void fileChanged(const QString &path);
-
-    void queryFinished();
 };
 
 #define SL3_exec( db )                                        \
@@ -520,6 +518,15 @@ public Q_SLOTS:
     if ( rv != SQLITE_CONSTRAINT ) {                    \
       qCWarning(lcMkcal) << "sqlite3_step error:" << rv;          \
     }                                                   \
+    goto error;                                         \
+  }                                                     \
+}
+
+#define SL3_reset( stmt )                               \
+{                                                       \
+  rv = sqlite3_reset( (stmt) );                         \
+  if ( rv && rv != SQLITE_OK ) {                        \
+    qCWarning(lcMkcal) << "sqlite3_reset error:" << rv; \
     goto error;                                         \
   }                                                     \
 }

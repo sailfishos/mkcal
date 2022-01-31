@@ -134,7 +134,6 @@ public:
     QMultiHash<QString, Incidence::Ptr> mIncidencesToInsert;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
-    QHash<QString, QString> mUidMappings;
     bool mIsLoading;
     bool mIsOpened;
     bool mIsSaved;
@@ -146,14 +145,7 @@ public:
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
-    bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
-                        const char *query1, int qsize1, const char *query2, int qsize2,
-                        const char *query3, int qsize3, const char *query4, int qsize4,
-                        const char *query5, int qsize5,  const char *query6, int qsize6,
-                        const char *query7, int qsize7, const char *query8, int qsize8,
-                        const char *query9, int qsize9, const char *query10, int qsize10,
-                        const char *query11, int qsize11, const char *query12, int qsize12,
-                        const char *query13, int qsize13);
+    bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop);
     bool selectIncidences(Incidence::List *list,
                           const char *query1, int qsize1,
                           DBOperation dbop, const QDateTime &after,
@@ -1062,22 +1054,8 @@ Person::List SqliteStorage::loadContacts()
         return list;
     }
 
-    int rv = 0;
     d->mIsLoading = true;
-
-    const char *query1 = NULL;
-    int qsize1 = 0;
-
-    sqlite3_stmt *stmt1 = NULL;
-
-    query1 = SELECT_ATTENDEE_AND_COUNT;
-    qsize1 = sizeof(SELECT_ATTENDEE_AND_COUNT);
-
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-
-    list = d->mFormat->selectContacts(stmt1);
-
-error:
+    list = d->mFormat->selectContacts();
     d->mIsLoading = false;
 
     return list;
@@ -1183,56 +1161,17 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            bool useDate,
                                            bool ignoreEnd)
 {
-    int rv = 0;
     int count = 0;
-    sqlite3_stmt *stmt2 = NULL;
-    sqlite3_stmt *stmt3 = NULL;
-    sqlite3_stmt *stmt4 = NULL;
-    sqlite3_stmt *stmt5 = NULL;
-    sqlite3_stmt *stmt6 = NULL;
-    sqlite3_stmt *stmt7 = NULL;
     Incidence::Ptr incidence;
     QDateTime previous, date;
     QString notebookUid;
-
-    const char *query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    int qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    const char *query3 = SELECT_ATTENDEE_BY_ID;
-    int qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    const char *query4 = SELECT_ALARM_BY_ID;
-    int qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    const char *query5 = SELECT_RECURSIVE_BY_ID;
-    int qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    const char *query6 = SELECT_RDATES_BY_ID;
-    int qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    const char *query7 = SELECT_ATTACHMENTS_BY_ID;
-    int qsize7 = sizeof(SELECT_ATTACHMENTS_BY_ID);
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
         return false;
     }
 
-    SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
-    SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
-    SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
-    SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
-    SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
-    SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
-
-    while ((incidence =
-                mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, stmt7, notebookUid))) {
-        sqlite3_reset(stmt2);
-        sqlite3_reset(stmt3);
-        sqlite3_reset(stmt4);
-        sqlite3_reset(stmt5);
-        sqlite3_reset(stmt6);
-        sqlite3_reset(stmt7);
+    while ((incidence = mFormat->selectComponents(stmt1, notebookUid))) {
 
         const QDateTime endDateTime(incidence->dateTime(Incidence::RoleEnd));
         if (useDate && endDateTime.isValid()
@@ -1266,12 +1205,6 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     }
 
     sqlite3_finalize(stmt1);
-    sqlite3_finalize(stmt2);
-    sqlite3_finalize(stmt3);
-    sqlite3_finalize(stmt4);
-    sqlite3_finalize(stmt5);
-    sqlite3_finalize(stmt6);
-    sqlite3_finalize(stmt7);
 
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
@@ -1279,14 +1212,6 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     mStorage->setFinished(false, "load completed");
 
     return count;
-
-error:
-    if (!mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
-    }
-    mStorage->setFinished(true, "error loading incidences");
-
-    return -1;
 }
 //@endcond
 
@@ -1301,32 +1226,6 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
         return false;
     }
 
-    const char *query1 = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
-    int size1 = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
-    const char *query2 = DELETE_COMPONENTS;
-    int size2 = sizeof(DELETE_COMPONENTS);
-    const char *query3 = DELETE_CUSTOMPROPERTIES;
-    int size3 = sizeof(DELETE_CUSTOMPROPERTIES);
-    const char *query4 = DELETE_ALARM;
-    int size4 = sizeof(DELETE_ALARM);
-    const char *query5 = DELETE_ATTENDEE;
-    int size5 = sizeof(DELETE_ATTENDEE);
-    const char *query6 = DELETE_RECURSIVE;
-    int size6 = sizeof(DELETE_RECURSIVE);
-    const char *query7 = DELETE_RDATES;
-    int size7 = sizeof(DELETE_RDATES);
-    const char *query8 = DELETE_ATTACHMENTS;
-    int size8 = sizeof(DELETE_ATTACHMENTS);
-
-    sqlite3_stmt *stmt1 = NULL;
-    sqlite3_stmt *stmt2 = NULL;
-    sqlite3_stmt *stmt3 = NULL;
-    sqlite3_stmt *stmt4 = NULL;
-    sqlite3_stmt *stmt5 = NULL;
-    sqlite3_stmt *stmt6 = NULL;
-    sqlite3_stmt *stmt7 = NULL;
-    sqlite3_stmt *stmt8 = NULL;
-
     int rv = 0;
     unsigned int error = 1;
 
@@ -1336,32 +1235,12 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
     query = BEGIN_TRANSACTION;
     SL3_exec(d->mDatabase);
 
-    SL3_prepare_v2(d->mDatabase, query1, size1, &stmt1, NULL);
-    SL3_prepare_v2(d->mDatabase, query2, size2, &stmt2, NULL);
-    SL3_prepare_v2(d->mDatabase, query3, size3, &stmt3, NULL);
-    SL3_prepare_v2(d->mDatabase, query4, size4, &stmt4, NULL);
-    SL3_prepare_v2(d->mDatabase, query5, size5, &stmt5, NULL);
-    SL3_prepare_v2(d->mDatabase, query6, size6, &stmt6, NULL);
-    SL3_prepare_v2(d->mDatabase, query7, size7, &stmt7, NULL);
-    SL3_prepare_v2(d->mDatabase, query8, size8, &stmt8, NULL);
-
     error = 0;
     for (const KCalendarCore::Incidence::Ptr &incidence: list) {
-        if (!d->mFormat->purgeDeletedComponents(incidence,
-                                                stmt1, stmt2, stmt3, stmt4,
-                                                stmt5, stmt6, stmt7, stmt8)) {
+        if (!d->mFormat->purgeDeletedComponents(incidence)) {
             error += 1;
         }
     }
-
-    sqlite3_finalize(stmt1);
-    sqlite3_finalize(stmt2);
-    sqlite3_finalize(stmt3);
-    sqlite3_finalize(stmt4);
-    sqlite3_finalize(stmt5);
-    sqlite3_finalize(stmt6);
-    sqlite3_finalize(stmt7);
-    sqlite3_finalize(stmt8);
 
     query = COMMIT_TRANSACTION;
     SL3_exec(d->mDatabase);
@@ -1396,108 +1275,15 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     }
 
     int errors = 0;
-    const char *query1 = NULL;
-    const char *query2 = NULL;
-    const char *query3 = NULL;
-    const char *query4 = NULL;
-    const char *query5 = NULL;
-    const char *query6 = NULL;
-    const char *query7 = NULL;
-    const char *query8 = NULL;
-    const char *query9 = NULL;
-    const char *query10 = NULL;
-    const char *query11 = NULL;
-    const char *query12 = NULL;
-    const char *query13 = NULL;
-
-    int qsize1 = 0;
-    int qsize2 = 0;
-    int qsize3 = 0;
-    int qsize4 = 0;
-    int qsize5 = 0;
-    int qsize6 = 0;
-    int qsize7 = 0;
-    int qsize8 = 0;
-    int qsize9 = 0;
-    int qsize10 = 0;
-    int qsize11 = 0;
-    int qsize12 = 0;
-    int qsize13 = 0;
 
     // Incidences to insert
-    if (!d->mIncidencesToInsert.isEmpty()) {
-        query1 = INSERT_COMPONENTS;
-        qsize1 = sizeof(INSERT_COMPONENTS);
-        query2 = INSERT_CUSTOMPROPERTIES;
-        qsize2 = sizeof(INSERT_CUSTOMPROPERTIES);
-        query3 = INSERT_CUSTOMPROPERTIES;
-        qsize3 = sizeof(INSERT_CUSTOMPROPERTIES);
-        query4 = INSERT_ATTENDEE;
-        qsize4 = sizeof(INSERT_ATTENDEE);
-        query5 = INSERT_ATTENDEE;
-        qsize5 = sizeof(INSERT_ATTENDEE);
-        query6 = INSERT_ALARM;
-        qsize6 = sizeof(INSERT_ALARM);
-        query7 = INSERT_ALARM;
-        qsize7 = sizeof(INSERT_ALARM);
-        query8 = INSERT_RECURSIVE;
-        qsize8 = sizeof(INSERT_RECURSIVE);
-        query9 = INSERT_RECURSIVE;
-        qsize9 = sizeof(INSERT_RECURSIVE);
-        query10 = INSERT_RDATES;
-        qsize10 = sizeof(INSERT_RDATES);
-        query11 = INSERT_RDATES;
-        qsize11 = sizeof(INSERT_RDATES);
-        query12 = INSERT_ATTACHMENTS;
-        qsize12 = sizeof(INSERT_ATTACHMENTS);
-        query13 = INSERT_ATTACHMENTS;
-        qsize13 = sizeof(INSERT_ATTACHMENTS);
-
-        if (!d->saveIncidences(d->mIncidencesToInsert, DBInsert,
-                               query1, qsize1, query2, qsize2, query3, qsize3, query4, qsize4,
-                               query5, qsize5, query6, qsize6, query7, qsize7, query8, qsize8,
-                               query9, qsize9, query10, qsize10, query11, qsize11,
-                               query12, qsize12, query13, qsize13)) {
-            errors++;
-        }
+    if (!d->mIncidencesToInsert.isEmpty() && !d->saveIncidences(d->mIncidencesToInsert, DBInsert)) {
+        errors++;
     }
 
     // Incidences to update
-    if (!d->mIncidencesToUpdate.isEmpty()) {
-        query1 = UPDATE_COMPONENTS;
-        qsize1 = sizeof(UPDATE_COMPONENTS);
-        query2 = DELETE_CUSTOMPROPERTIES;
-        qsize2 = sizeof(DELETE_CUSTOMPROPERTIES);
-        query3 = INSERT_CUSTOMPROPERTIES;
-        qsize3 = sizeof(INSERT_CUSTOMPROPERTIES);
-        query4 = DELETE_ATTENDEE;
-        qsize4 = sizeof(DELETE_ATTENDEE);
-        query5 = INSERT_ATTENDEE;
-        qsize5 = sizeof(INSERT_ATTENDEE);
-        query6 = DELETE_ALARM;
-        qsize6 = sizeof(DELETE_ALARM);
-        query7 = INSERT_ALARM;
-        qsize7 = sizeof(INSERT_ALARM);
-        query8 = DELETE_RECURSIVE;
-        qsize8 = sizeof(DELETE_RECURSIVE);
-        query9 = INSERT_RECURSIVE;
-        qsize9 = sizeof(INSERT_RECURSIVE);
-        query10 = DELETE_RDATES;
-        qsize10 = sizeof(DELETE_RDATES);
-        query11 = INSERT_RDATES;
-        qsize11 = sizeof(INSERT_RDATES);
-        query12 = DELETE_ATTACHMENTS;
-        qsize12 = sizeof(DELETE_ATTACHMENTS);
-        query13 = INSERT_ATTACHMENTS;
-        qsize13 = sizeof(INSERT_ATTACHMENTS);
-
-        if (!d->saveIncidences(d->mIncidencesToUpdate, DBUpdate,
-                               query1, qsize1, query2, qsize2, query3, qsize3, query4, qsize4,
-                               query5, qsize5, query6, qsize6, query7, qsize7, query8, qsize8,
-                               query9, qsize9, query10, qsize10, query11, qsize11,
-                               query12, qsize12, query13, qsize13)) {
-            errors++;
-        }
+    if (!d->mIncidencesToUpdate.isEmpty() && !d->saveIncidences(d->mIncidencesToUpdate, DBUpdate)) {
+        errors++;
     }
 
     // Incidences to delete
@@ -1506,33 +1292,13 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
         switch (deleteAction) {
         case ExtendedStorage::PurgeDeleted:
             dbop = DBDelete;
-            query1 = DELETE_COMPONENTS;
-            qsize1 = sizeof(DELETE_COMPONENTS);
-            query2 = DELETE_CUSTOMPROPERTIES;
-            qsize2 = sizeof(DELETE_CUSTOMPROPERTIES);
-            query4 = DELETE_ATTENDEE;
-            qsize4 = sizeof(DELETE_ATTENDEE);
-            query6 = DELETE_ALARM;
-            qsize6 = sizeof(DELETE_ALARM);
-            query8 = DELETE_RECURSIVE;
-            qsize8 = sizeof(DELETE_RECURSIVE);
-            query10 = DELETE_RDATES;
-            qsize10 = sizeof(DELETE_RDATES);
-            query12 = DELETE_ATTACHMENTS;
-            qsize12 = sizeof(DELETE_ATTACHMENTS);
             break;
         case ExtendedStorage::MarkDeleted:
             dbop = DBMarkDeleted;
-            query1 = UPDATE_COMPONENTS_AS_DELETED;
-            qsize1 = sizeof(UPDATE_COMPONENTS_AS_DELETED);
             break;
         }
 
-        if (!d->saveIncidences(d->mIncidencesToDelete, dbop,
-                               query1, qsize1, query2, qsize2, query3, qsize3, query4, qsize4,
-                               query5, qsize5, query6, qsize6, query7, qsize7, query8, qsize8,
-                               query9, qsize9, query10, qsize10, query11, qsize11,
-                               query12, qsize12, query13, qsize13)) {
+        if (!d->saveIncidences(d->mIncidencesToDelete, dbop)) {
             errors++;
         }
     }
@@ -1554,45 +1320,10 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
 }
 
 //@cond PRIVATE
-bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list,
-                                            DBOperation dbop,
-                                            const char *query1, int qsize1,
-                                            const char *query2, int qsize2,
-                                            const char *query3, int qsize3,
-                                            const char *query4, int qsize4,
-                                            const char *query5, int qsize5,
-                                            const char *query6, int qsize6,
-                                            const char *query7, int qsize7,
-                                            const char *query8, int qsize8,
-                                            const char *query9, int qsize9,
-                                            const char *query10, int qsize10,
-                                            const char *query11, int qsize11,
-                                            const char *query12, int qsize12,
-                                            const char *query13, int qsize13)
+bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop)
 {
     int rv = 0;
     int errors = 0;
-    sqlite3_stmt *stmt1 = NULL;
-    sqlite3_stmt *stmt2 = NULL;
-    sqlite3_stmt *stmt3 = NULL;
-    sqlite3_stmt *stmt4 = NULL;
-    sqlite3_stmt *stmt5 = NULL;
-    sqlite3_stmt *stmt6 = NULL;
-    sqlite3_stmt *stmt7 = NULL;
-    sqlite3_stmt *stmt8 = NULL;
-    sqlite3_stmt *stmt9 = NULL;
-    sqlite3_stmt *stmt10 = NULL;
-    sqlite3_stmt *stmt11 = NULL;
-    sqlite3_stmt *stmt12 = NULL;
-    sqlite3_stmt *stmt13 = NULL;
-    sqlite3_stmt *stmt21 = NULL;
-    sqlite3_stmt *stmt22 = NULL;
-    sqlite3_stmt *stmt23 = NULL;
-    sqlite3_stmt *stmt24 = NULL;
-    sqlite3_stmt *stmt25 = NULL;
-    sqlite3_stmt *stmt26 = NULL;
-    sqlite3_stmt *stmt27 = NULL;
-    sqlite3_stmt *stmt28 = NULL;
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
     QHash<QString, Incidence::Ptr>::const_iterator it;
@@ -1602,71 +1333,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     query = BEGIN_TRANSACTION;
     SL3_exec(mDatabase);
-
-    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
-    if (query2) {
-        SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, NULL);
-    }
-    if (query3) {
-        SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, NULL);
-    }
-    if (query4) {
-        SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, NULL);
-    }
-    if (query5) {
-        SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, NULL);
-    }
-    if (query6) {
-        SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, NULL);
-    }
-    if (query7) {
-        SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, NULL);
-    }
-    if (query8) {
-        SL3_prepare_v2(mDatabase, query8, qsize8, &stmt8, NULL);
-    }
-    if (query9) {
-        SL3_prepare_v2(mDatabase, query9, qsize9, &stmt9, NULL);
-    }
-    if (query10) {
-        SL3_prepare_v2(mDatabase, query10, qsize10, &stmt10, NULL);
-    }
-    if (query11) {
-        SL3_prepare_v2(mDatabase, query11, qsize11, &stmt11, NULL);
-    }
-    if (query12) {
-        SL3_prepare_v2(mDatabase, query12, qsize12, &stmt12, nullptr);
-    }
-    if (query13) {
-        SL3_prepare_v2(mDatabase, query13, qsize13, &stmt13, nullptr);
-    }
-    if (dbop == DBInsert) {
-        const char *q1 = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
-        int s1 = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
-        const char *q2 = DELETE_COMPONENTS;
-        int s2 = sizeof(DELETE_COMPONENTS);
-        const char *q3 = DELETE_CUSTOMPROPERTIES;
-        int s3 = sizeof(DELETE_CUSTOMPROPERTIES);
-        const char *q4 = DELETE_ALARM;
-        int s4 = sizeof(DELETE_ALARM);
-        const char *q5 = DELETE_ATTENDEE;
-        int s5 = sizeof(DELETE_ATTENDEE);
-        const char *q6 = DELETE_RECURSIVE;
-        int s6 = sizeof(DELETE_RECURSIVE);
-        const char *q7 = DELETE_RDATES;
-        int s7 = sizeof(DELETE_RDATES);
-        const char *q8 = DELETE_ATTACHMENTS;
-        int s8 = sizeof(DELETE_ATTACHMENTS);
-
-        SL3_prepare_v2(mDatabase, q1, s1, &stmt21, NULL);
-        SL3_prepare_v2(mDatabase, q2, s2, &stmt22, NULL);
-        SL3_prepare_v2(mDatabase, q3, s3, &stmt23, NULL);
-        SL3_prepare_v2(mDatabase, q4, s4, &stmt24, NULL);
-        SL3_prepare_v2(mDatabase, q5, s5, &stmt25, NULL);
-        SL3_prepare_v2(mDatabase, q6, s6, &stmt26, NULL);
-        SL3_prepare_v2(mDatabase, q7, s7, &stmt27, NULL);
-        SL3_prepare_v2(mDatabase, q8, s8, &stmt28, NULL);
-    }
 
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
         QString notebookUid = mCalendar->notebook(*it);
@@ -1687,44 +1353,15 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
             (*it)->setLastModified(QDateTime::currentDateTimeUtc());
         }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
-        if (!mFormat->modifyComponents(*it, notebookUid, dbop, stmt1, stmt2, stmt3, stmt4,
-                                       stmt5, stmt6, stmt7, stmt8, stmt9, stmt10, stmt11, stmt12, stmt13)) {
+        if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
         } else  if (dbop == DBInsert) {
             // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it,
-                                                 stmt21, stmt22, stmt23, stmt24,
-                                                 stmt25, stmt26, stmt27, stmt28)) {
+            if (!mFormat->purgeDeletedComponents(*it)) {
                 qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
                 errors += 1;
             }
-        }
-
-        sqlite3_reset(stmt1);
-        sqlite3_reset(stmt2);
-        if (stmt3) {
-            sqlite3_reset(stmt3);
-        }
-        sqlite3_reset(stmt4);
-        if (stmt5) {
-            sqlite3_reset(stmt5);
-        }
-        sqlite3_reset(stmt6);
-        if (stmt7) {
-            sqlite3_reset(stmt7);
-        }
-        sqlite3_reset(stmt8);
-        if (stmt9) {
-            sqlite3_reset(stmt9);
-        }
-        sqlite3_reset(stmt10);
-        if (stmt11) {
-            sqlite3_reset(stmt11);
-        }
-        sqlite3_reset(stmt12);
-        if (stmt13) {
-            sqlite3_reset(stmt13);
         }
     }
 
@@ -1738,31 +1375,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     list.clear();
     // TODO What if there were errors? Options: 1) rollback 2) best effort.
-
-    sqlite3_finalize(stmt1);
-    sqlite3_finalize(stmt2);
-    sqlite3_finalize(stmt3);
-    sqlite3_finalize(stmt4);
-    sqlite3_finalize(stmt5);
-    sqlite3_finalize(stmt6);
-    sqlite3_finalize(stmt7);
-    sqlite3_finalize(stmt8);
-    sqlite3_finalize(stmt9);
-    sqlite3_finalize(stmt10);
-    sqlite3_finalize(stmt11);
-    sqlite3_finalize(stmt12);
-    sqlite3_finalize(stmt13);
-
-    if (dbop == DBInsert) {
-        sqlite3_finalize(stmt21);
-        sqlite3_finalize(stmt22);
-        sqlite3_finalize(stmt23);
-        sqlite3_finalize(stmt24);
-        sqlite3_finalize(stmt25);
-        sqlite3_finalize(stmt26);
-        sqlite3_finalize(stmt27);
-        sqlite3_finalize(stmt28);
-    }
 
     query = COMMIT_TRANSACTION;
     SL3_exec(mDatabase);
@@ -1835,16 +1447,8 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
             incidence->setUid(suuid.mid(1, suuid.length() - 2));
         }
 
-        if (d->mUidMappings.contains(uid)) {
-            incidence->setUid(d->mUidMappings.value(incidence->uid()));
-            qCDebug(lcMkcal) << "mapping" << uid << "to" << incidence->uid();
-        }
-
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
         d->mIncidencesToInsert.insert(incidence->uid(), incidence);
-//    if ( !uid.isEmpty() ) {
-//      d->mUidMappings.insert( uid, incidence->uid() );
-//    }
     }
 }
 
@@ -1855,7 +1459,6 @@ void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
             !d->mIsLoading) {
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database update";
         d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
-        d->mUidMappings.insert(incidence->uid(), incidence->uid());
     }
 }
 
@@ -1892,36 +1495,12 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
 {
     int rv = 0;
     sqlite3_stmt *stmt1 = NULL;
-    sqlite3_stmt *stmt2 = NULL;
-    sqlite3_stmt *stmt3 = NULL;
-    sqlite3_stmt *stmt4 = NULL;
-    sqlite3_stmt *stmt5 = NULL;
-    sqlite3_stmt *stmt6 = NULL;
-    sqlite3_stmt *stmt7 = NULL;
     int index;
     QByteArray n;
     QByteArray s;
     Incidence::Ptr incidence;
     sqlite3_int64 secs;
     QString nbook;
-
-    const char *query2 = SELECT_CUSTOMPROPERTIES_BY_ID;
-    int qsize2 = sizeof(SELECT_CUSTOMPROPERTIES_BY_ID);
-
-    const char *query3 = SELECT_ATTENDEE_BY_ID;
-    int qsize3 = sizeof(SELECT_ATTENDEE_BY_ID);
-
-    const char *query4 = SELECT_ALARM_BY_ID;
-    int qsize4 = sizeof(SELECT_ALARM_BY_ID);
-
-    const char *query5 = SELECT_RECURSIVE_BY_ID;
-    int qsize5 = sizeof(SELECT_RECURSIVE_BY_ID);
-
-    const char *query6 = SELECT_RDATES_BY_ID;
-    int qsize6 = sizeof(SELECT_RDATES_BY_ID);
-
-    const char *query7 = SELECT_ATTACHMENTS_BY_ID;
-    int qsize7 = sizeof(SELECT_ATTACHMENTS_BY_ID);
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
@@ -1983,32 +1562,13 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             }
         }
     }
-    SL3_prepare_v2(mDatabase, query2, qsize2, &stmt2, nullptr);
-    SL3_prepare_v2(mDatabase, query3, qsize3, &stmt3, nullptr);
-    SL3_prepare_v2(mDatabase, query4, qsize4, &stmt4, nullptr);
-    SL3_prepare_v2(mDatabase, query5, qsize5, &stmt5, nullptr);
-    SL3_prepare_v2(mDatabase, query6, qsize6, &stmt6, nullptr);
-    SL3_prepare_v2(mDatabase, query7, qsize7, &stmt7, nullptr);
 
-    while ((incidence =
-                mFormat->selectComponents(stmt1, stmt2, stmt3, stmt4, stmt5, stmt6, stmt7, nbook))) {
+    while ((incidence = mFormat->selectComponents(stmt1, nbook))) {
         qCDebug(lcMkcal) << "adding incidence" << incidence->uid() << "into list"
                  << incidence->created() << incidence->lastModified();
         list->append(incidence);
-        sqlite3_reset(stmt2);
-        sqlite3_reset(stmt3);
-        sqlite3_reset(stmt4);
-        sqlite3_reset(stmt5);
-        sqlite3_reset(stmt6);
-        sqlite3_reset(stmt7);
     }
     sqlite3_finalize(stmt1);
-    sqlite3_finalize(stmt2);
-    sqlite3_finalize(stmt3);
-    sqlite3_finalize(stmt4);
-    sqlite3_finalize(stmt5);
-    sqlite3_finalize(stmt6);
-    sqlite3_finalize(stmt7);
 
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
@@ -2553,11 +2113,6 @@ bool SqliteStorage::initializeDatabase()
         return true;
     }
     return false;
-}
-
-void SqliteStorage::queryFinished()
-{
-    sender()->deleteLater(); //Cleanup the memory
 }
 
 void SqliteStorage::virtual_hook(int id, void *data)
