@@ -118,6 +118,16 @@ ExtendedStorage::~ExtendedStorage()
     delete d;
 }
 
+bool ExtendedStorage::close()
+{
+    clearLoaded();
+
+    d->mNotebooks.clear();
+    d->mDefaultNotebook = Notebook::Ptr();
+
+    return true;
+}
+
 void ExtendedStorage::clearLoaded()
 {
     d->mStart = QDate();

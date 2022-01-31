@@ -1794,7 +1794,7 @@ bool SqliteStorage::close()
         d->mDatabase = 0;
         d->mIsOpened = false;
     }
-    return true;
+    return ExtendedStorage::close();
 }
 
 void SqliteStorage::calendarModified(bool modified, Calendar *calendar)
@@ -2149,7 +2149,11 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     QByteArray u;
     int rv = 0;
     sqlite3_int64 date;
-    QDateTime deletionDate = QDateTime();
+    QDateTime deletionDate;
+
+    if (!d->mIsOpened) {
+        return deletionDate;
+    }
 
     const char *query = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
     int qsize = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
@@ -2195,6 +2199,10 @@ int SqliteStorage::Private::selectCount(const char *query, int qsize)
     int count = 0;
     sqlite3_stmt *stmt = NULL;
     const char *tail = NULL;
+
+    if (!mIsOpened) {
+        return count;
+    }
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
@@ -2253,6 +2261,10 @@ bool SqliteStorage::loadNotebooks()
 
     Notebook::Ptr nb;
 
+    if (!d->mIsOpened) {
+        return false;
+    }
+
     if (!d->mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
@@ -2294,6 +2306,10 @@ error:
 
 bool SqliteStorage::reloadNotebooks()
 {
+    if (!d->mIsOpened) {
+        return false;
+    }
+
     Notebook::List list = notebooks();
     Notebook::List::Iterator it = list.begin();
     d->mIsLoading = true;
@@ -2315,6 +2331,10 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
     const char *tail = NULL;
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
+
+    if (!d->mIsOpened) {
+        return false;
+    }
 
     if (!d->mIsLoading) {
         // Execute database operation.
@@ -2370,6 +2390,10 @@ bool SqliteStorage::Private::saveTimezones()
     int index = 1;
     bool success = false;
 
+    if (!mIsOpened) {
+        return false;
+    }
+
     const char *query1 = UPDATE_TIMEZONES;
     int qsize1 = sizeof(UPDATE_TIMEZONES);
     sqlite3_stmt *stmt1 = NULL;
@@ -2403,6 +2427,10 @@ bool SqliteStorage::Private::loadTimezones()
 {
     int rv = 0;
     bool success = false;
+
+    if (!mIsOpened) {
+        return false;
+    }
 
     const char *query = SELECT_TIMEZONES;
     int qsize = sizeof(SELECT_TIMEZONES);
