@@ -378,7 +378,8 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb, bool signal)
         return false;
     }
 
-    if (!calendar()->addNotebook(nb->uid(), nb->isVisible())) {
+    if (!calendar()->hasValidNotebook(nb->uid())
+        && !calendar()->addNotebook(nb->uid(), nb->isVisible())) {
         qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << "to calendar";
         return false;
     }
