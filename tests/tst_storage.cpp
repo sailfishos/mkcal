@@ -2029,6 +2029,45 @@ void tst_storage::tst_populateFromIcsData()
     QCOMPARE(m_calendar->incidence(event->uid())->revision(), event->revision());
 }
 
+void tst_storage::tst_attendees()
+{
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setSummary("testing attendees.");
+    event->setDtStart(QDateTime(QDate(2022, 2, 23), QTime(14, 33)));
+
+    event->setOrganizer(KCalendarCore::Person(QString::fromLatin1("Alice"),
+                                              QString::fromLatin1("alice@example.org")));
+    event->addAttendee(KCalendarCore::Attendee(event->organizer().name(),
+                                               event->organizer().email(), true,
+                                               KCalendarCore::Attendee::Accepted,
+                                               KCalendarCore::Attendee::Chair));
+    event->addAttendee(KCalendarCore::Attendee(QString::fromLatin1("Bob"),
+                                               QString::fromLatin1("bob@example.org"),
+                                               true,
+                                               KCalendarCore::Attendee::Tentative,
+                                               KCalendarCore::Attendee::OptParticipant));
+    QVERIFY(m_calendar->addIncidence(event, NotebookId));
+    m_storage->save();
+
+    reloadDb();
+    // Organizer is in the attendee list.
+    const KCalendarCore::Incidence::Ptr fetched = m_calendar->incidence(event->uid());
+    QVERIFY(fetched);
+    QCOMPARE(fetched->organizer(), event->organizer());
+    QCOMPARE(fetched->attendees(), event->attendees());
+
+    fetched->setOrganizer(KCalendarCore::Person(QString::fromLatin1("Carl"),
+                                                QString::fromLatin1("carl@example.org")));
+    m_storage->save();
+
+    reloadDb();
+    // Organizer is not in the attendee list but mKCal is adding him.
+    const KCalendarCore::Incidence::Ptr refetched = m_calendar->incidence(event->uid());
+    QVERIFY(refetched);
+    QCOMPARE(refetched->organizer(), fetched->organizer());
+    QCOMPARE(refetched->attendees(), fetched->attendees() << KCalendarCore::Attendee(fetched->organizer().name(), fetched->organizer().email()));
+}
+
 void tst_storage::openDb(bool clear)
 {
     m_calendar = ExtendedCalendar::Ptr(new ExtendedCalendar(QTimeZone::systemTimeZone()));
