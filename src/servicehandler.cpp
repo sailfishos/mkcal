@@ -51,7 +51,10 @@ ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
 
 void ServiceHandlerPrivate::loadPlugins()
 {
-    QDir pluginsDir(QLatin1String(MKCALPLUGINDIR));
+    QString pluginPath = QLatin1String(qgetenv("MKCAL_PLUGIN_DIR"));
+    if (pluginPath.isEmpty())
+        pluginPath = QLatin1String(MKCALPLUGINDIR);
+    QDir pluginsDir(pluginPath);
     qCDebug(lcMkcal) << "LOADING !!!! Plugin directory" << pluginsDir.path();
 
     foreach (const QString &fileName, pluginsDir.entryList(QDir::Files)) {
@@ -393,19 +396,17 @@ QStringList ServiceHandler::availableServices()
 
 QString ServiceHandler::icon(QString serviceId)
 {
-    if (!d->mLoaded)
-        d->loadPlugins();
-
-    QHash<QString, ServiceInterface *>::const_iterator i = d->mServices.find(serviceId);
-
-    if (i != d->mServices.end()) {
-        return i.value()->icon();
-    } else {
-        return QString();
-    }
+    ServiceInterface *plugin = service(serviceId);
+    return plugin ? plugin->icon() : QString();
 }
 
 QString ServiceHandler::uiName(QString serviceId)
+{
+    ServiceInterface *plugin = service(serviceId);
+    return plugin ? plugin->uiName() : QString();
+}
+
+ServiceInterface* ServiceHandler::service(const QString &serviceId)
 {
     if (!d->mLoaded)
         d->loadPlugins();
@@ -413,9 +414,9 @@ QString ServiceHandler::uiName(QString serviceId)
     QHash<QString, ServiceInterface *>::const_iterator i = d->mServices.find(serviceId);
 
     if (i != d->mServices.end()) {
-        return i.value()->uiName();
+        return i.value();
     } else {
-        return QString();
+        return nullptr;
     }
 }
 
