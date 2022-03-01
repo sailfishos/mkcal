@@ -1105,11 +1105,12 @@ bool SqliteFormat::Private::insertAttachments(Incidence::Ptr incidence, int rowi
         }
         SL3_reset(mInsertIncAttachments);
         SL3_bind_int(mInsertIncAttachments, index, rowid);
+        QByteArray uri; // must remain valid instance until end of the scope
         if (it->isBinary()) {
             SL3_bind_blob(mInsertIncAttachments, index, it->decodedData().constData(), it->size(), SQLITE_STATIC);
             SL3_bind_text(mInsertIncAttachments, index, nullptr, 0, SQLITE_STATIC);
         } else if (it->isUri()) {
-            const QByteArray uri = it->uri().toUtf8();
+            uri = it->uri().toUtf8();
             SL3_bind_blob(mInsertIncAttachments, index, nullptr, 0, SQLITE_STATIC);
             SL3_bind_text(mInsertIncAttachments, index, uri.constData(), uri.length(), SQLITE_STATIC);
         } else {
