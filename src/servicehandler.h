@@ -224,13 +224,20 @@ public:
       */
     QString icon(QString serviceId);
 
-    /** \brief Get the Name tp be shown on the UI of a service based on the id of the plugin
+    /** \brief Get the Name to be shown on the UI of a service based on the id of the plugin
 
       @return Name of the service
       @see availableMulticalendarServices
 
       */
     QString uiName(QString serviceId);
+
+    /** \brief Get the plugin object providing the service.
+
+      @return the plugin object
+      @see availableMulticalendarServices
+      */
+    ServiceInterface* service(const QString &serviceId);
 
 signals:
     /** Monitors the progress of the download. The id is the return value got when download started */

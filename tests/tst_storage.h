@@ -78,6 +78,7 @@ private slots:
     void tst_addIncidence();
     void tst_attachments();
     void tst_populateFromIcsData();
+    void tst_attendees();
 
 private:
     void openDb(bool clear = false);

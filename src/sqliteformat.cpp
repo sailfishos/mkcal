@@ -1021,7 +1021,9 @@ bool SqliteFormat::Private::insertAttendees(Incidence::Ptr incidence, int rowid)
     QString organizerEmail;
     if (!incidence->organizer().isEmpty()) {
         organizerEmail = incidence->organizer().email();
-        const Attendee organizer(incidence->organizer().name(), organizerEmail);
+        Attendee organizer = incidence->attendeeByMail(organizerEmail);
+        if (organizer.isNull())
+            organizer = Attendee(incidence->organizer().name(), organizerEmail);
         if (!insertAttendee(rowid, organizer, true)) {
             qCWarning(lcMkcal) << "failed to modify organizer for incidence" << incidence->uid();
             success = false;
