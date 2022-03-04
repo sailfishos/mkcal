@@ -1376,14 +1376,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         }
     }
 
-    if (dbop == DBDelete || dbop == DBMarkDeleted) {
-        // Remove all alarms.
-        mStorage->clearAlarms(validIncidences);
-    } else {
-        // Reset all alarms.
-        mStorage->resetAlarms(validIncidences);
-    }
-
     list.clear();
     // TODO What if there were errors? Options: 1) rollback 2) best effort.
 

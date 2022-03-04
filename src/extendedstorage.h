@@ -678,16 +678,6 @@ protected:
                     const KCalendarCore::Incidence::List &modified,
                     const KCalendarCore::Incidence::List &deleted);
 
-    // These alarm methods are used to communicate with an external
-    // daemon, like timed, to bind Incidence::Alarm with the system notification.
-    void clearAlarms(const KCalendarCore::Incidence::Ptr &incidence);
-    void clearAlarms(const KCalendarCore::Incidence::List &incidences);
-    void clearAlarms(const QString &nname);
-    void setAlarms(const KCalendarCore::Incidence::Ptr &incidence);
-    void setAlarms(const KCalendarCore::Incidence::List &incidences);
-    void resetAlarms(const KCalendarCore::Incidence::List &incidences);
-    void resetAlarms(const KCalendarCore::Incidence::Ptr &incidence);
-
     bool isUncompletedTodosLoaded();
     void setIsUncompletedTodosLoaded(bool loaded);
 
