@@ -32,6 +32,7 @@
 #define MKCAL_STORAGEOBSERVER_H
 
 #include <QString>
+#include <KCalendarCore/Incidence>
 
 
 namespace mKCal {
@@ -51,7 +52,11 @@ public:
     virtual ~ExtendedStorageObserver() {};
 
     /**
-       Notify the Observer that a Storage has been modified.
+       Notify the Observer that a Storage has been modified by an external
+       process. There is no information about what has been changed.
+
+       See also storageUpdated() for a notification of modifications done
+       in-process.
 
        @param storage is a pointer to the ExtendedStorage object that
        is being observed.
@@ -79,6 +84,26 @@ public:
        @param info textual information
     */
     virtual void storageFinished(ExtendedStorage *storage, bool error, const QString &info);
+
+    /**
+       Notify the Observer that a Storage has been updated to reflect the
+       content of the associated calendar. This notification is delivered
+       because of local changes done in-process by a call to
+       ExtendedStorage::save() for instance.
+
+       See also storageModified() for a notification for modifications
+       done to the database by an external process.
+
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+       @param added is a list of newly added incidences in the storage
+       @param modified is a list of updated incidences in the storage
+       @param deleted is a list of deleted incidences from the storage
+    */
+    virtual void storageUpdated(ExtendedStorage *storage,
+                                const KCalendarCore::Incidence::List &added,
+                                const KCalendarCore::Incidence::List &modified,
+                                const KCalendarCore::Incidence::List &deleted);
 };
 
 };

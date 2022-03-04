@@ -530,6 +530,8 @@ public Q_SLOTS:
   }                                                     \
 }
 
+#define CREATE_METADATA \
+  "CREATE TABLE IF NOT EXISTS Metadata(transactionId INTEGER)"
 #define CREATE_TIMEZONES \
   "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
@@ -604,6 +606,8 @@ public Q_SLOTS:
 #define INSERT_ATTACHMENTS \
 "insert into Attachments values (?, ?, ?, ?, ?, ?, ?)"
 
+#define UPDATE_METADATA \
+"replace into Metadata (rowid, transactionId) values (1, ?)"
 #define UPDATE_TIMEZONES \
 "update Timezones set ICalData=? where TzId=1"
 #define UPDATE_CALENDARS \
@@ -633,6 +637,8 @@ public Q_SLOTS:
 #define DELETE_ATTACHMENTS \
 "delete from Attachments where ComponentId=?"
 
+#define SELECT_METADATA \
+"select * from Metadata where rowid=1"
 #define SELECT_TIMEZONES \
 "select * from Timezones where TzId=1"
 #define SELECT_CALENDARS_ALL \

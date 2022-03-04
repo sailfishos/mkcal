@@ -317,6 +317,17 @@ void ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
     Q_UNUSED(info);
 }
 
+void ExtendedStorageObserver::storageUpdated(ExtendedStorage *storage,
+                                             const KCalendarCore::Incidence::List &added,
+                                             const KCalendarCore::Incidence::List &modified,
+                                             const KCalendarCore::Incidence::List &deleted)
+{
+    Q_UNUSED(storage);
+    Q_UNUSED(added);
+    Q_UNUSED(modified);
+    Q_UNUSED(deleted);
+}
+
 void ExtendedStorage::registerObserver(ExtendedStorageObserver *observer)
 {
     if (!d->mObservers.contains(observer)) {
@@ -360,6 +371,15 @@ void ExtendedStorage::setFinished(bool error, const QString &info)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageFinished(this, error, info);
+    }
+}
+
+void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
+                                 const KCalendarCore::Incidence::List &modified,
+                                 const KCalendarCore::Incidence::List &deleted)
+{
+    foreach (ExtendedStorageObserver *observer, d->mObservers) {
+        observer->storageUpdated(this, added, modified, deleted);
     }
 }
 

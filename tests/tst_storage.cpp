@@ -21,6 +21,7 @@
 #include <QTest>
 #include <QDebug>
 #include <QTimeZone>
+#include <QSignalSpy>
 
 #include <KCalendarCore/ICalFormat>
 #include <KCalendarCore/OccurrenceIterator>
@@ -2122,5 +2123,112 @@ void tst_storage::reloadDb(const QDate &from, const QDate &to)
 
     m_storage->load(from, to);
 }
+
+class TestStorageObserver: public QObject, public ExtendedStorageObserver
+{
+    Q_OBJECT
+public:
+    TestStorageObserver(ExtendedStorage::Ptr storage): mStorage(storage)
+    {
+        mStorage->registerObserver(this);
+    }
+    ~TestStorageObserver()
+    {
+        mStorage->unregisterObserver(this);
+    }
+
+    void storageModified(ExtendedStorage *storage, const QString &info)
+    {
+        emit modified();
+    }
+
+    void storageUpdated(ExtendedStorage *storage,
+                        const KCalendarCore::Incidence::List &added,
+                        const KCalendarCore::Incidence::List &modified,
+                        const KCalendarCore::Incidence::List &deleted)
+    {
+        emit updated(added, modified, deleted);
+    }
+
+signals:
+    void modified();
+    void updated(const KCalendarCore::Incidence::List &added,
+                 const KCalendarCore::Incidence::List &modified,
+                 const KCalendarCore::Incidence::List &deleted);
+
+private:
+    ExtendedStorage::Ptr mStorage;
+};
+
+Q_DECLARE_METATYPE(KCalendarCore::Incidence::List);
+void tst_storage::tst_storageObserver()
+{
+    TestStorageObserver observer(m_storage);
+    QSignalSpy updated(&observer, &TestStorageObserver::updated);
+    QSignalSpy modified(&observer, &TestStorageObserver::modified);
+    QVERIFY(updated.isEmpty());
+    m_storage->save();
+    QCOMPARE(updated.count(), 1);
+    QList<QVariant> args = updated.takeFirst();
+    QCOMPARE(args.count(), 3);
+    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
+
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    QVERIFY(m_calendar->addIncidence(event));
+    QVERIFY(updated.isEmpty());
+    m_storage->save();
+    QCOMPARE(updated.count(), 1);
+    args = updated.takeFirst();
+    QCOMPARE(args.count(), 3);
+    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>().count(), 1);
+    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
+    event->setDtStart(QDateTime::currentDateTime());
+    QVERIFY(updated.isEmpty());
+    m_storage->save();
+    QCOMPARE(updated.count(), 1);
+    args = updated.takeFirst();
+    QCOMPARE(args.count(), 3);
+    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
+    QCOMPARE(args[1].value<KCalendarCore::Incidence::List>().count(), 1);
+    QCOMPARE(args[1].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
+    QVERIFY(m_calendar->deleteIncidence(event));
+    QVERIFY(updated.isEmpty());
+    m_storage->save();
+    QCOMPARE(updated.count(), 1);
+    args = updated.takeFirst();
+    QCOMPARE(args.count(), 3);
+    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
+    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>().count(), 1);
+    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
+    mKCal::ExtendedCalendar::Ptr calendar(new mKCal::ExtendedCalendar(QTimeZone::systemTimeZone()));
+    mKCal::ExtendedStorage::Ptr storage = mKCal::ExtendedCalendar::defaultStorage(calendar);
+    QVERIFY(storage->open());
+    KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
+    event2->setSummary(QString::fromLatin1("New event added externally"));
+    event2->setDtStart(QDateTime(QDate(2022, 3, 9), QTime(11, 46)));
+    QVERIFY(calendar->addEvent(event2));
+    QVERIFY(storage->save());
+    QVERIFY(modified.wait());
+    QVERIFY(updated.isEmpty());
+}
+
+#include "tst_storage.moc"
 
 QTEST_GUILESS_MAIN(tst_storage)

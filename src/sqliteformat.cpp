@@ -54,6 +54,8 @@ public:
     }
     ~Private()
     {
+        sqlite3_finalize(mSelectMetadata);
+        sqlite3_finalize(mUpdateMetadata);
         sqlite3_finalize(mSelectCalProps);
         sqlite3_finalize(mInsertCalProps);
         sqlite3_finalize(mSelectIncProperties);
@@ -84,6 +86,9 @@ public:
     sqlite3 *mDatabase;
 
     // Cache for various queries.
+    sqlite3_stmt *mSelectMetadata = nullptr;
+    sqlite3_stmt *mUpdateMetadata = nullptr;
+
     sqlite3_stmt *mSelectCalProps = nullptr;
     sqlite3_stmt *mInsertCalProps = nullptr;
 
@@ -116,6 +121,7 @@ public:
 
     sqlite3_stmt *mMarkDeletedIncidences = nullptr;
 
+    bool updateMetadata(int transactionId);
     bool selectCustomproperties(Incidence::Ptr &incidence, int rowid);
     int selectRowId(Incidence::Ptr incidence);
     bool selectRecursives(Incidence::Ptr &incidence, int rowid);
@@ -151,6 +157,66 @@ SqliteFormat::SqliteFormat(SqliteStorage *storage, sqlite3 *database)
 SqliteFormat::~SqliteFormat()
 {
     delete d;
+}
+
+bool SqliteFormat::selectMetadata(int *id)
+{
+    int rv = 0;
+
+    if (!id)
+        return false;
+    if (!d->mSelectMetadata) {
+        const char *query = SELECT_METADATA;
+        int qsize = sizeof(SELECT_METADATA);
+        SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectMetadata, NULL);
+    }
+    SL3_step(d->mSelectMetadata);
+    *id = (rv == SQLITE_ROW) ? sqlite3_column_int(d->mSelectMetadata, 0) : -1;
+    SL3_reset(d->mSelectMetadata);
+
+    return true;
+
+error:
+    qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(d->mDatabase);
+    return false;
+}
+
+bool SqliteFormat::incrementTransactionId(int *id)
+{
+    int savedId;
+
+    if (id)
+        *id = -1;
+    if (!selectMetadata(&savedId))
+        return false;
+    savedId += 1;
+
+    if (!d->updateMetadata(savedId))
+        return false;
+    if (id)
+        *id = savedId;
+    return true;
+}
+
+bool SqliteFormat::Private::updateMetadata(int transactionId)
+{
+    int rv = 0;
+    int index = 1;
+
+    if (!mUpdateMetadata) {
+        const char *qupdate = UPDATE_METADATA;
+        int qsize = sizeof(UPDATE_METADATA);
+        SL3_prepare_v2(mDatabase, qupdate, qsize, &mUpdateMetadata, NULL);
+    }
+    SL3_reset(mUpdateMetadata);
+    SL3_bind_int64(mUpdateMetadata, index, transactionId);
+    SL3_step(mUpdateMetadata);
+
+    return true;
+
+error:
+    qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(mDatabase);
+    return false;
 }
 
 bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,

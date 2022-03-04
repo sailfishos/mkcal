@@ -674,6 +674,9 @@ protected:
     void setModified(const QString &info);
     void setProgress(const QString &info);
     void setFinished(bool error, const QString &info);
+    void setUpdated(const KCalendarCore::Incidence::List &added,
+                    const KCalendarCore::Incidence::List &modified,
+                    const KCalendarCore::Incidence::List &deleted);
 
     // These alarm methods are used to communicate with an external
     // daemon, like timed, to bind Incidence::Alarm with the system notification.
