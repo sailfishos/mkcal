@@ -109,10 +109,8 @@ public:
 #endif
           mChanged(databaseName + gChanged),
           mWatcher(0),
-          mDatabase(0),
           mFormat(0),
           mIsLoading(false),
-          mIsOpened(false),
           mIsSaved(false)
     {}
     ~Private()
@@ -131,13 +129,12 @@ public:
     QFile mChanged;
     QFileSystemWatcher *mWatcher;
     int mSavedTransactionId;
-    sqlite3 *mDatabase;
-    SqliteFormat *mFormat;
+    sqlite3 *mDatabase = nullptr;
+    SqliteFormat *mFormat = nullptr;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToInsert;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
     bool mIsLoading;
-    bool mIsOpened;
     bool mIsSaved;
     QDateTime mOriginTime;
 
@@ -186,7 +183,7 @@ bool SqliteStorage::open()
     const char *query = NULL;
     Notebook::List list;
 
-    if (d->mIsOpened) {
+    if (d->mDatabase) {
         return false;
     }
 
@@ -199,12 +196,9 @@ bool SqliteStorage::open()
     if (rv) {
         qCWarning(lcMkcal) << "sqlite3_open error:" << rv << "on database" << d->mDatabaseName;
         qCWarning(lcMkcal) << sqlite3_errmsg(d->mDatabase);
-        sqlite3_close(d->mDatabase);
-        return false;
+        goto error;
     }
     qCDebug(lcMkcal) << "database" << d->mDatabaseName << "opened";
-
-    d->mIsOpened = true;
 
     // Set one and half second busy timeout for waiting for internal sqlite locks
     sqlite3_busy_timeout(d->mDatabase, 1500);
@@ -258,7 +252,7 @@ error:
 
 bool SqliteStorage::load()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -286,7 +280,7 @@ error:
 
 bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -334,7 +328,7 @@ error:
 
 bool SqliteStorage::loadSeries(const QString &uid)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -367,7 +361,7 @@ error:
 
 bool SqliteStorage::load(const QDate &date)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -380,7 +374,7 @@ bool SqliteStorage::load(const QDate &date)
 
 bool SqliteStorage::load(const QDate &start, const QDate &end)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -447,7 +441,7 @@ error:
 
 bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -508,7 +502,7 @@ bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
 bool SqliteStorage::loadJournals()
 {
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -536,7 +530,7 @@ error:
 
 bool SqliteStorage::loadPlainIncidences()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -564,7 +558,7 @@ error:
 
 bool SqliteStorage::loadRecurringIncidences()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -592,7 +586,7 @@ error:
 
 bool SqliteStorage::loadGeoIncidences()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -621,7 +615,7 @@ error:
 bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
                                       float diffLatitude, float diffLongitude)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -654,7 +648,7 @@ error:
 
 bool SqliteStorage::loadAttendeeIncidences()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -682,7 +676,7 @@ error:
 
 int SqliteStorage::loadUncompletedTodos()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -716,7 +710,7 @@ error:
 
 int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -773,7 +767,7 @@ error:
 }
 int SqliteStorage::loadJournals(int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last)
+    if (!d->mDatabase || !last)
         return -1;
 
     if (isJournalsLoaded())
@@ -814,7 +808,7 @@ error:
 
 int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -872,7 +866,7 @@ error:
 
 int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -915,7 +909,7 @@ error:
 
 int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -972,7 +966,7 @@ error:
 
 int SqliteStorage::loadUnreadInvitationIncidences()
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -1006,7 +1000,7 @@ error:
 
 int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -1051,7 +1045,7 @@ Person::List SqliteStorage::loadContacts()
 {
     Person::List list;
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return list;
     }
 
@@ -1064,7 +1058,7 @@ Person::List SqliteStorage::loadContacts()
 
 int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateTime *last)
 {
-    if (!d->mIsOpened || !last) {
+    if (!d->mDatabase || !last) {
         return -1;
     }
 
@@ -1218,7 +1212,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
 
 bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List &list)
 {
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -1262,7 +1256,7 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
 {
     d->mIsSaved = false;
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -1398,7 +1392,7 @@ bool SqliteStorage::cancel()
 
 bool SqliteStorage::close()
 {
-    if (d->mIsOpened) {
+    if (d->mDatabase) {
         if (d->mWatcher) {
             d->mWatcher->removePaths(d->mWatcher->files());
             // This should work, as storage should be closed before
@@ -1411,7 +1405,6 @@ bool SqliteStorage::close()
         d->mFormat = 0;
         sqlite3_close(d->mDatabase);
         d->mDatabase = 0;
-        d->mIsOpened = false;
     }
     return ExtendedStorage::close();
 }
@@ -1591,7 +1584,7 @@ error:
 bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &after,
                                        const QString &notebookUid)
 {
-    if (d->mIsOpened && list && after.isValid()) {
+    if (d->mDatabase && list && after.isValid()) {
         const char *query1 = NULL;
         int qsize1 = 0;
 
@@ -1612,7 +1605,7 @@ bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &a
 bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &after,
                                        const QString &notebookUid)
 {
-    if (d->mIsOpened && list && after.isValid()) {
+    if (d->mDatabase && list && after.isValid()) {
         const char *query1 = NULL;
         int qsize1 = 0;
 
@@ -1633,7 +1626,7 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
 bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &after,
                                       const QString &notebookUid)
 {
-    if (d->mIsOpened && list) {
+    if (d->mDatabase && list) {
         const char *query1 = NULL;
         int qsize1 = 0;
 
@@ -1663,7 +1656,7 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
 
 bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebookUid)
 {
-    if (d->mIsOpened && list) {
+    if (d->mDatabase && list) {
         const char *query1 = NULL;
         int qsize1 = 0;
 
@@ -1684,7 +1677,7 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
 bool SqliteStorage::duplicateIncidences(Incidence::List *list, const Incidence::Ptr &incidence,
                                         const QString &notebookUid)
 {
-    if (d->mIsOpened && list && incidence) {
+    if (d->mDatabase && list && incidence) {
         const char *query1 = NULL;
         int qsize1 = 0;
         QDateTime dtStart;
@@ -1718,7 +1711,7 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     sqlite3_int64 date;
     QDateTime deletionDate;
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return deletionDate;
     }
 
@@ -1772,7 +1765,7 @@ int SqliteStorage::Private::selectCount(const char *query, int qsize)
     sqlite3_stmt *stmt = NULL;
     const char *tail = NULL;
 
-    if (!mIsOpened) {
+    if (!mDatabase) {
         return count;
     }
 
@@ -1833,7 +1826,7 @@ bool SqliteStorage::loadNotebooks()
 
     Notebook::Ptr nb;
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -1887,7 +1880,7 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
 
-    if (!d->mIsOpened) {
+    if (!d->mDatabase) {
         return false;
     }
 
@@ -1951,9 +1944,8 @@ bool SqliteStorage::Private::saveTimezones()
 {
     int rv = 0;
     int index = 1;
-    bool success = false;
 
-    if (!mIsOpened) {
+    if (!mDatabase) {
         return false;
     }
 
@@ -1971,19 +1963,18 @@ bool SqliteStorage::Private::saveTimezones()
         SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
         SL3_bind_text(stmt1, index, data, data.length(), SQLITE_STATIC);
         SL3_step(stmt1);
-        success = true;
         mIsSaved = true;
         qCDebug(lcMkcal) << "updated timezones in database";
-
-error:
-        sqlite3_reset(stmt1);
         sqlite3_finalize(stmt1);
-
-    } else {
-        success = true;     //Zero TZ is not an error
     }
 
-    return success;
+    return true;
+
+ error:
+    sqlite3_finalize(stmt1);
+    qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase);
+
+    return false;
 }
 
 bool SqliteStorage::Private::loadTimezones()
@@ -1991,7 +1982,7 @@ bool SqliteStorage::Private::loadTimezones()
     int rv = 0;
     bool success = false;
 
-    if (!mIsOpened) {
+    if (!mDatabase) {
         return false;
     }
 
