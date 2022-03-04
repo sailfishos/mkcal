@@ -1392,19 +1392,6 @@ void ExtendedCalendar::storageModified(ExtendedStorage *storage, const QString &
     close();
 }
 
-void ExtendedCalendar::storageProgress(ExtendedStorage *storage, const QString &info)
-{
-    Q_UNUSED(storage);
-    Q_UNUSED(info);
-}
-
-void ExtendedCalendar::storageFinished(ExtendedStorage *storage, bool error, const QString &info)
-{
-    Q_UNUSED(storage);
-    Q_UNUSED(error);
-    Q_UNUSED(info);
-}
-
 int ExtendedCalendar::eventCount(const QString &notebookUid)
 {
     Event::List events = rawEvents();

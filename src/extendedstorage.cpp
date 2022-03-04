@@ -31,6 +31,7 @@
   @author Cornelius Schumacher \<schumacher@kde.org\>
 */
 #include "extendedstorage.h"
+#include "extendedstorageobserver.h"
 #include "logging_p.h"
 
 #include <KCalendarCore/Exceptions>
@@ -294,29 +295,27 @@ void ExtendedStorage::setIsInvitationIncidencesLoaded(bool loaded)
     d->mIsInvitationIncidencesLoaded = loaded;
 }
 
-#if 0
-void ExtendedStorage::ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
-                                                               const QString &info)
+void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
+                                              const QString &info)
 {
     Q_UNUSED(storage);
     Q_UNUSED(info);
 }
 
-void ExtendedStorage::ExtendedStorageObserver::storageProgress(ExtendedStorage *storage,
-                                                               const QString &info)
+void ExtendedStorageObserver::storageProgress(ExtendedStorage *storage,
+                                              const QString &info)
 {
     Q_UNUSED(storage);
     Q_UNUSED(info);
 }
 
-void ExtendedStorage::ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
-                                                               bool error, const QString &info)
+void ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
+                                              bool error, const QString &info)
 {
     Q_UNUSED(storage);
     Q_UNUSED(error);
     Q_UNUSED(info);
 }
-#endif
 
 void ExtendedStorage::registerObserver(ExtendedStorageObserver *observer)
 {

@@ -57,7 +57,7 @@ public:
        is being observed.
        @param info uids inserted/updated/deleted, modified file etc.
     */
-    virtual void storageModified(ExtendedStorage *storage, const QString &info) = 0;
+    virtual void storageModified(ExtendedStorage *storage, const QString &info);
 
     /**
        Notify the Observer that a Storage is executing an action.
@@ -68,7 +68,7 @@ public:
        is being observed.
        @param info textual information
     */
-    virtual void storageProgress(ExtendedStorage *storage, const QString &info) = 0;
+    virtual void storageProgress(ExtendedStorage *storage, const QString &info);
 
     /**
        Notify the Observer that a Storage has finished an action.
@@ -78,7 +78,7 @@ public:
        @param error true if action was unsuccessful; false otherwise
        @param info textual information
     */
-    virtual void storageFinished(ExtendedStorage *storage, bool error, const QString &info) = 0;
+    virtual void storageFinished(ExtendedStorage *storage, bool error, const QString &info);
 };
 
 };

@@ -748,9 +748,6 @@ protected:
        contents on the storage change.
      */
     virtual void storageModified(ExtendedStorage *storage, const QString &info);
-    virtual void storageProgress(ExtendedStorage *storage, const QString &info);
-    virtual void storageFinished(ExtendedStorage *storage, bool error, const QString &info);
-
 
 private:
     //@cond PRIVATE
