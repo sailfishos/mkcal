@@ -140,7 +140,6 @@ public:
     bool mIsOpened;
     bool mIsSaved;
     QDateTime mOriginTime;
-    QString mSparql;
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,

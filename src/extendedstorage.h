@@ -58,12 +58,6 @@ enum DBOperation {
     DBSelect
 };
 
-// Default alarm receiver is the organiser application.
-const char *const DBusService = "com.nokia.organiser";
-const char *const DBusInterface = "com.nokia.OrganiserAlarmIf";
-const char *const DBusPath = "/";
-const char *const DBusName = "alarm";
-
 /**
   @brief
   This class provides a calendar storage interface.
