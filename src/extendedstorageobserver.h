@@ -65,17 +65,6 @@ public:
     virtual void storageModified(ExtendedStorage *storage, const QString &info);
 
     /**
-       Notify the Observer that a Storage is executing an action.
-       This callback is called typically for example every time
-       an incidence has been loaded.
-
-       @param storage is a pointer to the ExtendedStorage object that
-       is being observed.
-       @param info textual information
-    */
-    virtual void storageProgress(ExtendedStorage *storage, const QString &info);
-
-    /**
        Notify the Observer that a Storage has finished an action.
 
        @param storage is a pointer to the ExtendedStorage object that

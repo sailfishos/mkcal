@@ -310,13 +310,6 @@ void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
     Q_UNUSED(info);
 }
 
-void ExtendedStorageObserver::storageProgress(ExtendedStorage *storage,
-                                              const QString &info)
-{
-    Q_UNUSED(storage);
-    Q_UNUSED(info);
-}
-
 void ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
                                               bool error, const QString &info)
 {
@@ -365,13 +358,6 @@ void ExtendedStorage::setModified(const QString &info)
 
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageModified(this, info);
-    }
-}
-
-void ExtendedStorage::setProgress(const QString &info)
-{
-    foreach (ExtendedStorageObserver *observer, d->mObservers) {
-        observer->storageProgress(this, info);
     }
 }
 

@@ -666,7 +666,6 @@ protected:
     void setLoadDates(const QDate &start, const QDate &end);
 
     void setModified(const QString &info);
-    void setProgress(const QString &info);
     void setFinished(bool error, const QString &info);
     void setUpdated(const KCalendarCore::Incidence::List &added,
                     const KCalendarCore::Incidence::List &modified,
