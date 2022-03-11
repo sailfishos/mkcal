@@ -535,13 +535,12 @@ public:
       Operation is executed immediately into storage, @see modifyNotebook().
 
       @param nb notebook
-      @param signal for modifynotebook. Default true, false only when database is initialized
       @return true if operation was successful; false otherwise.
 
       @note if the Notebook doesn't have a uid that is a valid UUID a new one will
       be generated on insertion.
     */
-    bool addNotebook(const Notebook::Ptr &nb, bool signal = true);
+    bool addNotebook(const Notebook::Ptr &nb);
 
     /**
       Update notebook parameters.
@@ -557,11 +556,9 @@ public:
       Operation is executed immediately into storage, @see modifyNotebook().
 
       @param nb notebook
-      @param onlyMemory. If true deleting notebooks only from memory but not from database.
-      Default false, true only when notebooks are reloaded from database
       @return true if delete was successful; false otherwise.
     */
-    bool deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory = false);
+    bool deleteNotebook(const Notebook::Ptr &nb);
 
     /**
       setDefaultNotebook to the storage.
