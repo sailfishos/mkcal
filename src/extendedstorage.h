@@ -43,6 +43,7 @@ class Incidence;
 }
 
 class MkcalTool;
+class tst_load;
 
 namespace mKCal {
 
@@ -132,7 +133,7 @@ public:
       Load incidences at given date into the memory.
 
       @param date date
-      @return true if the load was successful and specific date wasn't already loaded; false otherwise.
+      @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &date) = 0;
 
@@ -141,7 +142,7 @@ public:
 
       @param start is the starting date
       @param end is the ending date
-      @return true if the load was successful and specific dates wasn't already loaded; false otherwise.
+      @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &start, const QDate &end) = 0;
 
@@ -661,9 +662,11 @@ protected:
                                 bool signal = true) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
-                      QDateTime &loadStart, QDateTime &loadEnd);
+                      QDateTime *loadStart, QDateTime *loadEnd) const;
 
-    void setLoadDates(const QDate &start, const QDate &end);
+    void addLoadedRange(const QDate &start, const QDate &end) const;
+    bool isRecurrenceLoaded() const;
+    void setIsRecurrenceLoaded(bool loaded);
 
     void setModified(const QString &info);
     void setFinished(bool error, const QString &info);
@@ -710,6 +713,7 @@ private:
     //@endcond
 
     friend class ::MkcalTool;
+    friend class ::tst_load;
 };
 
 }

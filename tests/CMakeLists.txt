@@ -34,8 +34,21 @@ target_link_libraries(tst_perf
 
 add_test(tst_perf tst_perf)
 
+add_executable(tst_load tst_load.cpp)
+
+target_include_directories(tst_load PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(tst_load
+	Qt5::Test
+	KF5::CalendarCore
+	mkcal-qt5)
+
+add_test(tst_load tst_load)
+
 if(INSTALL_TESTS)
 	install(TARGETS tst_storage
+		DESTINATION /opt/tests/mkcal)
+	install(TARGETS tst_load
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_perf
 		DESTINATION /opt/tests/mkcal)

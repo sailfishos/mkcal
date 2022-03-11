@@ -52,6 +52,32 @@ static const QLatin1String RESET_ALARMS_CMD("invoker --type=generic -n /usr/bin/
 
 using namespace mKCal;
 
+struct Range
+{
+    Range(const QDate &start, const QDate &end)
+        : mStart(start), mEnd(end) { }
+
+    bool contains(const QDate &at) const
+    {
+        return at.isValid()
+            && (mStart.isNull() || at >= mStart)
+            && (mEnd.isNull() || at <= mEnd);
+    }
+
+    QDate mStart, mEnd;
+};
+
+// Range a is strictly before range b.
+bool operator<(const Range &a, const Range &b)
+{
+    return a.mEnd.isValid() && b.mStart.isValid() && a.mEnd < b.mStart;
+}
+// Date a is strictly before range b.
+bool operator<(const QDate &at, const Range &range)
+{
+    return at.isNull() || (range.mStart.isValid() && at < range.mStart);
+}
+
 /**
   Private class that helps to provide binary compatibility between releases.
   @internal
@@ -62,6 +88,7 @@ class mKCal::ExtendedStorage::Private
 public:
     Private(bool validateNotebooks)
         : mValidateNotebooks(validateNotebooks),
+          mIsRecurrenceLoaded(false),
           mIsUncompletedTodosLoaded(false),
           mIsCompletedTodosDateLoaded(false),
           mIsCompletedTodosCreatedLoaded(false),
@@ -77,8 +104,8 @@ public:
     {}
 
     bool mValidateNotebooks;
-    QDate mStart;
-    QDate mEnd;
+    QList<Range> mRanges;
+    bool mIsRecurrenceLoaded;
     bool mIsUncompletedTodosLoaded;
     bool mIsCompletedTodosDateLoaded;
     bool mIsCompletedTodosCreatedLoaded;
@@ -135,8 +162,8 @@ bool ExtendedStorage::close()
 
 void ExtendedStorage::clearLoaded()
 {
-    d->mStart = QDate();
-    d->mEnd = QDate();
+    d->mRanges.clear();
+    d->mIsRecurrenceLoaded = false;
     d->mIsUncompletedTodosLoaded = false;
     d->mIsCompletedTodosDateLoaded = false;
     d->mIsCompletedTodosCreatedLoaded = false;
@@ -151,46 +178,72 @@ void ExtendedStorage::clearLoaded()
 }
 
 bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
-                                   QDateTime &loadStart, QDateTime &loadEnd)
+                                   QDateTime *loadStart, QDateTime *loadEnd) const
 {
+    loadStart->setDate(start);   // may be null if start is not valid
+    loadEnd->setDate(end);   // may be null if end is not valid
+
     // Check the need to load from db.
-    if (start.isValid() && d->mStart.isValid() && start >= d->mStart &&
-            end.isValid() && d->mEnd.isValid() && end <= d->mEnd) {
+    for (const Range &loadedRange : d->mRanges) {
+        bool startIsIn = loadedRange.contains(loadStart->date())
+            || (loadedRange.mStart.isNull() && loadStart->date().isNull());
+        bool endIsIn = loadedRange.contains(loadEnd->date().addDays(-1))
+            || (loadedRange.mEnd.isNull() && loadEnd->date().isNull());
+        if (startIsIn && endIsIn) {
+            return false;
+        } else if (startIsIn) {
+            loadStart->setDate(loadedRange.mEnd.addDays(1));
+        } else if (endIsIn) {
+            loadEnd->setDate(loadedRange.mStart);
+        }
+    }
+    if (loadStart->isValid() && loadEnd->isValid() && *loadStart >= *loadEnd) {
         return false;
     }
 
-    // Set load dates to load only what's necessary.
-    if (start.isValid() && d->mStart.isValid() && start >= d->mStart) {
-        loadStart.setDate(d->mEnd);
-    } else {
-        loadStart.setDate(start);   // may be null if start is not valid
-    }
+    loadStart->setTimeZone(calendar()->timeZone());
+    loadEnd->setTimeZone(calendar()->timeZone());
 
-    if (end.isValid() && d->mEnd.isValid() && end <= d->mEnd) {
-        loadEnd.setDate(d->mStart);
-    } else {
-        loadEnd.setDate(end);   // may be null if end is not valid
-    }
-
-    loadStart.setTimeZone(calendar()->timeZone());
-    loadEnd.setTimeZone(calendar()->timeZone());
-
-    qCDebug(lcMkcal) << "get load dates" << start << end << loadStart << loadEnd;
+    qCDebug(lcMkcal) << "get load dates" << start << end << *loadStart << *loadEnd;
 
     return true;
 }
 
-void ExtendedStorage::setLoadDates(const QDate &start, const QDate &end)
+void ExtendedStorage::addLoadedRange(const QDate &start, const QDate &end) const
 {
-    // Set dates.
-    if (start.isValid() && (!d->mStart.isValid() || start < d->mStart)) {
-        d->mStart = start;
-    }
-    if (end.isValid() && (!d->mEnd.isValid() || end > d->mEnd)) {
-        d->mEnd = end;
-    }
+    qCDebug(lcMkcal) << "set load dates" << start << end;
 
-    qCDebug(lcMkcal) << "set load dates" << d->mStart << d->mEnd;
+    Range range(start, end.addDays(-1));
+    QList<Range>::Iterator it = d->mRanges.begin();
+    while (it != d->mRanges.end()) {
+        if (range < *it) {
+            d->mRanges.insert(it, range);
+            return;
+        } else if (it->contains(end)) {
+            if (start < *it) {
+                it->mStart = start;
+            }
+            return;
+        } else if (start < *it) {
+            it = d->mRanges.erase(it);
+        } else if (it->contains(start)) {
+            range.mStart = it->mStart;
+            it = d->mRanges.erase(it);
+        } else {
+            it++;
+        }
+    }
+    d->mRanges.append(range);
+}
+
+bool ExtendedStorage::isRecurrenceLoaded() const
+{
+    return d->mIsRecurrenceLoaded;
+}
+
+void ExtendedStorage::setIsRecurrenceLoaded(bool loaded)
+{
+    d->mIsRecurrenceLoaded = loaded;
 }
 
 bool ExtendedStorage::isUncompletedTodosLoaded()
