@@ -236,10 +236,6 @@ public:
     {
         return true;
     }
-    bool reloadNotebooks()
-    {
-        return true;
-    }
     bool modifyNotebook(const mKCal::Notebook::Ptr &, mKCal::DBOperation, bool)
     {
         return true;

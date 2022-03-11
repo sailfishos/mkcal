@@ -666,7 +666,6 @@ public:
 
 protected:
     virtual bool loadNotebooks() = 0;
-    virtual bool reloadNotebooks() = 0;
     virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop,
                                 bool signal = true) = 0;
 

@@ -336,16 +336,18 @@ void ExtendedStorage::unregisterObserver(ExtendedStorageObserver *observer)
 
 void ExtendedStorage::setModified(const QString &info)
 {
-    // Clear all smart loading variables
-    d->mStart = QDate();
-    d->mEnd = QDate();
-    d->mIsUncompletedTodosLoaded = false;
-    d->mIsCompletedTodosDateLoaded = false;
-    d->mIsCompletedTodosCreatedLoaded = false;
-    d->mIsGeoDateLoaded = false;
-    d->mIsGeoCreatedLoaded = false;
-    d->mIsUnreadIncidencesLoaded = false;
-    d->mIsInvitationIncidencesLoaded = false;
+    clearLoaded();
+    const QStringList list = d->mNotebooks.keys();
+    for (const QString &uid : list) {
+        if (!calendar()->deleteNotebook(uid)) {
+            qCDebug(lcMkcal) << "notebook" << uid << "already removed from calendar";
+        }
+    }
+    d->mNotebooks.clear();
+    d->mDefaultNotebook.clear();
+    if (!loadNotebooks()) {
+        qCWarning(lcMkcal) << "loading notebooks failed";
+    }
 
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageModified(this, info);

@@ -415,7 +415,6 @@ private:
 
 protected:
     bool loadNotebooks();
-    bool reloadNotebooks();
     bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal = true);
 
 private:
