@@ -422,6 +422,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
             SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
             secsStart = toOriginTime(loadStart);
             SL3_bind_int64(stmt1, index, secsStart);
+            SL3_bind_int64(stmt1, index, secsStart);
         } else if (loadEnd.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_END;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_END);
