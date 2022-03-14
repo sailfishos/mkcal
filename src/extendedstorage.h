@@ -130,7 +130,14 @@ public:
     virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime()) = 0;
 
     /**
-      Load incidences at given date into the memory.
+      Load incidences at given date into the memory. All incidences that
+      happens within date, or starts / ends within date or span
+      during date are loaded into memory. The time zone used to expand
+      date into points in time is the time zone of the associated calendar.
+      In addition, all recurring events are also loaded into memory since
+      there is no way to know in advance if they will have occurrences
+      intersecting date. Internally, recurring incidences and incidences of
+      date are cached to avoid loading them several times.
 
       @param date date
       @return true if the load was successful; false otherwise.
@@ -138,10 +145,12 @@ public:
     virtual bool load(const QDate &date) = 0;
 
     /**
-      Load incidences between given dates into the memory.
+      Load incidences between given dates into the memory. start is inclusive,
+      while end is exclusive. The same definitions and restrictions for loading
+      apply as for load(const QDate &) method.
 
       @param start is the starting date
-      @param end is the ending date
+      @param end is the ending date, exclusive
       @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &start, const QDate &end) = 0;
