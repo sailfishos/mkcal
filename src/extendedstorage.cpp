@@ -39,10 +39,6 @@ using namespace KCalendarCore;
 
 #include <QtCore/QUuid>
 
-#if defined(MKCAL_FOR_MEEGO)
-# include <mlocale.h>
-#endif
-
 #ifdef TIMED_SUPPORT
 # include <timed-qt5/interface.h>
 # include <timed-qt5/event-declarations.h>
@@ -336,16 +332,18 @@ void ExtendedStorage::unregisterObserver(ExtendedStorageObserver *observer)
 
 void ExtendedStorage::setModified(const QString &info)
 {
-    // Clear all smart loading variables
-    d->mStart = QDate();
-    d->mEnd = QDate();
-    d->mIsUncompletedTodosLoaded = false;
-    d->mIsCompletedTodosDateLoaded = false;
-    d->mIsCompletedTodosCreatedLoaded = false;
-    d->mIsGeoDateLoaded = false;
-    d->mIsGeoCreatedLoaded = false;
-    d->mIsUnreadIncidencesLoaded = false;
-    d->mIsInvitationIncidencesLoaded = false;
+    clearLoaded();
+    const QStringList list = d->mNotebooks.keys();
+    for (const QString &uid : list) {
+        if (!calendar()->deleteNotebook(uid)) {
+            qCDebug(lcMkcal) << "notebook" << uid << "already removed from calendar";
+        }
+    }
+    d->mNotebooks.clear();
+    d->mDefaultNotebook.clear();
+    if (!loadNotebooks()) {
+        qCWarning(lcMkcal) << "loading notebooks failed";
+    }
 
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageModified(this, info);
@@ -366,11 +364,11 @@ void ExtendedStorage::setFinished(bool error, const QString &info)
     }
 }
 
-bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb, bool signal)
+bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
 {
     if (nb->uid().length() < 7) {
         // Cannot accept this id, create better one.
-        QByteArray uid(QUuid::createUuid().toByteArray());
+        QString uid(QUuid::createUuid().toString());
         nb->setUid(uid.mid(1, uid.length() - 2));
     }
 
@@ -378,19 +376,15 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb, bool signal)
         return false;
     }
 
-    if (!calendar()->hasValidNotebook(nb->uid())
-        && !calendar()->addNotebook(nb->uid(), nb->isVisible())) {
-        qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << "to calendar";
-        return false;
-    }
-
-    if (!modifyNotebook(nb, DBInsert, signal)) {
-        if (!calendar()->deleteNotebook(nb->uid())) {
-            qCWarning(lcMkcal) << "cannot delete notebook" << nb->uid() << "from calendar";
-        }
+    if (!modifyNotebook(nb, DBInsert)) {
         return false;
     }
     d->mNotebooks.insert(nb->uid(), nb);
+
+    if (!calendar()->addNotebook(nb->uid(), nb->isVisible())
+        && !calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
+        qCWarning(lcMkcal) << "notebook" << nb->uid() << "already in calendar";
+    }
 
     return true;
 }
@@ -422,7 +416,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     return true;
 }
 
-bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory)
+bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
 {
     if (!nb || !d->mNotebooks.contains(nb->uid())) {
         return false;
@@ -433,30 +427,24 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb, bool onlyMemory)
     }
 
     // delete all notebook incidences from calendar
-    if (!onlyMemory) {
-        Incidence::List list;
-        Incidence::List::Iterator it;
-        if (allIncidences(&list, nb->uid())) {
-            qCDebug(lcMkcal) << "deleting" << list.size() << "notes of notebook" << nb->name();
-            for (it = list.begin(); it != list.end(); ++it) {
-                load((*it)->uid(), (*it)->recurrenceId());
-            }
-            for (it = list.begin(); it != list.end(); ++it) {
-                Incidence::Ptr toDelete = calendar()->incidence((*it)->uid(), (*it)->recurrenceId());
+    if (loadNotebookIncidences(nb->uid())) {
+        const Incidence::List list = calendar()->incidences(nb->uid());
+        qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();
+        for (const Incidence::Ptr &toDelete : list) {
+            if (!toDelete->hasRecurrenceId()
+                || calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
                 calendar()->deleteIncidence(toDelete);
-            }
-            if (!list.isEmpty()) {
-                save(ExtendedStorage::PurgeDeleted);
-            }
-        } else {
-            qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();
-            return false;
         }
+        if (!list.isEmpty()) {
+            save(ExtendedStorage::PurgeDeleted);
+        }
+    } else {
+        qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();
+        return false;
     }
 
     if (!calendar()->deleteNotebook(nb->uid())) {
-        qCWarning(lcMkcal) << "cannot delete notebook" << nb->uid() << "from calendar";
-        return false;
+        qCWarning(lcMkcal) << "notebook" << nb->uid() << "already deleted from calendar";
     }
 
     d->mNotebooks.remove(nb->uid());
@@ -496,11 +484,7 @@ bool ExtendedStorage::setDefaultNotebook(const Notebook::Ptr &nb)
 
 Notebook::Ptr ExtendedStorage::defaultNotebook()
 {
-    if (d->mDefaultNotebook) {
-        return d->mDefaultNotebook;
-    } else {
-        return Notebook::Ptr();
-    }
+    return d->mDefaultNotebook;
 }
 
 Notebook::List ExtendedStorage::notebooks()
@@ -510,11 +494,7 @@ Notebook::List ExtendedStorage::notebooks()
 
 Notebook::Ptr ExtendedStorage::notebook(const QString &uid)
 {
-    if (d->mNotebooks.contains(uid)) {
-        return d->mNotebooks.value(uid);
-    } else {
-        return Notebook::Ptr();
-    }
+    return d->mNotebooks.value(uid);
 }
 
 void ExtendedStorage::setValidateNotebooks(bool validateNotebooks)
@@ -696,25 +676,21 @@ Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &re
 
 Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
 {
-    QString uid;
-#ifdef MKCAL_FOR_MEEGO
-    if (name.isEmpty()) {
-        MLocale locale;
-        locale.installTrCatalog("calendar");
-        MLocale::setDefault(locale);
-        name = qtTrId("qtn_caln_personal_caln");
-    }
-    if (color.isEmpty())
-        color = "#63B33B";
-    uid = "11111111-2222-3333-4444-555555555555";
-#else
+    // Could use QUuid::WithoutBraces when moving to Qt5.11.
+    const QString uid(QUuid::createUuid().toString());
     if (name.isEmpty())
         name = "Default";
     if (color.isEmpty())
         color = "#0000FF";
-#endif
-    Notebook::Ptr nbDefault = Notebook::Ptr(new Notebook(uid, name, QString(), color, false, true, false, false, true));
-    addNotebook(nbDefault, false);
+    Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
+                                         false, true, false, false, true));
+    if (modifyNotebook(nbDefault, DBInsert, false)) {
+        d->mNotebooks.insert(nbDefault->uid(), nbDefault);
+        if (!calendar()->addNotebook(nbDefault->uid(), nbDefault->isVisible())
+            && !calendar()->updateNotebook(nbDefault->uid(), nbDefault->isVisible())) {
+            qCWarning(lcMkcal) << "notebook" << nbDefault->uid() << "already in calendar";
+        }
+    }
     setDefaultNotebook(nbDefault);
     return nbDefault;
 }

@@ -55,7 +55,8 @@ void tst_storage::initTestCase()
 void tst_storage::cleanupTestCase()
 {
     mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
-    m_storage->deleteNotebook(notebook);
+    if (notebook)
+        QVERIFY(m_storage->deleteNotebook(notebook));
 }
 
 void tst_storage::init()
@@ -66,7 +67,8 @@ void tst_storage::init()
 void tst_storage::cleanup()
 {
     mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
-    m_storage->deleteNotebook(notebook);
+    if (notebook)
+        QVERIFY(m_storage->deleteNotebook(notebook));
 }
 
 void tst_storage::tst_timezone()
@@ -1147,8 +1149,9 @@ void tst_storage::tst_dateCreated()
     }
 
     if (!dateCreated_update.isNull()) {
+        fetchEvent->startUpdates();
         fetchEvent->setCreated(dateCreated_update.toUTC());
-        fetchEvent->updated();
+        fetchEvent->endUpdates();
         m_storage->save();
         reloadDb();
 

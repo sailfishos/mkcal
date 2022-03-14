@@ -1873,23 +1873,6 @@ error:
     return false;
 }
 
-bool SqliteStorage::reloadNotebooks()
-{
-    if (!d->mIsOpened) {
-        return false;
-    }
-
-    Notebook::List list = notebooks();
-    Notebook::List::Iterator it = list.begin();
-    d->mIsLoading = true;
-    for (; it != list.end(); it++) {
-        deleteNotebook(*it, true);
-    }
-    d->mIsLoading = false;
-
-    return loadNotebooks();
-}
-
 bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal)
 {
     int rv = 0;
@@ -2048,12 +2031,8 @@ void SqliteStorage::fileChanged(const QString &path)
         d->mPreWatcherDbTime = QDateTime();
         return;
     }
-    clearLoaded();
     if (!d->loadTimezones()) {
         qCWarning(lcMkcal) << "loading timezones failed";
-    }
-    if (!reloadNotebooks()) {
-        qCWarning(lcMkcal) << "loading notebooks failed";
     }
     setModified(path);
     qCDebug(lcMkcal) << path << "has been modified";

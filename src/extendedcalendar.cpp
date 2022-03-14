@@ -1387,8 +1387,6 @@ void ExtendedCalendar::storageModified(ExtendedStorage *storage, const QString &
     Q_UNUSED(storage);
     Q_UNUSED(info);
 
-    clearNotebookAssociations();
-
     // Despite the strange name, close() method does exactly what we
     // want - clears the in-memory contents of the calendar.
     close();
