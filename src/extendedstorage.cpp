@@ -31,6 +31,7 @@
   @author Cornelius Schumacher \<schumacher@kde.org\>
 */
 #include "extendedstorage.h"
+#include "extendedstorageobserver.h"
 #include "logging_p.h"
 
 #include <KCalendarCore/Exceptions>
@@ -93,8 +94,16 @@ public:
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
 
-    void setAlarmsForNotebook(const KCalendarCore::Incidence::List &incidences, const QString &nbuid);
 #if defined(TIMED_SUPPORT)
+    // These alarm methods are used to communicate with an external
+    // daemon, like timed, to bind Incidence::Alarm with the system notification.
+    void clearAlarms(const Incidence::Ptr &incidence);
+    void clearAlarms(const Incidence::List &incidences);
+    void clearAlarms(const QString &notebookUid);
+    void setAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
+    void resetAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
+
+    void setAlarmsForNotebook(const Incidence::List &incidences, const QString &notebookUid);
     void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const QDateTime &now);
     void commitEvents(Timed::Event::List &events);
 #endif
@@ -294,29 +303,31 @@ void ExtendedStorage::setIsInvitationIncidencesLoaded(bool loaded)
     d->mIsInvitationIncidencesLoaded = loaded;
 }
 
-#if 0
-void ExtendedStorage::ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
-                                                               const QString &info)
+void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
+                                              const QString &info)
 {
     Q_UNUSED(storage);
     Q_UNUSED(info);
 }
 
-void ExtendedStorage::ExtendedStorageObserver::storageProgress(ExtendedStorage *storage,
-                                                               const QString &info)
-{
-    Q_UNUSED(storage);
-    Q_UNUSED(info);
-}
-
-void ExtendedStorage::ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
-                                                               bool error, const QString &info)
+void ExtendedStorageObserver::storageFinished(ExtendedStorage *storage,
+                                              bool error, const QString &info)
 {
     Q_UNUSED(storage);
     Q_UNUSED(error);
     Q_UNUSED(info);
 }
-#endif
+
+void ExtendedStorageObserver::storageUpdated(ExtendedStorage *storage,
+                                             const KCalendarCore::Incidence::List &added,
+                                             const KCalendarCore::Incidence::List &modified,
+                                             const KCalendarCore::Incidence::List &deleted)
+{
+    Q_UNUSED(storage);
+    Q_UNUSED(added);
+    Q_UNUSED(modified);
+    Q_UNUSED(deleted);
+}
 
 void ExtendedStorage::registerObserver(ExtendedStorageObserver *observer)
 {
@@ -350,18 +361,28 @@ void ExtendedStorage::setModified(const QString &info)
     }
 }
 
-void ExtendedStorage::setProgress(const QString &info)
-{
-    foreach (ExtendedStorageObserver *observer, d->mObservers) {
-        observer->storageProgress(this, info);
-    }
-}
-
 void ExtendedStorage::setFinished(bool error, const QString &info)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageFinished(this, error, info);
     }
+}
+
+void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
+                                 const KCalendarCore::Incidence::List &modified,
+                                 const KCalendarCore::Incidence::List &deleted)
+{
+    foreach (ExtendedStorageObserver *observer, d->mObservers) {
+        observer->storageUpdated(this, added, modified, deleted);
+    }
+#if defined(TIMED_SUPPORT)
+    if (!added.isEmpty())
+        d->setAlarms(added, calendar());
+    if (!modified.isEmpty())
+        d->resetAlarms(modified, calendar());
+    if (!deleted.isEmpty())
+        d->clearAlarms(deleted);
+#endif
 }
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
@@ -404,14 +425,16 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     if (!modifyNotebook(nb, DBUpdate)) {
         return false;
     }
+#if defined(TIMED_SUPPORT)
     if (wasVisible && !nb->isVisible()) {
-        clearAlarms(nb->uid());
+        d->clearAlarms(nb->uid());
     } else if (!wasVisible && nb->isVisible()) {
         Incidence::List list;
         if (allIncidences(&list, nb->uid())) {
             d->setAlarmsForNotebook(list, nb->uid());
         }
     }
+#endif
 
     return true;
 }
@@ -525,44 +548,74 @@ bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
     return true;
 }
 
-void ExtendedStorage::resetAlarms(const Incidence::Ptr &incidence)
+Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
 {
-    resetAlarms(Incidence::List(1, incidence));
+    // Could use QUuid::WithoutBraces when moving to Qt5.11.
+    const QString uid(QUuid::createUuid().toString());
+    if (name.isEmpty())
+        name = "Default";
+    if (color.isEmpty())
+        color = "#0000FF";
+    Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
+                                         false, true, false, false, true));
+    if (modifyNotebook(nbDefault, DBInsert, false)) {
+        d->mNotebooks.insert(nbDefault->uid(), nbDefault);
+        if (!calendar()->addNotebook(nbDefault->uid(), nbDefault->isVisible())
+            && !calendar()->updateNotebook(nbDefault->uid(), nbDefault->isVisible())) {
+            qCWarning(lcMkcal) << "notebook" << nbDefault->uid() << "already in calendar";
+        }
+    }
+    setDefaultNotebook(nbDefault);
+    return nbDefault;
 }
 
-void ExtendedStorage::resetAlarms(const Incidence::List &incidences)
+Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
+                                           bool loadAlways)
+{
+    QDateTime rid;
+
+    if (!recurrenceId.isEmpty()) {
+        rid = QDateTime::fromString(recurrenceId, Qt::ISODate);
+    }
+    Incidence::Ptr incidence = calendar()->incidence(uid, rid);
+    if (!incidence || loadAlways) {
+        load(uid, rid);
+        incidence = calendar()->incidence(uid, rid);
+    }
+    if (incidence && incidence->hasEnabledAlarms()) {
+        // Return incidence if it exists and has active alarms.
+        return incidence;
+    }
+    return Incidence::Ptr();
+}
+
+#if defined(TIMED_SUPPORT)
+// Todo: move this into a service plugin that is a ExtendedStorageObserver.
+void ExtendedStorage::Private::resetAlarms(const Incidence::List &incidences,
+                                           const Calendar::Ptr &calendar)
 {
     clearAlarms(incidences);
-    setAlarms(incidences);
+    setAlarms(incidences, calendar);
 }
 
-void ExtendedStorage::setAlarms(const Incidence::Ptr &incidence)
+void ExtendedStorage::Private::setAlarms(const Incidence::List &incidences,
+                                         const Calendar::Ptr &calendar)
 {
-    setAlarms(Incidence::List(1, incidence));
-}
-
-void ExtendedStorage::setAlarms(const Incidence::List &incidences)
-{
-#if defined(TIMED_SUPPORT)
     const QDateTime now = QDateTime::currentDateTime();
     Timed::Event::List events;
     foreach (const Incidence::Ptr incidence, incidences) {
         // The incidence from the list must be in the calendar and in a notebook.
-        const QString &nbuid = calendar()->notebook(incidence->uid());
-        if (!calendar()->isVisible(incidence) || nbuid.isEmpty()) {
+        const QString &nbuid = calendar->notebook(incidence->uid());
+        if (!calendar->isVisible(incidence) || nbuid.isEmpty()) {
             continue;
         }
-        d->setAlarms(incidence, nbuid, events, now);
+        setAlarms(incidence, nbuid, events, now);
     }
-    d->commitEvents(events);
-#else
-    Q_UNUSED(incidences);
-#endif
+    commitEvents(events);
 }
 
-void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
+void ExtendedStorage::Private::clearAlarms(const Incidence::Ptr &incidence)
 {
-#if defined(TIMED_SUPPORT)
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";
     map["uid"] = incidence->uid();
@@ -609,109 +662,54 @@ void ExtendedStorage::clearAlarms(const Incidence::Ptr &incidence)
                                << reply.value() << timed.lastError();
         }
     }
-#else
-    Q_UNUSED(incidence);
-#endif
 }
 
-void ExtendedStorage::clearAlarms(const KCalendarCore::Incidence::List &incidences)
+void ExtendedStorage::Private::clearAlarms(const KCalendarCore::Incidence::List &incidences)
 {
     foreach (const Incidence::Ptr incidence, incidences) {
         clearAlarms(incidence);
     }
 }
 
-void ExtendedStorage::clearAlarms(const QString &nb)
+void ExtendedStorage::Private::clearAlarms(const QString &notebookUid)
 {
-#if defined(TIMED_SUPPORT)
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";
-    map["notebook"] = nb;
+    map["notebook"] = notebookUid;
 
     Timed::Interface timed;
     if (!timed.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << nb
+        qCWarning(lcMkcal) << "cannot clear alarms for" << notebookUid
                  << "alarm interface is not valid" << timed.lastError();
         return;
     }
     QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
     if (!reply.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << nb << timed.lastError();
+        qCWarning(lcMkcal) << "cannot clear alarms for" << notebookUid << timed.lastError();
         return;
     }
     const QList<QVariant> &result = reply.value();
     for (int i = 0; i < result.size(); i++) {
         uint32_t cookie = result[i].toUInt();
-        qCDebug(lcMkcal) << "removing alarm" << cookie << nb;
+        qCDebug(lcMkcal) << "removing alarm" << cookie << notebookUid;
         QDBusReply<bool> reply = timed.cancel_sync(cookie);
         if (!reply.isValid() || !reply.value()) {
-            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << nb;
+            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << notebookUid;
         }
     }
-#else
-    Q_UNUSED(nb);
-#endif
 }
 
-Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
-                                           bool loadAlways)
+void ExtendedStorage::Private::setAlarmsForNotebook(const Incidence::List &incidences, const QString &notebookUid)
 {
-    QDateTime rid;
-
-    if (!recurrenceId.isEmpty()) {
-        rid = QDateTime::fromString(recurrenceId, Qt::ISODate);
-    }
-    Incidence::Ptr incidence = calendar()->incidence(uid, rid);
-    if (!incidence || loadAlways) {
-        load(uid, rid);
-        incidence = calendar()->incidence(uid, rid);
-    }
-    if (incidence && incidence->hasEnabledAlarms()) {
-        // Return incidence if it exists and has active alarms.
-        return incidence;
-    }
-    return Incidence::Ptr();
-}
-
-
-Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
-{
-    // Could use QUuid::WithoutBraces when moving to Qt5.11.
-    const QString uid(QUuid::createUuid().toString());
-    if (name.isEmpty())
-        name = "Default";
-    if (color.isEmpty())
-        color = "#0000FF";
-    Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
-                                         false, true, false, false, true));
-    if (modifyNotebook(nbDefault, DBInsert, false)) {
-        d->mNotebooks.insert(nbDefault->uid(), nbDefault);
-        if (!calendar()->addNotebook(nbDefault->uid(), nbDefault->isVisible())
-            && !calendar()->updateNotebook(nbDefault->uid(), nbDefault->isVisible())) {
-            qCWarning(lcMkcal) << "notebook" << nbDefault->uid() << "already in calendar";
-        }
-    }
-    setDefaultNotebook(nbDefault);
-    return nbDefault;
-}
-
-void ExtendedStorage::Private::setAlarmsForNotebook(const KCalendarCore::Incidence::List &incidences, const QString &nbuid)
-{
-#if defined(TIMED_SUPPORT)
     const QDateTime now = QDateTime::currentDateTime();
     // list of all timed events
     Timed::Event::List events;
     foreach (const Incidence::Ptr incidence, incidences) {
-        setAlarms(incidence, nbuid, events, now);
+        setAlarms(incidence, notebookUid, events, now);
     }
     commitEvents(events);
-#else
-    Q_UNUSED(incidences);
-    Q_UNUSED(nbuid);
-#endif
 }
 
-#if defined(TIMED_SUPPORT)
 void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
                                          const QString &nbuid,
                                          Timed::Event::List &events,

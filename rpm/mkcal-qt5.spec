@@ -1,7 +1,7 @@
 Name:       mkcal-qt5
 
-Summary:    Extended KDE kcal calendar library port for Maemo
-Version:    0.5.45
+Summary:    SQlite storage backend for KCalendarCore
+Version:    0.5.58
 Release:    1
 License:    LGPLv2+
 URL:        https://github.com/sailfishos/mkcal
@@ -20,7 +20,7 @@ BuildRequires:  pkgconfig(timed-qt5) >= 2.88
 BuildRequires:  pkgconfig(QmfClient)
 
 %description
-Extended KDE kcal calendar library port for Maemo
+Extends KDE calendar core library and provides an SQlite backend.
 
 
 %package devel

@@ -121,6 +121,9 @@ public:
     */
     KCalendarCore::Person::List selectContacts();
 
+    bool selectMetadata(int *id);
+    bool incrementTransactionId(int *id);
+
 private:
     //@cond PRIVATE
     Q_DISABLE_COPY(SqliteFormat)

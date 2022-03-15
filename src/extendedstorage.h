@@ -58,12 +58,6 @@ enum DBOperation {
     DBSelect
 };
 
-// Default alarm receiver is the organiser application.
-const char *const DBusService = "com.nokia.organiser";
-const char *const DBusInterface = "com.nokia.OrganiserAlarmIf";
-const char *const DBusPath = "/";
-const char *const DBusName = "alarm";
-
 /**
   @brief
   This class provides a calendar storage interface.
@@ -672,18 +666,10 @@ protected:
     void setLoadDates(const QDate &start, const QDate &end);
 
     void setModified(const QString &info);
-    void setProgress(const QString &info);
     void setFinished(bool error, const QString &info);
-
-    // These alarm methods are used to communicate with an external
-    // daemon, like timed, to bind Incidence::Alarm with the system notification.
-    void clearAlarms(const KCalendarCore::Incidence::Ptr &incidence);
-    void clearAlarms(const KCalendarCore::Incidence::List &incidences);
-    void clearAlarms(const QString &nname);
-    void setAlarms(const KCalendarCore::Incidence::Ptr &incidence);
-    void setAlarms(const KCalendarCore::Incidence::List &incidences);
-    void resetAlarms(const KCalendarCore::Incidence::List &incidences);
-    void resetAlarms(const KCalendarCore::Incidence::Ptr &incidence);
+    void setUpdated(const KCalendarCore::Incidence::List &added,
+                    const KCalendarCore::Incidence::List &modified,
+                    const KCalendarCore::Incidence::List &deleted);
 
     bool isUncompletedTodosLoaded();
     void setIsUncompletedTodosLoaded(bool loaded);

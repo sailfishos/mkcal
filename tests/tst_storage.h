@@ -79,6 +79,7 @@ private slots:
     void tst_attachments();
     void tst_populateFromIcsData();
     void tst_attendees();
+    void tst_storageObserver();
 
 private:
     void openDb(bool clear = false);
