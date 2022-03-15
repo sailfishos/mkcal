@@ -1,7 +1,7 @@
 Name:       mkcal-qt5
 
 Summary:    SQlite storage backend for KCalendarCore
-Version:    0.5.58
+Version:    0.6.1
 Release:    1
 License:    LGPLv2+
 URL:        https://github.com/sailfishos/mkcal
