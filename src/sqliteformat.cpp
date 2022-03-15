@@ -381,7 +381,10 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
     if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
         rowid = d->selectRowId(incidence);
-        if (!rowid) {
+        if (!rowid && dbop == DBDelete) {
+            // Already deleted.
+            return true;
+        } else if (!rowid) {
             qCWarning(lcMkcal) << "failed to select rowid of incidence" << incidence->uid() << incidence->recurrenceId();
             goto error;
         }

@@ -507,8 +507,14 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         const Incidence::List list = calendar()->incidences(nb->uid());
         qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();
         for (const Incidence::Ptr &toDelete : list) {
-            if (!toDelete->hasRecurrenceId()
-                || calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
+            // Need to test the existence of toDelete inside the calendar here,
+            // because KCalendarCore::Calendar::incidences(nbuid) is returning
+            // all incidences associated to nbuid, even those that have been
+            // deleted already.
+            // In addition, Calendar::deleteIncidence() is also deleting all exceptions
+            // of a recurring event, so exceptions may have been already removed and
+            // their existence should be checked to avoid warnings.
+            if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
                 calendar()->deleteIncidence(toDelete);
         }
         if (!list.isEmpty()) {

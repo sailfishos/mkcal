@@ -44,6 +44,7 @@ private slots:
 
 private:
     ExtendedStorage::Ptr mStorage;
+    QString mCreatedNotebookUid;
 };
 
 void tst_load::init()
@@ -51,15 +52,30 @@ void tst_load::init()
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
     mStorage = ExtendedCalendar::defaultStorage(calendar);
     mStorage->open();
+
+    if (!mStorage->defaultNotebook()) {
+        Notebook::Ptr notebook(new Notebook({}, QString::fromLatin1("Default"), {}, {},
+                                            false, false, false, false, true));
+        QVERIFY(mStorage->addNotebook(notebook));
+        mCreatedNotebookUid = notebook->uid();
+        QVERIFY(mStorage->setDefaultNotebook(notebook));
+    }
 }
 
 void tst_load::cleanup()
 {
+    if (!mCreatedNotebookUid.isEmpty()) {
+        QVERIFY(mStorage->deleteNotebook(mStorage->notebook(mCreatedNotebookUid)));
+    }
     mStorage.clear();
 }
 
 void tst_load::testAll()
 {
+    int length0 = mStorage->calendar()->events().length();
+    QVERIFY(mStorage->load());
+    length0 = mStorage->calendar()->events().length() - length0;
+
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime(QDate(2022, 3, 14), QTime(11, 56)));
     QVERIFY(mStorage->calendar()->addEvent(event));
@@ -75,7 +91,7 @@ void tst_load::testAll()
     QVERIFY(calendar->events().isEmpty());
 
     QVERIFY(storage->load());
-    QCOMPARE(calendar->events().length(), 2);
+    QCOMPARE(calendar->events().length() - length0, 2);
     QVERIFY(calendar->incidence(event->uid()));
     QVERIFY(calendar->incidence(event2->uid()));
     QVERIFY(storage->isRecurrenceLoaded());
@@ -85,7 +101,7 @@ void tst_load::testAll()
 
     QVERIFY(mStorage->calendar()->deleteIncidence(event2));
     QVERIFY(mStorage->calendar()->deleteIncidence(event));
-    QVERIFY(mStorage->save());
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
 
 void tst_load::testById()
@@ -130,7 +146,7 @@ void tst_load::testById()
     QVERIFY(event);
     QVERIFY(calendar->deleteIncidence(event));
 
-    QVERIFY(storage->save());
+    QVERIFY(storage->save(ExtendedStorage::PurgeDeleted));
 }
 
 void tst_load::testSeries()
@@ -174,7 +190,7 @@ void tst_load::testSeries()
 
     QVERIFY(mStorage->calendar()->deleteIncidence(event));
     QVERIFY(mStorage->calendar()->deleteIncidence(single));
-    QVERIFY(mStorage->save());
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
 
 void tst_load::testByInstanceIdentifier()
@@ -216,13 +232,18 @@ void tst_load::testByInstanceIdentifier()
 
     QVERIFY(mStorage->calendar()->deleteIncidence(event));
     QVERIFY(mStorage->calendar()->deleteIncidence(single));
-    QVERIFY(mStorage->save());
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
 
 void tst_load::testByDate()
 {
     // Will test loading events intersecting date.
     const QDate date(2022, 3, 14);
+
+    int length0 = mStorage->calendar()->events().length();
+    QVERIFY(mStorage->load(date));
+    length0 = mStorage->calendar()->events().length() - length0;
+
     // Plain event within the day.
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime(date, QTime(11, 56), Qt::UTC));
@@ -258,16 +279,16 @@ void tst_load::testByDate()
 
     QVERIFY(calendar->events().isEmpty());
 
-    QVERIFY(storage->load(event->dtStart().date()));
+    QVERIFY(storage->load(date));
     QVERIFY(calendar->incidence(event->uid()));
     QVERIFY(calendar->incidence(event3->uid()));
     QVERIFY(calendar->incidence(event4->uid()));
     QVERIFY(calendar->incidence(event5->uid()));
     QVERIFY(calendar->incidence(event6->uid()));
-    QCOMPARE(calendar->events().length(), 5);
+    QCOMPARE(calendar->events().length() - length0, 5);
     QVERIFY(storage->isRecurrenceLoaded());
     QDateTime start, end;
-    QVERIFY(!storage->getLoadDates(QDate(2022, 3, 14), QDate(2022, 3, 15), &start, &end));
+    QVERIFY(!storage->getLoadDates(date, date.addDays(1), &start, &end));
 
     QVERIFY(mStorage->calendar()->deleteIncidence(event6));
     QVERIFY(mStorage->calendar()->deleteIncidence(event5));
@@ -275,7 +296,7 @@ void tst_load::testByDate()
     QVERIFY(mStorage->calendar()->deleteIncidence(event3));
     QVERIFY(mStorage->calendar()->deleteIncidence(event2));
     QVERIFY(mStorage->calendar()->deleteIncidence(event));
-    QVERIFY(mStorage->save());
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
 
 void tst_load::testRange_data()
