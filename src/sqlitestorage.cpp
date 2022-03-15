@@ -275,6 +275,11 @@ bool SqliteStorage::load()
 error:
     d->mIsLoading = false;
 
+    setIsRecurrenceLoaded(count >= 0);
+    if (count >= 0) {
+        addLoadedRange(QDate(), QDate());
+    }
+
     return count >= 0;
 }
 
@@ -378,6 +383,13 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
         return false;
     }
 
+    // We have no way to know if a recurring incidence
+    // is happening within [start, end[, so load them all.
+    if ((start.isValid() || end.isValid())
+        && !loadRecurringIncidences()) {
+        return false;
+    }
+
     int rv = 0;
     int count = -1;
     QDateTime loadStart;
@@ -385,7 +397,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
 
     d->mIsLoading = true;
 
-    if (getLoadDates(start, end, loadStart, loadEnd)) {
+    if (getLoadDates(start, end, &loadStart, &loadEnd)) {
         const char *query1 = NULL;
         int qsize1 = 0;
 
@@ -410,6 +422,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
             SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
             secsStart = toOriginTime(loadStart);
             SL3_bind_int64(stmt1, index, secsStart);
+            SL3_bind_int64(stmt1, index, secsStart);
         } else if (loadEnd.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_END;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_END);
@@ -423,15 +436,14 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
         }
         count = d->loadIncidences(stmt1);
 
-        if (count > 0) {
-            if (loadStart.isValid() && loadEnd.isValid()) {
-                setLoadDates(loadStart.date(), loadEnd.date());
-            } else if (loadStart.isValid()) {
-                setLoadDates(loadStart.date(), QDate(9999, 12, 31));     // 9999-12-31
-            } else if (loadEnd.isValid()) {
-                setLoadDates(QDate(1, 1, 1), loadEnd.date());     // 0001-01-01
-            }
+        if (count >= 0) {
+            addLoadedRange(loadStart.date(), loadEnd.date());
         }
+        if (loadStart.isNull() && loadEnd.isNull()) {
+            setIsRecurrenceLoaded(count >= 0);
+        }
+    } else {
+        count = 0;
     }
 error:
     d->mIsLoading = false;
@@ -562,6 +574,10 @@ bool SqliteStorage::loadRecurringIncidences()
         return false;
     }
 
+    if (isRecurrenceLoaded()) {
+        return true;
+    }
+
     int rv = 0;
     int count = 0;
     d->mIsLoading = true;
@@ -580,6 +596,8 @@ bool SqliteStorage::loadRecurringIncidences()
 
 error:
     d->mIsLoading = false;
+
+    setIsRecurrenceLoaded(count >= 0);
 
     return count >= 0;
 }
@@ -1163,7 +1181,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
-        return false;
+        return -1;
     }
 
     while ((incidence = mFormat->selectComponents(stmt1, notebookUid))) {

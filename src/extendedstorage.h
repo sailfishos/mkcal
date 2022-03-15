@@ -43,6 +43,7 @@ class Incidence;
 }
 
 class MkcalTool;
+class tst_load;
 
 namespace mKCal {
 
@@ -129,19 +130,28 @@ public:
     virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime()) = 0;
 
     /**
-      Load incidences at given date into the memory.
+      Load incidences at given date into the memory. All incidences that
+      happens within date, or starts / ends within date or span
+      during date are loaded into memory. The time zone used to expand
+      date into points in time is the time zone of the associated calendar.
+      In addition, all recurring events are also loaded into memory since
+      there is no way to know in advance if they will have occurrences
+      intersecting date. Internally, recurring incidences and incidences of
+      date are cached to avoid loading them several times.
 
       @param date date
-      @return true if the load was successful and specific date wasn't already loaded; false otherwise.
+      @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &date) = 0;
 
     /**
-      Load incidences between given dates into the memory.
+      Load incidences between given dates into the memory. start is inclusive,
+      while end is exclusive. The same definitions and restrictions for loading
+      apply as for load(const QDate &) method.
 
       @param start is the starting date
-      @param end is the ending date
-      @return true if the load was successful and specific dates wasn't already loaded; false otherwise.
+      @param end is the ending date, exclusive
+      @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &start, const QDate &end) = 0;
 
@@ -661,9 +671,11 @@ protected:
                                 bool signal = true) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
-                      QDateTime &loadStart, QDateTime &loadEnd);
+                      QDateTime *loadStart, QDateTime *loadEnd) const;
 
-    void setLoadDates(const QDate &start, const QDate &end);
+    void addLoadedRange(const QDate &start, const QDate &end) const;
+    bool isRecurrenceLoaded() const;
+    void setIsRecurrenceLoaded(bool loaded);
 
     void setModified(const QString &info);
     void setFinished(bool error, const QString &info);
@@ -710,6 +722,7 @@ private:
     //@endcond
 
     friend class ::MkcalTool;
+    friend class ::tst_load;
 };
 
 }
