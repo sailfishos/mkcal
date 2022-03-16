@@ -502,7 +502,13 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    // delete all notebook incidences from calendar
+    // purge all notebook incidences from storage
+    Incidence::List deleted;
+    deletedIncidences(&deleted, QDateTime(), nb->uid());
+    qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
+    if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
+        qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
+    }
     if (loadNotebookIncidences(nb->uid())) {
         const Incidence::List list = calendar()->incidences(nb->uid());
         qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();

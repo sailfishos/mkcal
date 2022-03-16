@@ -1261,7 +1261,7 @@ void tst_storage::tst_deleted()
 {
     mKCal::Notebook::Ptr notebook =
         mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-deletion",
-                                                 "test notebook",
+                                                 "test notebook for deletion",
                                                  QLatin1String(""),
                                                  "#001122",
                                                  false, // Not shared.
@@ -1358,6 +1358,23 @@ void tst_storage::tst_deleted()
     deleted.clear();
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
     QCOMPARE(deleted.length(), 0);
+
+    // Test notebook deletion (with non-purged deleted incidences)
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent3));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook->uid()));
+    QCOMPARE(deleted.length(), 1);
+    QVERIFY(m_storage->deleteNotebook(m_storage->notebook(notebook->uid())));
+    reloadDb();
+    QVERIFY(m_storage->notebook(notebook->uid()).isNull());
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook->uid()));
+    QVERIFY(deleted.isEmpty());
+    KCalendarCore::Incidence::List incidences;
+    QVERIFY(m_storage->allIncidences(&incidences, notebook->uid()));
+    QVERIFY(incidences.isEmpty());
 }
 
 // Accessor check for modified incidences.
