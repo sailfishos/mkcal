@@ -502,13 +502,25 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    // delete all notebook incidences from calendar
+    // purge all notebook incidences from storage
+    Incidence::List deleted;
+    deletedIncidences(&deleted, QDateTime(), nb->uid());
+    qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
+    if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
+        qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
+    }
     if (loadNotebookIncidences(nb->uid())) {
         const Incidence::List list = calendar()->incidences(nb->uid());
         qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();
         for (const Incidence::Ptr &toDelete : list) {
-            if (!toDelete->hasRecurrenceId()
-                || calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
+            // Need to test the existence of toDelete inside the calendar here,
+            // because KCalendarCore::Calendar::incidences(nbuid) is returning
+            // all incidences associated to nbuid, even those that have been
+            // deleted already.
+            // In addition, Calendar::deleteIncidence() is also deleting all exceptions
+            // of a recurring event, so exceptions may have been already removed and
+            // their existence should be checked to avoid warnings.
+            if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
                 calendar()->deleteIncidence(toDelete);
         }
         if (!list.isEmpty()) {
