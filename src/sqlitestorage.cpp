@@ -136,7 +136,6 @@ public:
     QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
     bool mIsLoading;
     bool mIsSaved;
-    QDateTime mOriginTime;
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
@@ -159,8 +158,6 @@ SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &da
     : ExtendedStorage(cal, validateNotebooks),
       d(new Private(cal, this, databaseName))
 {
-    d->mOriginTime = QDateTime(QDate(1970, 1, 1), QTime(0, 0, 0), Qt::UTC);
-    qCDebug(lcMkcal) << "time of origin is " << d->mOriginTime << d->mOriginTime.toTime_t();
     cal->registerObserver(this);
 }
 
@@ -208,7 +205,7 @@ bool SqliteStorage::open()
          SL3_exec(d->mDatabase);
     }
 
-    d->mFormat = new SqliteFormat(this, d->mDatabase);
+    d->mFormat = new SqliteFormat(d->mDatabase, calendar()->timeZone());
     d->mFormat->selectMetadata(&d->mSavedTransactionId);
 
     if (!d->mChanged.open(QIODevice::Append)) {
@@ -311,9 +308,9 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
         SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
         if (recurrenceId.isValid()) {
             if (recurrenceId.timeSpec() == Qt::LocalTime) {
-                secsRecurId = toLocalOriginTime(recurrenceId);
+                secsRecurId = d->mFormat->toLocalOriginTime(recurrenceId);
             } else {
-                secsRecurId = toOriginTime(recurrenceId);
+                secsRecurId = d->mFormat->toOriginTime(recurrenceId);
             }
             SL3_bind_int64(stmt1, index, secsRecurId);
         } else {
@@ -412,8 +409,8 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
             query1 = SELECT_COMPONENTS_BY_DATE_BOTH;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_BOTH);
             SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-            secsStart = toOriginTime(loadStart);
-            secsEnd = toOriginTime(loadEnd);
+            secsStart = d->mFormat->toOriginTime(loadStart);
+            secsEnd = d->mFormat->toOriginTime(loadEnd);
             SL3_bind_int64(stmt1, index, secsEnd);
             SL3_bind_int64(stmt1, index, secsStart);
             SL3_bind_int64(stmt1, index, secsStart);
@@ -421,14 +418,14 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
             query1 = SELECT_COMPONENTS_BY_DATE_START;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_START);
             SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-            secsStart = toOriginTime(loadStart);
+            secsStart = d->mFormat->toOriginTime(loadStart);
             SL3_bind_int64(stmt1, index, secsStart);
             SL3_bind_int64(stmt1, index, secsStart);
         } else if (loadEnd.isValid()) {
             query1 = SELECT_COMPONENTS_BY_DATE_END;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_DATE_END);
             SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-            secsEnd = toOriginTime(loadEnd);
+            secsEnd = d->mFormat->toOriginTime(loadEnd);
             SL3_bind_int64(stmt1, index, secsEnd);
         } else {
             query1 = SELECT_COMPONENTS_ALL;
@@ -754,7 +751,7 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     qint64 secsStart;
 
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -804,7 +801,7 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     qint64 secsStart;
 
     if (last->isValid())
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     else
         secsStart = LLONG_MAX; // largest time
 
@@ -852,7 +849,7 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     qint64 secsStart;
 
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -904,7 +901,7 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     qint64 secsStart;
 
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -953,7 +950,7 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     qint64 secsStart;
 
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -1041,7 +1038,7 @@ int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
     query1 = SELECT_COMPONENTS_BY_INVITATION_AND_CREATED;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_INVITATION_AND_CREATED);
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -1105,7 +1102,7 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
         SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     }
     if (last->isValid()) {
-        secsStart = toOriginTime(*last);
+        secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
     }
@@ -1534,7 +1531,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
         if (after.isValid()) {
             if (dbop == DBInsert) {
                 index = 1;
-                secs = mStorage->toOriginTime(after);
+                secs = mFormat->toOriginTime(after);
                 SL3_bind_int64(stmt1, index, secs);
                 if (!notebookUid.isNull()) {
                     index = 2;
@@ -1544,7 +1541,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             }
             if (dbop == DBUpdate || dbop == DBMarkDeleted) {
                 index = 1;
-                secs = mStorage->toOriginTime(after);
+                secs = mFormat->toOriginTime(after);
                 SL3_bind_int64(stmt1, index, secs);
                 index = 2;
                 SL3_bind_int64(stmt1, index, secs);
@@ -1556,7 +1553,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
             }
             if (dbop == DBSelect) {
                 index = 1;
-                secs = mStorage->toOriginTime(after);
+                secs = mFormat->toOriginTime(after);
                 qCDebug(lcMkcal) << "QUERY FROM" << secs;
                 SL3_bind_int64(stmt1, index, secs);
                 index = 2;
@@ -1746,9 +1743,9 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     if (incidence->hasRecurrenceId()) {
         qint64 secsRecurId;
         if (incidence->recurrenceId().timeSpec() == Qt::LocalTime) {
-            secsRecurId = toLocalOriginTime(incidence->recurrenceId());
+            secsRecurId = d->mFormat->toLocalOriginTime(incidence->recurrenceId());
         } else {
-            secsRecurId = toOriginTime(incidence->recurrenceId());
+            secsRecurId = d->mFormat->toOriginTime(incidence->recurrenceId());
         }
         SL3_bind_int64(stmt, index, secsRecurId);
     } else {
@@ -1763,7 +1760,7 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     SL3_step(stmt);
     if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
         date = sqlite3_column_int64(stmt, 1);
-        deletionDate = d->mStorage->fromOriginTime(date);
+        deletionDate = d->mFormat->fromOriginTime(date);
     }
 
 error:
@@ -2065,53 +2062,6 @@ void SqliteStorage::fileChanged(const QString &path)
         setModified(path);
         qCDebug(lcMkcal) << path << "has been modified";
     }
-}
-
-sqlite3_int64 SqliteStorage::toOriginTime(const QDateTime &dt)
-{
-    return d->mOriginTime.secsTo(dt);
-}
-
-sqlite3_int64 SqliteStorage::toLocalOriginTime(const QDateTime &dt)
-{
-    return static_cast<qint64>(d->mOriginTime.date().daysTo(dt.date())) * 86400
-           + d->mOriginTime.time().secsTo(dt.time());
-}
-
-QDateTime SqliteStorage::fromLocalOriginTime(sqlite3_int64 seconds)
-{
-    // Note: don't call toClockTime() as that implies a conversion first to the local time zone.
-    QDateTime local(d->mOriginTime.addSecs(seconds));
-    return QDateTime(local.date(), local.time(), Qt::LocalTime);
-}
-
-QDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds)
-{
-    //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
-    return d->mOriginTime.addSecs(seconds).toUTC();
-}
-
-QDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename)
-{
-    QDateTime dt;
-
-    if (zonename == "UTC") {
-        dt = d->mOriginTime.addSecs(seconds).toUTC();
-    } else if (!zonename.isEmpty()) {
-        // First try system zones.
-        const QTimeZone timezone(zonename);
-        if (timezone.isValid()) {
-            dt = d->mOriginTime.addSecs(seconds).toTimeZone(timezone);
-        } else if (d->mCalendar->timeZone().isValid() && d->mCalendar->timeZone().id() == zonename) {
-            dt = d->mOriginTime.addSecs(seconds).toTimeZone(d->mCalendar->timeZone());
-        }
-    } else {
-        // Empty zonename, use floating time.
-        dt = d->mOriginTime.addSecs(seconds);
-        dt.setTimeSpec(Qt::LocalTime);
-    }
-//  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
-    return dt;
 }
 
 void SqliteStorage::virtual_hook(int id, void *data)
