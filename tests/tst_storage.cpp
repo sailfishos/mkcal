@@ -1544,7 +1544,7 @@ void tst_storage::tst_icalAllDay()
                        "VERSION:2.0\n") + vEvent +
         QStringLiteral("\nEND:VCALENDAR");
     KCalendarCore::ICalFormat format;
-    QVERIFY(format.fromString(m_calendar, icsData));
+    QVERIFY(format.fromString(m_calendar, icsData, false, m_calendar->defaultNotebook()));
     KCalendarCore::Event::Ptr event = m_calendar->event(uid);
     QVERIFY(event);
     QCOMPARE(event->allDay(), allDay);
@@ -1870,7 +1870,8 @@ void tst_storage::tst_populateFromIcsData()
     event->setDtStart(QDateTime(QDate(2021, 9, 23), QTime(15, 29)));
 
     KCalendarCore::ICalFormat icalFormat;
-    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8()));
+    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8(),
+                                     false, m_calendar->defaultNotebook()));
     QVERIFY(m_calendar->incidence(event->uid()));
     QVERIFY(m_storage->save());
 
@@ -1878,7 +1879,8 @@ void tst_storage::tst_populateFromIcsData()
     QVERIFY(m_calendar->incidence(event->uid()));
 
     event->setRevision(event->revision() + 1);
-    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8()));
+    QVERIFY(icalFormat.fromRawString(m_calendar, icalFormat.toICalString(event).toUtf8(),
+                                     false, m_calendar->defaultNotebook()));
     QVERIFY(m_calendar->incidence(event->uid()));
     QCOMPARE(m_calendar->incidence(event->uid())->revision(), event->revision());
     m_storage->save();
@@ -2033,7 +2035,7 @@ void tst_storage::tst_storageObserver()
     QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
 
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
-    QVERIFY(m_calendar->addIncidence(event));
+    QVERIFY(m_calendar->addIncidence(event, {}));
     QVERIFY(updated.isEmpty());
     m_storage->save();
     QCOMPARE(updated.count(), 1);
@@ -2078,7 +2080,7 @@ void tst_storage::tst_storageObserver()
     KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
     event2->setSummary(QString::fromLatin1("New event added externally"));
     event2->setDtStart(QDateTime(QDate(2022, 3, 9), QTime(11, 46)));
-    QVERIFY(calendar->addEvent(event2));
+    QVERIFY(calendar->addEvent(event2, {}));
     QVERIFY(storage->save());
     QVERIFY(modified.wait());
     QVERIFY(updated.isEmpty());

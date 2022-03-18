@@ -21,8 +21,9 @@
 #include <QTest>
 #include <QDebug>
 
+#include <KCalendarCore/MemoryCalendar>
 #include "extendedcalendar.h"
-#include "extendedstorage.h"
+#include "sqlitestorage.h"
 
 using namespace mKCal;
 
@@ -43,14 +44,15 @@ private slots:
     void testRange_data();
 
 private:
-    ExtendedStorage::Ptr mStorage;
+    SqliteStorage::Ptr mStorage;
+    QString mNotebookUid;
     QString mCreatedNotebookUid;
 };
 
 void tst_load::init()
 {
-    ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
-    mStorage = ExtendedCalendar::defaultStorage(calendar);
+    KCalendarCore::MemoryCalendar::Ptr calendar(new KCalendarCore::MemoryCalendar(QTimeZone::systemTimeZone()));
+    mStorage = SqliteStorage::Ptr(new SqliteStorage(calendar));
     mStorage->open();
 
     if (!mStorage->defaultNotebook()) {
@@ -60,6 +62,7 @@ void tst_load::init()
         mCreatedNotebookUid = notebook->uid();
         QVERIFY(mStorage->setDefaultNotebook(notebook));
     }
+    mNotebookUid = mStorage->defaultNotebook()->uid();
 }
 
 void tst_load::cleanup()
@@ -79,13 +82,15 @@ void tst_load::testAll()
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime(QDate(2022, 3, 14), QTime(11, 56)));
     QVERIFY(mStorage->calendar()->addEvent(event));
+    QVERIFY(mStorage->calendar()->setNotebook(event, mNotebookUid));
     KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
     event2->setDtStart(QDateTime(QDate(2022, 3, 14), QTime(11, 57)));
     QVERIFY(mStorage->calendar()->addEvent(event2));
+    QVERIFY(mStorage->calendar()->setNotebook(event2, mNotebookUid));
     QVERIFY(mStorage->save());
     
-    ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
-    ExtendedStorage::Ptr storage = ExtendedCalendar::defaultStorage(calendar);
+    KCalendarCore::MemoryCalendar::Ptr calendar(new KCalendarCore::MemoryCalendar(QTimeZone::systemTimeZone()));
+    SqliteStorage::Ptr storage(new SqliteStorage(calendar));
     QVERIFY(storage->open());
 
     QVERIFY(calendar->events().isEmpty());
@@ -94,6 +99,8 @@ void tst_load::testAll()
     QCOMPARE(calendar->events().length() - length0, 2);
     QVERIFY(calendar->incidence(event->uid()));
     QVERIFY(calendar->incidence(event2->uid()));
+    QCOMPARE(calendar->notebook(calendar->incidence(event->uid())), mNotebookUid);
+    QCOMPARE(calendar->notebook(calendar->incidence(event2->uid())), mNotebookUid);
     QVERIFY(storage->isRecurrenceLoaded());
     QDateTime start, end;
     QVERIFY(!storage->getLoadDates(QDate(), QDate(), &start, &end));
@@ -122,6 +129,7 @@ void tst_load::testById()
 
     QVERIFY(mStorage->calendar()->addEvent(event));
     QVERIFY(mStorage->calendar()->addEvent(occurrence));
+    QVERIFY(mStorage->calendar()->setNotebook(event, mNotebookUid));
     QVERIFY(mStorage->save());
 
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
@@ -170,7 +178,9 @@ void tst_load::testSeries()
 
     QVERIFY(mStorage->calendar()->addEvent(event));
     QVERIFY(mStorage->calendar()->addEvent(occurrence));
+    QVERIFY(mStorage->calendar()->setNotebook(event, mNotebookUid));
     QVERIFY(mStorage->calendar()->addEvent(single));
+    QVERIFY(mStorage->calendar()->setNotebook(single, mNotebookUid));
     QVERIFY(mStorage->save());
 
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
@@ -212,7 +222,9 @@ void tst_load::testByInstanceIdentifier()
 
     QVERIFY(mStorage->calendar()->addEvent(event));
     QVERIFY(mStorage->calendar()->addEvent(occurrence));
+    QVERIFY(mStorage->calendar()->setNotebook(event, mNotebookUid));
     QVERIFY(mStorage->calendar()->addEvent(single));
+    QVERIFY(mStorage->calendar()->setNotebook(single, mNotebookUid));
     QVERIFY(mStorage->save());
 
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::systemTimeZone()));
@@ -248,29 +260,35 @@ void tst_load::testByDate()
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime(date, QTime(11, 56), Qt::UTC));
     QVERIFY(mStorage->calendar()->addEvent(event));
+    QVERIFY(mStorage->calendar()->setNotebook(event, mNotebookUid));
     // Plain event the day after at 00:00.
     KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
     event2->setDtStart(QDateTime(date.addDays(1), QTime(), Qt::UTC));
     QVERIFY(mStorage->calendar()->addEvent(event2));
+    QVERIFY(mStorage->calendar()->setNotebook(event2, mNotebookUid));
     // Recurring daily event, intersecting date.
     KCalendarCore::Event::Ptr event3(new KCalendarCore::Event);
     event3->setDtStart(QDateTime(date.addDays(-30), QTime(12, 07), Qt::UTC));
     event3->recurrence()->setDaily(1);
     QVERIFY(mStorage->calendar()->addEvent(event3));
+    QVERIFY(mStorage->calendar()->setNotebook(event3, mNotebookUid));
     // Multi-day event intersecting day.
     KCalendarCore::Event::Ptr event4(new KCalendarCore::Event);
     event4->setDtStart(QDateTime(date.addDays(-2), QTime(), Qt::UTC));
     event4->setDtEnd(QDateTime(date.addDays(+2), QTime(), Qt::UTC));
     QVERIFY(mStorage->calendar()->addEvent(event4));
+    QVERIFY(mStorage->calendar()->setNotebook(event4, mNotebookUid));
     // All day event at day.
     KCalendarCore::Event::Ptr event5(new KCalendarCore::Event);
     event5->setDtStart(QDateTime(date, QTime()));
     event5->setAllDay(true);
     QVERIFY(mStorage->calendar()->addEvent(event5));
+    QVERIFY(mStorage->calendar()->setNotebook(event5, mNotebookUid));
     // Plain event happening another day, but intersecting in the calendar time zone.
     KCalendarCore::Event::Ptr event6(new KCalendarCore::Event);
     event6->setDtStart(QDateTime(date.addDays(1), QTime(0, 30), QTimeZone("Europe/Paris")));
     QVERIFY(mStorage->calendar()->addEvent(event6));
+    QVERIFY(mStorage->calendar()->setNotebook(event6, mNotebookUid));
     QVERIFY(mStorage->save());
     
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::utc()));

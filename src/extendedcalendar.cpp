@@ -237,17 +237,7 @@ bool ExtendedCalendar::deleteIncidence(const Incidence::Ptr &incidence)
 
 bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent)
 {
-    return addEvent(aEvent, defaultNotebook());
-}
-
-bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &notebookUid)
-{
     if (!aEvent) {
-        return false;
-    }
-
-    if (notebookUid.isEmpty()) {
-        qCWarning(lcMkcal) << "ExtendedCalendar::addEvent(): NotebookUid empty";
         return false;
     }
 
@@ -261,7 +251,16 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
 
     if (MemoryCalendar::addIncidence(aEvent)) {
         d->addIncidenceToLists(aEvent);
-        return setNotebook(aEvent, notebookUid);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &notebookUid)
+{
+    if (addEvent(aEvent)) {
+        return setNotebook(aEvent, notebookUid.isEmpty() ? defaultNotebook() : notebookUid);
     } else {
         return false;
     }
@@ -270,7 +269,6 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
 bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
 {
     if (MemoryCalendar::deleteIncidence(event)) {
-        event->unRegisterObserver(this);
         d->removeIncidenceFromLists(event);
         return true;
     } else {
@@ -280,17 +278,7 @@ bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
 
 bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo)
 {
-    return addTodo(aTodo, defaultNotebook());
-}
-
-bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUid)
-{
     if (!aTodo) {
-        return false;
-    }
-
-    if (notebookUid.isEmpty()) {
-        qCWarning(lcMkcal) << "ExtendedCalendar::addTodo(): NotebookUid empty";
         return false;
     }
 
@@ -311,7 +299,16 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
 
     if (MemoryCalendar::addIncidence(aTodo)) {
         d->addIncidenceToLists(aTodo);
-        return setNotebook(aTodo, notebookUid);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUid)
+{
+    if (addTodo(aTodo)) {
+        return setNotebook(aTodo, notebookUid.isEmpty() ? defaultNotebook() : notebookUid);
     } else {
         return false;
     }
@@ -320,7 +317,6 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
 bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
 {
     if (MemoryCalendar::deleteIncidence(todo)) {
-        todo->unRegisterObserver(this);
         d->removeIncidenceFromLists(todo);
         return true;
     } else {
@@ -469,17 +465,7 @@ QDate ExtendedCalendar::previousEventsDate(const QDate &date, const QTimeZone &t
 
 bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal)
 {
-    return addJournal(aJournal, defaultNotebook());
-}
-
-bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &notebookUid)
-{
     if (!aJournal) {
-        return false;
-    }
-
-    if (notebookUid.isEmpty()) {
-        qCWarning(lcMkcal) << "ExtendedCalendar::addJournal(): NotebookUid empty";
         return false;
     }
 
@@ -500,7 +486,16 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
 
     if (MemoryCalendar::addIncidence(aJournal)) {
         d->addIncidenceToLists(aJournal);
-        return setNotebook(aJournal, notebookUid);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &notebookUid)
+{
+    if (addJournal(aJournal)) {
+        return setNotebook(aJournal, notebookUid.isEmpty() ? defaultNotebook() : notebookUid);
     } else {
         return false;
     }
@@ -509,7 +504,6 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
 bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
 {
     if (MemoryCalendar::deleteIncidence(journal)) {
-        journal->unRegisterObserver(this);
         d->removeIncidenceFromLists(journal);
         return true;
     } else {

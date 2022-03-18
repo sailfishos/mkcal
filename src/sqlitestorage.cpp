@@ -97,7 +97,7 @@ static const char *createStatements[] =
 class mKCal::SqliteStorage::Private
 {
 public:
-    Private(const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
+    Private(const Calendar::Ptr &calendar, SqliteStorage *storage,
             const QString &databaseName
            )
         : mCalendar(calendar),
@@ -118,7 +118,7 @@ public:
     {
     }
 
-    ExtendedCalendar::Ptr mCalendar;
+    Calendar::Ptr mCalendar;
     SqliteStorage *mStorage;
     QString mDatabaseName;
 #ifdef Q_OS_UNIX
@@ -154,7 +154,7 @@ public:
 };
 //@endcond
 
-SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &databaseName,
+SqliteStorage::SqliteStorage(const Calendar::Ptr &cal, const QString &databaseName,
                              bool validateNotebooks)
     : ExtendedStorage(cal, validateNotebooks),
       d(new Private(cal, this, databaseName))
@@ -194,7 +194,7 @@ static QString defaultLocation()
     return dbFile;
 }
 
-SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
+SqliteStorage::SqliteStorage(const Calendar::Ptr &cal, bool validateNotebooks)
     : SqliteStorage(cal, defaultLocation(), validateNotebooks)
 {
 }
@@ -1196,7 +1196,8 @@ bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const
             }
         }
     }
-    if (added && !mCalendar->addIncidence(incidence, notebookUid)) {
+    if (added && (!mCalendar->addIncidence(incidence)
+                  || !mCalendar->setNotebook(incidence, notebookUid))) {
         added = false;
         qCWarning(lcMkcal) << "cannot add incidence" << incidence->uid() << "to notebook" << notebookUid;
     }

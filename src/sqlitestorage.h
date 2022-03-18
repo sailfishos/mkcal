@@ -65,7 +65,7 @@ public:
       @param validateNotebooks set to true for saving only those incidences
              that belong to an existing notebook of this storage
     */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
+    explicit SqliteStorage(const KCalendarCore::Calendar::Ptr &cal,
                            const QString &databaseName,
                            bool validateNotebooks = true);
 
@@ -78,7 +78,7 @@ public:
       @param validateNotebooks set to true for saving only those incidences
              that belong to an existing notebook of this storage
     */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
+    explicit SqliteStorage(const KCalendarCore::Calendar::Ptr &cal,
                            bool validateNotebooks = true);
 
     /**
