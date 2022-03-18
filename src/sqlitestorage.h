@@ -57,8 +57,8 @@ public:
     typedef QSharedPointer<SqliteStorage> Ptr;
 
     /**
-      Constructs a new SqliteStorage object for Calendar @p calendar with format
-      @p format, and storage to file @p fileName.
+      Constructs a new SqliteStorage object for Calendar @p calendar with
+      storage to file @p databaseName.
 
       @param calendar is a pointer to a valid Calendar object.
       @param databaseName is the name of the database containing the Calendar data.
@@ -67,6 +67,18 @@ public:
     */
     explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
                            const QString &databaseName,
+                           bool validateNotebooks = true);
+
+    /**
+      Constructs a new SqliteStorage object for Calendar @p calendar. Location
+      of the database is using default location, or is taken from SQLITESTORAGEDB
+      enivronment variable.
+
+      @param calendar is a pointer to a valid Calendar object.
+      @param validateNotebooks set to true for saving only those incidences
+             that belong to an existing notebook of this storage
+    */
+    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
                            bool validateNotebooks = true);
 
     /**

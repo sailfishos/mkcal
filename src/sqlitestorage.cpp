@@ -41,6 +41,7 @@ using namespace KCalendarCore;
 
 #include <QFileSystemWatcher>
 
+#include <QtCore/QDir>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
 #include <QtCore/QUuid>
@@ -159,6 +160,44 @@ SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &da
       d(new Private(cal, this, databaseName))
 {
     cal->registerObserver(this);
+}
+
+// QDir::isReadable() doesn't support group permissions, only user permissions.
+static bool directoryIsRW(const QString &dirPath)
+{
+    QFileInfo databaseDirInfo(dirPath);
+    return (databaseDirInfo.permission(QFile::ReadGroup | QFile::WriteGroup)
+            || databaseDirInfo.permission(QFile::ReadUser  | QFile::WriteUser));
+}
+
+static QString defaultLocation()
+{
+    // Environment variable is taking precedence.
+    QString dbFile = QLatin1String(qgetenv("SQLITESTORAGEDB"));
+    if (dbFile.isEmpty()) {
+        // Otherwise, use a central storage location by default
+        const QString privilegedDataDir = QString("%1/.local/share/system/privileged/").arg(QDir::homePath());
+
+        QDir databaseDir(privilegedDataDir);
+        if (databaseDir.exists() && directoryIsRW(privilegedDataDir)) {
+            databaseDir = privilegedDataDir + QLatin1String("Calendar/mkcal/");
+        } else {
+            databaseDir = QString("%1/.local/share/system/Calendar/mkcal/").arg(QDir::homePath());
+        }
+
+        if (!databaseDir.exists() && !databaseDir.mkpath(QString::fromLatin1("."))) {
+            qCWarning(lcMkcal) << "Unable to create calendar database directory:" << databaseDir.path();
+        }
+
+        dbFile = databaseDir.absoluteFilePath(QLatin1String("db"));
+    }
+
+    return dbFile;
+}
+
+SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
+    : SqliteStorage(cal, defaultLocation(), validateNotebooks)
+{
 }
 
 SqliteStorage::~SqliteStorage()
