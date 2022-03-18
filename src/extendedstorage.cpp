@@ -141,8 +141,6 @@ ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validate
     : CalStorage(cal),
       d(new ExtendedStorage::Private(validateNotebooks))
 {
-    // Add the calendar as observer
-    registerObserver(cal.data());
 }
 
 ExtendedStorage::~ExtendedStorage()
@@ -396,13 +394,14 @@ void ExtendedStorage::unregisterObserver(ExtendedStorageObserver *observer)
 
 void ExtendedStorage::setModified(const QString &info)
 {
-    clearLoaded();
     const QStringList list = d->mNotebooks.keys();
     for (const QString &uid : list) {
         if (!calendar()->deleteNotebook(uid)) {
             qCDebug(lcMkcal) << "notebook" << uid << "already removed from calendar";
         }
     }
+    calendar()->close();
+    clearLoaded();
     d->mNotebooks.clear();
     d->mDefaultNotebook.clear();
     if (!loadNotebooks()) {

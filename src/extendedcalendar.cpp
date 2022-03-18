@@ -1382,16 +1382,6 @@ Incidence::List ExtendedCalendar::addIncidences(Incidence::List *incidenceList,
     return returnList;
 }
 
-void ExtendedCalendar::storageModified(ExtendedStorage *storage, const QString &info)
-{
-    Q_UNUSED(storage);
-    Q_UNUSED(info);
-
-    // Despite the strange name, close() method does exactly what we
-    // want - clears the in-memory contents of the calendar.
-    close();
-}
-
 int ExtendedCalendar::eventCount(const QString &notebookUid)
 {
     Event::List events = rawEvents();
