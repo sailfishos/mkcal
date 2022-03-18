@@ -141,10 +141,12 @@ ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validate
     : CalStorage(cal),
       d(new ExtendedStorage::Private(validateNotebooks))
 {
+    cal->registerObserver(this);
 }
 
 ExtendedStorage::~ExtendedStorage()
 {
+    calendar()->unregisterObserver(this);
     delete d;
 }
 

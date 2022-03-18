@@ -159,7 +159,6 @@ SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &da
     : ExtendedStorage(cal, validateNotebooks),
       d(new Private(cal, this, databaseName))
 {
-    cal->registerObserver(this);
 }
 
 // QDir::isReadable() doesn't support group permissions, only user permissions.
@@ -202,7 +201,6 @@ SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, bool validateNote
 
 SqliteStorage::~SqliteStorage()
 {
-    calendar()->unregisterObserver(this);
     close();
     delete d;
 }
