@@ -237,7 +237,8 @@ bool SqliteStorage::open()
 
     list = notebooks();
     if (list.isEmpty()) {
-        initializeDatabase();
+        qCDebug(lcMkcal) << "Storage is empty, initializing";
+        createDefaultNotebook();
     }
 
     return true;
@@ -2111,15 +2112,6 @@ QDateTime SqliteStorage::fromOriginTime(sqlite3_int64 seconds, const QByteArray 
     }
 //  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
     return dt;
-}
-
-bool SqliteStorage::initializeDatabase()
-{
-    qCDebug(lcMkcal) << "Storage is empty, initializing";
-    if (createDefaultNotebook()) {
-        return true;
-    }
-    return false;
 }
 
 void SqliteStorage::virtual_hook(int id, void *data)

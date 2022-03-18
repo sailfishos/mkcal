@@ -405,14 +405,6 @@ public:
     */
     QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename);
 
-private:
-    /**
-      Initialized the database with the predefined contents
-
-      @return True if ok, false if there was an error
-    */
-    bool initializeDatabase();
-
 protected:
     bool loadNotebooks();
     bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal = true);
