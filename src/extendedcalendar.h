@@ -195,7 +195,6 @@
 #include "mkcal_export.h"
 
 #include <KCalendarCore/MemoryCalendar>
-#include <extendedstorageobserver.h>
 
 namespace mKCal {
 
@@ -206,8 +205,7 @@ class Notebook;
   @brief
   This class provides a calendar cached into memory.
 */
-class MKCAL_EXPORT ExtendedCalendar : public KCalendarCore::MemoryCalendar,
-    public ExtendedStorageObserver
+class MKCAL_EXPORT ExtendedCalendar : public KCalendarCore::MemoryCalendar
 {
 public:
     /**
@@ -740,14 +738,6 @@ public:
       @return count of incidences
     */
     int journalCount(const QString &notebookUid = QString());
-
-protected:
-
-    /**
-       Implement the storageModified to clear ExtendedCalendar
-       contents on the storage change.
-     */
-    virtual void storageModified(ExtendedStorage *storage, const QString &info);
 
 private:
     //@cond PRIVATE

@@ -26,9 +26,12 @@
 #include <KCalendarCore/ICalFormat>
 #include <KCalendarCore/OccurrenceIterator>
 
+#include <sqlite3.h>
+
 #include "tst_storage.h"
 #include "dummystorage.h" // Not used, but tests API compilqtion
 #include "sqlitestorage.h"
+#include "sqliteformat.h"
 #ifdef TIMED_SUPPORT
 #include <timed-qt5/interface.h>
 #include <QtCore/QMap>
@@ -82,13 +85,15 @@ void tst_storage::tst_timezone()
 Q_DECLARE_METATYPE(QDateTime)
 void tst_storage::tst_veventdtstart_data()
 {
+    SqliteFormat format(nullptr);
+
     QTest::addColumn<QDateTime>("startDateTime");
 
     QTest::newRow("clock time") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), Qt::LocalTime);
     QTest::newRow("UTC") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), Qt::UTC);
     QTest::newRow("time zone") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), QTimeZone("Europe/Paris"));
     QTest::newRow("date only") << QDateTime(QDate(2020, 5, 29));
-    QTest::newRow("origin date time") << m_storage.staticCast<SqliteStorage>()->fromOriginTime(0);
+    QTest::newRow("origin date time") << format.fromOriginTime(0);
     // Not allowed by RFC, will be converted to origin of time after save.
     QTest::newRow("bogus QDateTime") << QDateTime();
 }
@@ -111,8 +116,9 @@ void tst_storage::tst_veventdtstart()
     if (startDateTime.isValid()) {
         QCOMPARE(fetchedEvent->dtStart(), startDateTime);
     } else {
+        SqliteFormat format(nullptr);
         // QDateTime is bogus, invalid date time == January 1st 1970.
-        QCOMPARE(fetchedEvent->dtStart(), m_storage.staticCast<SqliteStorage>()->fromOriginTime(0));
+        QCOMPARE(fetchedEvent->dtStart(), format.fromOriginTime(0));
     }
     QVERIFY(!fetchedEvent->hasEndDate());
 }
@@ -503,8 +509,7 @@ void tst_storage::tst_recurrenceExpansion()
 
 void tst_storage::tst_origintimes()
 {
-    SqliteStorage *ss = dynamic_cast<SqliteStorage *>(m_storage.data());
-    QVERIFY(ss);
+    SqliteFormat format(nullptr, m_storage->calendar()->timeZone());
 
     QDateTime utcTime(QDate(2014, 1, 15), QTime(), Qt::UTC);
     QDateTime localTime(QDate(2014, 1, 15), QTime(), Qt::LocalTime);
@@ -512,8 +517,8 @@ void tst_storage::tst_origintimes()
     // local origin time is the same as specific time set to utc
     // note: currently origin time of clock time is saved as time in current time zone.
     // that does not necessarily make sense, but better be careful when changing behavior there.
-    QCOMPARE(ss->toOriginTime(utcTime), ss->toLocalOriginTime(utcTime));
-    QCOMPARE(ss->toLocalOriginTime(localTime), ss->toLocalOriginTime(utcTime));
+    QCOMPARE(format.toOriginTime(utcTime), format.toLocalOriginTime(utcTime));
+    QCOMPARE(format.toLocalOriginTime(localTime), format.toLocalOriginTime(utcTime));
 }
 
 void tst_storage::tst_rawEvents_data()

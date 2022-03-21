@@ -33,6 +33,7 @@
 
 #include "mkcal_export.h"
 #include "extendedcalendar.h"
+#include "extendedstorageobserver.h"
 #include "notebook.h"
 
 #include <KCalendarCore/CalStorage>
