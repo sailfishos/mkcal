@@ -49,10 +49,8 @@ class mKCal::SqliteFormat::Private
 public:
     Private(SqliteFormat *format, sqlite3 *database, const QTimeZone &timeZone)
         : mFormat(format), mDatabase(database)
-        , mOriginTime(QDateTime(QDate(1970, 1, 1), QTime(0, 0, 0), Qt::UTC))
         , mTimeZone(timeZone)
     {
-        qCDebug(lcMkcal) << "time of origin is " << mOriginTime << mOriginTime.toTime_t();
     }
     ~Private()
     {
@@ -86,7 +84,6 @@ public:
     }
     SqliteFormat *mFormat;
     sqlite3 *mDatabase;
-    QDateTime mOriginTime;
     QTimeZone mTimeZone;
 
     // Cache for various queries.
@@ -2175,26 +2172,25 @@ error:
 
 sqlite3_int64 SqliteFormat::toOriginTime(const QDateTime &dt)
 {
-    return d->mOriginTime.secsTo(dt);
+    return dt.toMSecsSinceEpoch() / 1000;
 }
 
 sqlite3_int64 SqliteFormat::toLocalOriginTime(const QDateTime &dt)
 {
-    return static_cast<qint64>(d->mOriginTime.date().daysTo(dt.date())) * 86400
-           + d->mOriginTime.time().secsTo(dt.time());
+    return toOriginTime(QDateTime(dt.date(), dt.time(), Qt::UTC));
 }
 
 QDateTime SqliteFormat::fromLocalOriginTime(sqlite3_int64 seconds)
 {
     // Note: don't call toClockTime() as that implies a conversion first to the local time zone.
-    QDateTime local(d->mOriginTime.addSecs(seconds));
+    const QDateTime local = fromOriginTime(seconds);
     return QDateTime(local.date(), local.time(), Qt::LocalTime);
 }
 
 QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds)
 {
     //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
-    return d->mOriginTime.addSecs(seconds).toUTC();
+    return QDateTime::fromMSecsSinceEpoch(seconds * 1000, Qt::UTC);
 }
 
 QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename)
@@ -2202,18 +2198,18 @@ QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds, const QByteArray &
     QDateTime dt;
 
     if (zonename == "UTC") {
-        dt = d->mOriginTime.addSecs(seconds).toUTC();
+        dt = fromOriginTime(seconds);
     } else if (!zonename.isEmpty()) {
         // First try system zones.
         const QTimeZone timezone(zonename);
         if (timezone.isValid()) {
-            dt = d->mOriginTime.addSecs(seconds).toTimeZone(timezone);
+            dt = fromOriginTime(seconds).toTimeZone(timezone);
         } else if (d->mTimeZone.isValid() && d->mTimeZone.id() == zonename) {
-            dt = d->mOriginTime.addSecs(seconds).toTimeZone(d->mTimeZone);
+            dt = fromOriginTime(seconds).toTimeZone(d->mTimeZone);
         }
     } else {
         // Empty zonename, use floating time.
-        dt = d->mOriginTime.addSecs(seconds);
+        dt = fromOriginTime(seconds);
         dt.setTimeSpec(Qt::LocalTime);
     }
 //  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
