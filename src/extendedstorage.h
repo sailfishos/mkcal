@@ -32,16 +32,11 @@
 #define MKCAL_EXTENDEDSTORAGE_H
 
 #include "mkcal_export.h"
-#include "extendedcalendar.h"
 #include "extendedstorageobserver.h"
 #include "notebook.h"
 
 #include <KCalendarCore/CalStorage>
 #include <KCalendarCore/Calendar>
-
-namespace KCalendarCore {
-class Incidence;
-}
 
 class MkcalTool;
 class tst_load;
@@ -102,7 +97,7 @@ public:
       cannot change. It is possible to do so through the API, but the internal
       hash tables will not be updated and hence the changes will not be tracked.
     */
-    explicit ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks = true);
+    explicit ExtendedStorage(const KCalendarCore::Calendar::Ptr &cal, bool validateNotebooks = true);
 
     /**
       Destructor.

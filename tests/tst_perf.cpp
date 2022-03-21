@@ -23,6 +23,7 @@
 #include <QTemporaryFile>
 
 #include "tst_perf.h"
+#include "extendedcalendar.h"
 #include "sqlitestorage.h"
 
 tst_perf::tst_perf(QObject *parent)
@@ -92,6 +93,7 @@ void tst_perf::tst_save()
             i += 1;
         }
         QVERIFY(m_storage->calendar()->addIncidence(event));
+        QVERIFY(m_storage->calendar()->setNotebook(event, m_storage->defaultNotebook()->uid()));
     }
     QCOMPARE(m_storage->calendar()->rawEvents().count(), N_EVENTS);
     QVERIFY(m_storage->save());

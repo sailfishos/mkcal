@@ -137,7 +137,7 @@ public:
 };
 //@endcond
 
-ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
+ExtendedStorage::ExtendedStorage(const Calendar::Ptr &cal, bool validateNotebooks)
     : CalStorage(cal),
       d(new ExtendedStorage::Private(validateNotebooks))
 {
