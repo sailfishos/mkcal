@@ -64,6 +64,7 @@ private slots:
     void tst_deleted();
     void tst_modified();
     void tst_inserted();
+    void tst_changeNotebook();
     void tst_icalAllDay_data();
     void tst_icalAllDay();
     void tst_deleteAllEvents();
