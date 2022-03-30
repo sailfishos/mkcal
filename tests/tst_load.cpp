@@ -271,6 +271,12 @@ void tst_load::testByDate()
     KCalendarCore::Event::Ptr event6(new KCalendarCore::Event);
     event6->setDtStart(QDateTime(date.addDays(1), QTime(0, 30), QTimeZone("Europe/Paris")));
     QVERIFY(mStorage->calendar()->addEvent(event6));
+    // Recurring event defined with rdates.
+    KCalendarCore::Event::Ptr event7(new KCalendarCore::Event);
+    event7->setDtStart(QDateTime(date.addDays(-3), QTime(12, 0), Qt::UTC));
+    event7->recurrence()->addRDateTime(QDateTime(date, QTime(9, 0), Qt::UTC));
+    QVERIFY(mStorage->calendar()->addEvent(event7));
+
     QVERIFY(mStorage->save());
     
     ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::utc()));
@@ -285,11 +291,13 @@ void tst_load::testByDate()
     QVERIFY(calendar->incidence(event4->uid()));
     QVERIFY(calendar->incidence(event5->uid()));
     QVERIFY(calendar->incidence(event6->uid()));
-    QCOMPARE(calendar->events().length() - length0, 5);
+    QVERIFY(calendar->incidence(event7->uid()));
+    QCOMPARE(calendar->events().length() - length0, 6);
     QVERIFY(storage->isRecurrenceLoaded());
     QDateTime start, end;
     QVERIFY(!storage->getLoadDates(date, date.addDays(1), &start, &end));
 
+    QVERIFY(mStorage->calendar()->deleteIncidence(event7));
     QVERIFY(mStorage->calendar()->deleteIncidence(event6));
     QVERIFY(mStorage->calendar()->deleteIncidence(event5));
     QVERIFY(mStorage->calendar()->deleteIncidence(event4));
