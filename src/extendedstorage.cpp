@@ -201,8 +201,12 @@ bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
         return false;
     }
 
-    loadStart->setTimeZone(calendar()->timeZone());
-    loadEnd->setTimeZone(calendar()->timeZone());
+    if (loadStart->isValid()) {
+        loadStart->setTimeZone(calendar()->timeZone());
+    }
+    if (loadEnd->isValid()) {
+        loadEnd->setTimeZone(calendar()->timeZone());
+    }
 
     qCDebug(lcMkcal) << "get load dates" << start << end << *loadStart << *loadEnd;
 
