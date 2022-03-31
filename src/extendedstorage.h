@@ -68,7 +68,7 @@ enum DBOperation {
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
-    : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
+    : public KCalendarCore::CalStorage
 {
     Q_OBJECT
 
@@ -113,7 +113,7 @@ public:
       @copydoc
       CalStorage::open()
     */
-    virtual bool open() = 0;
+    virtual bool open();
 
     /**
       @copydoc
@@ -329,7 +329,7 @@ public:
       @copydoc
       CalStorage::save()
     */
-    virtual bool save() = 0;
+    virtual bool save();
 
     /**
       This is an overload of save() method. When @deleteAction is
@@ -340,7 +340,7 @@ public:
       @param deleteAction the action to apply to deleted incidences
       @return True if successful; false otherwise
     */
-    virtual bool save(DeleteAction deleteAction) = 0;
+    virtual bool save(DeleteAction deleteAction);
 
     /**
       Mark if supported by the storage that an incidence has been opened.
@@ -364,38 +364,6 @@ public:
       CalStorage::close()
     */
     virtual bool close();
-
-    // Internal Calendar Listener Methods //
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarModified()
-    */
-    virtual void calendarModified(bool modified, KCalendarCore::Calendar *calendar) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdded()
-    */
-    virtual void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceChanged()
-    */
-    virtual void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceDeleted()
-    */
-    virtual void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
-    */
-    virtual void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
     // Synchronization Specific Methods //
 
@@ -623,8 +591,13 @@ public:
     virtual void virtual_hook(int id, void *data) = 0;
 
 protected:
-    virtual bool loadNotebooks() = 0;
+    virtual QTimeZone timeZone() const = 0;
+    virtual bool loadNotebooks(QList<Notebook> *notebooks, QString *defaultNotebookId) = 0;
     virtual bool modifyNotebook(const Notebook &nb, DBOperation dbop) = 0;
+    virtual bool storeIncidences(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
+                                 const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modifications,
+                                 const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
+                                 ExtendedStorage::DeleteAction deleteAction) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;
@@ -638,6 +611,7 @@ protected:
     void setUpdated(const KCalendarCore::Incidence::List &added,
                     const KCalendarCore::Incidence::List &modified,
                     const KCalendarCore::Incidence::List &deleted);
+    void setLoaded(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &incidences);
 
     bool isUncompletedTodosLoaded();
     void setIsUncompletedTodosLoaded(bool loaded);

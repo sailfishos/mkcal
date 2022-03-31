@@ -32,6 +32,7 @@
 #define MKCAL_STORAGEOBSERVER_H
 
 #include <QString>
+#include <QMultiHash>
 #include <KCalendarCore/Incidence>
 
 
@@ -93,6 +94,18 @@ public:
                                 const KCalendarCore::Incidence::List &added,
                                 const KCalendarCore::Incidence::List &modified,
                                 const KCalendarCore::Incidence::List &deleted);
+
+    /**
+      Notify the Observer that incidences have been loaded from storage.
+      The loaded incidence are sorted with their notebook id.
+
+      @param storage is a pointer to the ExtendedStorage object that
+      is being observed.
+      @param incidences is a list of incidences, sorted by notebook ids.
+     */
+    virtual void incidenceLoaded(ExtendedStorage *storage,
+                                 const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &incidences);
+
 };
 
 };

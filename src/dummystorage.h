@@ -45,21 +45,6 @@ public:
         Q_ASSERT(r);
     }
 
-    void calendarModified(bool, KCalendarCore::Calendar *)
-    {
-    }
-    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &)
-    {
-    }
-    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &)
-    {
-    }
-    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &, const KCalendarCore::Calendar *)
-    {
-    }
-    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &)
-    {
-    }
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
     {
         return true;
@@ -83,22 +68,6 @@ public:
         return true;
     }
 
-    /**
-      @copydoc
-      ExtendedStorage::save()
-    */
-    bool save()
-    {
-        return true;
-    }
-    bool save(DeleteAction)
-    {
-        return true;
-    }
-    bool close()
-    {
-        return true;
-    }
     bool load(const QString &, const QDateTime &)
     {
         return true;
@@ -231,11 +200,18 @@ public:
     {
         return true;
     }
-    bool loadNotebooks()
+    bool loadNotebooks(QList<Notebook> *notebooks, QString *defaultNotebookId)
     {
         return true;
     }
     bool modifyNotebook(const mKCal::Notebook &, mKCal::DBOperation)
+    {
+        return true;
+    }
+    bool storeIncidences(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
+                         const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modification,
+                         const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
+                         ExtendedStorage::DeleteAction deleteAction)
     {
         return true;
     }
@@ -254,6 +230,10 @@ public:
     int journalCount()
     {
         return 0;
+    }
+    QTimeZone timeZone() const
+    {
+        return QTimeZone();
     }
     void virtual_hook(int, void *)
     {

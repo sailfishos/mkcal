@@ -232,21 +232,21 @@ public:
 
     /**
       @copydoc
+      ExtendedStorage::storeIncidences(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
+                                       const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
+                                       const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
+                                       ExtendedStorage::DeleteAction)
+    */
+    bool storeIncidences(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
+                         const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modifications,
+                         const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
+                         ExtendedStorage::DeleteAction deleteAction);
+
+    /**
+      @copydoc
       ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
-
-    /**
-      @copydoc
-      CalStorage::save()
-    */
-    bool save();
-
-    /**
-      @copydoc
-      ExtendedStorage::save(ExtendedStorage::DeleteAction deleteAction)
-    */
-    bool save(ExtendedStorage::DeleteAction deleteAction);
 
     /**
       @copydoc
@@ -259,42 +259,6 @@ public:
       CalStorage::close()
     */
     bool close();
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarModified()
-    */
-    void calendarModified(bool modified, KCalendarCore::Calendar *calendar);
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceCreated()
-    */
-    void calendarIncidenceCreated(const KCalendarCore::Incidence::Ptr &incidence);
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdded()
-    */
-    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence);
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceChanged()
-    */
-    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &incidence);
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceDeleted()
-    */
-    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar);
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
-    */
-    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
@@ -357,13 +321,18 @@ public:
     int journalCount();
 
     /**
+      Returns the time zone used by the storage.
+     */
+    QTimeZone timeZone() const;
+
+    /**
       @copydoc
       ExtendedStorage::virtual_hook()
     */
     virtual void virtual_hook(int id, void *data);
 
 protected:
-    bool loadNotebooks();
+    bool loadNotebooks(QList<Notebook> *notebooks, QString *defaultNotebookId);
     bool modifyNotebook(const Notebook &nb, DBOperation dbop);
 
 private:
