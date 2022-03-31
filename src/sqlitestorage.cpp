@@ -97,10 +97,10 @@ static const char *createStatements[] =
 class mKCal::SqliteStorage::Private
 {
 public:
-    Private(const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
+    Private(const QTimeZone &timeZone, SqliteStorage *storage,
             const QString &databaseName
            )
-        : mCalendar(calendar),
+        : mTimeZone(timeZone),
           mStorage(storage),
           mDatabaseName(databaseName),
 #ifdef Q_OS_UNIX
@@ -110,15 +110,13 @@ public:
 #endif
           mChanged(databaseName + gChanged),
           mWatcher(0),
-          mFormat(0),
-          mIsLoading(false),
-          mIsSaved(false)
+          mFormat(0)
     {}
     ~Private()
     {
     }
 
-    ExtendedCalendar::Ptr mCalendar;
+    QTimeZone mTimeZone;
     SqliteStorage *mStorage;
     QString mDatabaseName;
 #ifdef Q_OS_UNIX
@@ -132,17 +130,11 @@ public:
     int mSavedTransactionId;
     sqlite3 *mDatabase = nullptr;
     SqliteFormat *mFormat = nullptr;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToInsert;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
-    bool mIsLoading;
-    bool mIsSaved;
 
-    bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
-    bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
+    bool saveIncidences(const QMultiHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
     bool selectIncidences(Incidence::List *list,
                           const char *query1, int qsize1,
@@ -157,7 +149,7 @@ public:
 SqliteStorage::SqliteStorage(const ExtendedCalendar::Ptr &cal, const QString &databaseName,
                              bool validateNotebooks)
     : ExtendedStorage(cal, validateNotebooks),
-      d(new Private(cal, this, databaseName))
+      d(new Private(cal->timeZone(), this, databaseName))
 {
 }
 
@@ -242,7 +234,7 @@ bool SqliteStorage::open()
          SL3_exec(d->mDatabase);
     }
 
-    d->mFormat = new SqliteFormat(d->mDatabase, calendar()->timeZone());
+    d->mFormat = new SqliteFormat(d->mDatabase, d->mTimeZone);
     d->mFormat->selectMetadata(&d->mSavedTransactionId);
 
     if (!d->mChanged.open(QIODevice::Append)) {
@@ -260,19 +252,14 @@ bool SqliteStorage::open()
     }
 
     if (!d->loadTimezones()) {
-        qCWarning(lcMkcal) << "cannot load timezones from calendar";
-        goto error;
+        qCWarning(lcMkcal) << "cannot load timezones from database";
+        close();
+        return false;
     }
 
-    if (!loadNotebooks()) {
-        qCWarning(lcMkcal) << "cannot load notebooks from calendar";
-        goto error;
-    }
-
-    list = notebooks();
-    if (list.isEmpty()) {
-        qCDebug(lcMkcal) << "Storage is empty, initializing";
-        createDefaultNotebook();
+    if (!ExtendedStorage::open()) {
+        close();
+        return false;
     }
 
     return true;
@@ -293,7 +280,6 @@ bool SqliteStorage::load()
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -308,8 +294,6 @@ bool SqliteStorage::load()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     setIsRecurrenceLoaded(count >= 0);
     if (count >= 0) {
         addLoadedRange(QDate(), QDate());
@@ -326,7 +310,6 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -361,8 +344,6 @@ bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
         count = d->loadIncidences(stmt1);
     }
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -374,7 +355,6 @@ bool SqliteStorage::loadSeries(const QString &uid)
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -394,8 +374,6 @@ bool SqliteStorage::loadSeries(const QString &uid)
         count = d->loadIncidences(stmt1);
     }
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -429,8 +407,6 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
     int count = -1;
     QDateTime loadStart;
     QDateTime loadEnd;
-
-    d->mIsLoading = true;
 
     if (getLoadDates(start, end, &loadStart, &loadEnd)) {
         const char *query1 = NULL;
@@ -481,8 +457,6 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
         count = 0;
     }
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -494,7 +468,6 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -514,8 +487,6 @@ bool SqliteStorage::loadNotebookIncidences(const QString &notebookUid)
         count = d->loadIncidences(stmt1);
     }
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -555,7 +526,6 @@ bool SqliteStorage::loadJournals()
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -570,8 +540,6 @@ bool SqliteStorage::loadJournals()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -583,7 +551,6 @@ bool SqliteStorage::loadPlainIncidences()
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -598,8 +565,6 @@ bool SqliteStorage::loadPlainIncidences()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -615,7 +580,6 @@ bool SqliteStorage::loadRecurringIncidences()
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -630,8 +594,6 @@ bool SqliteStorage::loadRecurringIncidences()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     setIsRecurrenceLoaded(count >= 0);
 
     return count >= 0;
@@ -645,7 +607,6 @@ bool SqliteStorage::loadGeoIncidences()
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -660,8 +621,6 @@ bool SqliteStorage::loadGeoIncidences()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -674,7 +633,6 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -694,8 +652,6 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -707,7 +663,6 @@ bool SqliteStorage::loadAttendeeIncidences()
 
     int rv = 0;
     int count = -1;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -722,8 +677,6 @@ bool SqliteStorage::loadAttendeeIncidences()
     count = d->loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
-
     return count >= 0;
 }
 
@@ -739,7 +692,6 @@ int SqliteStorage::loadUncompletedTodos()
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -756,8 +708,6 @@ int SqliteStorage::loadUncompletedTodos()
     setIsUncompletedTodosLoaded(count >= 0);
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -778,7 +728,6 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     }
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -814,8 +763,6 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     }
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 int SqliteStorage::loadJournals(int limit, QDateTime *last)
@@ -828,7 +775,6 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -854,8 +800,6 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
         setIsJournalsLoaded(true);
     }
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -876,7 +820,6 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     }
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -911,8 +854,6 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     }
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -928,7 +869,6 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     }
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -955,8 +895,6 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     }
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -977,7 +915,6 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     }
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -1012,8 +949,6 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     }
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -1025,9 +960,7 @@ Person::List SqliteStorage::loadContacts()
         return list;
     }
 
-    d->mIsLoading = true;
     list = d->mFormat->selectContacts();
-    d->mIsLoading = false;
 
     return list;
 }
@@ -1040,7 +973,6 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -1071,8 +1003,6 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
     count = d->loadIncidences(stmt1, limit, last, false);
 
 error:
-    d->mIsLoading = false;
-
     return count;
 }
 
@@ -1080,51 +1010,6 @@ bool SqliteStorage::notifyOpened(const Incidence::Ptr &incidence)
 {
     Q_UNUSED(incidence);
     return false;
-}
-
-static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
-{
-    QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());
-    for (; it != list.constEnd(); ++it) {
-        if ((*it)->recurrenceId() == incidence->recurrenceId()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
-{
-    bool added = true;
-    bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
-    // Cannot use .contains(incidence->uid(), incidence) here, like
-    // in the rest of the file, since incidence here is a new one
-    // returned by the selectComponents() that cannot by design be already
-    // in the multihash tables.
-    if (isContaining(mIncidencesToInsert, incidence) ||
-        isContaining(mIncidencesToUpdate, incidence) ||
-        isContaining(mIncidencesToDelete, incidence) ||
-        (mStorage->validateNotebooks() && !hasNotebook)) {
-        qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
-                           << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
-        added = false;
-    } else {
-        Incidence::Ptr old(mCalendar->incidence(incidence->uid(), incidence->recurrenceId()));
-        if (old) {
-            if (incidence->revision() > old->revision()) {
-                mCalendar->deleteIncidence(old);   // move old to deleted
-                // and replace it with the new one.
-            } else {
-                added = false;
-            }
-        }
-    }
-    if (added && !mCalendar->addIncidence(incidence, notebookUid)) {
-        added = false;
-        qCWarning(lcMkcal) << "cannot add incidence" << incidence->uid() << "to notebook" << notebookUid;
-    }
-
-    return added;
 }
 
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
@@ -1142,6 +1027,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
         return -1;
     }
 
+    QMultiHash<QString, Incidence::Ptr> incidences;
     while ((incidence = mFormat->selectComponents(stmt1, notebookUid))) {
 
         const QDateTime endDateTime(incidence->dateTime(Incidence::RoleEnd));
@@ -1164,12 +1050,8 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 break;
             }
         }
-        if (addIncidence(incidence, notebookUid)) {
-            // qCDebug(lcMkcal) << "updating incidence" << incidence->uid()
-            //                  << incidence->dtStart() << endDateTime
-            //                  << "in calendar";
-            count += 1;
-        }
+        incidences.insert(notebookUid, incidence);
+        count += 1;
     }
     if (last) {
         *last = date;
@@ -1180,13 +1062,14 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
+    mStorage->setLoaded(incidences);
     mStorage->setFinished(false, "load completed");
 
     return count;
 }
 //@endcond
 
-bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List &list)
+bool SqliteStorage::purgeDeletedIncidences(const Incidence::List &list)
 {
     if (!d->mDatabase) {
         return false;
@@ -1207,7 +1090,7 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
     SL3_exec(d->mDatabase);
 
     error = 0;
-    for (const KCalendarCore::Incidence::Ptr &incidence: list) {
+    for (const Incidence::Ptr &incidence: list) {
         if (!d->mFormat->purgeDeletedComponents(incidence)) {
             error += 1;
         }
@@ -1223,15 +1106,11 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
     return error == 0;
 }
 
-bool SqliteStorage::save()
+bool SqliteStorage::store(const QMultiHash<QString, Incidence::Ptr> &additions,
+                          const QMultiHash<QString, Incidence::Ptr> &modifications,
+                          const QMultiHash<QString, Incidence::Ptr> &deletions,
+                          ExtendedStorage::DeleteAction deleteAction)
 {
-    return save(ExtendedStorage::MarkDeleted);
-}
-
-bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
-{
-    d->mIsSaved = false;
-
     if (!d->mDatabase) {
         return false;
     }
@@ -1245,63 +1124,46 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
         qCWarning(lcMkcal) << "saving timezones failed";
     }
 
-    int errors = 0;
-
-    // Incidences to insert
+    bool success = true;
     Incidence::List added;
-    if (!d->mIncidencesToInsert.isEmpty()
-        && !d->saveIncidences(d->mIncidencesToInsert, DBInsert, &added)) {
-        errors++;
+    if (!additions.isEmpty() && !d->saveIncidences(additions, DBInsert, &added)) {
+        success = false;
     }
-
-    // Incidences to update
     Incidence::List modified;
-    if (!d->mIncidencesToUpdate.isEmpty()
-        && !d->saveIncidences(d->mIncidencesToUpdate, DBUpdate, &modified)) {
-        errors++;
+    if (!modifications.isEmpty() && !d->saveIncidences(modifications, DBUpdate, &modified)) {
+        success = false;
     }
-
-    // Incidences to delete
     Incidence::List deleted;
-    if (!d->mIncidencesToDelete.isEmpty()) {
-        DBOperation dbop = DBNone;
-        switch (deleteAction) {
-        case ExtendedStorage::PurgeDeleted:
-            dbop = DBDelete;
-            break;
-        case ExtendedStorage::MarkDeleted:
-            dbop = DBMarkDeleted;
-            break;
-        }
-
-        if (!d->saveIncidences(d->mIncidencesToDelete, dbop, &deleted)) {
-            errors++;
-        }
+    if (deleteAction == ExtendedStorage::MarkDeleted
+        && !deletions.isEmpty() && !d->saveIncidences(deletions, DBMarkDeleted, &deleted)) {
+        success = false;
+    }
+    if (deleteAction == ExtendedStorage::PurgeDeleted
+        && !deletions.isEmpty() && !d->saveIncidences(deletions, DBDelete, &deleted)) {
+        success = false;
     }
 
-    if (d->mIsSaved)
+    bool changed = (d->mTimeZone.isValid() || !added.isEmpty()
+                    || !modified.isEmpty() || !deleted.isEmpty());
+    if (changed)
         d->mFormat->incrementTransactionId(&d->mSavedTransactionId);
 
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
 
-    if (d->mIsSaved) {
+    if (changed) {
         setUpdated(added, modified, deleted);
         d->mChanged.resize(0);   // make a change to create signal
     }
 
-    if (errors == 0) {
-        setFinished(false, "save completed");
-    } else {
-        setFinished(true, "errors saving incidences");
-    }
+    setFinished(!success, success ? "save completed" : "errors saving incidences");
 
-    return errors == 0;
+    return success;
 }
 
 //@cond PRIVATE
-bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop, Incidence::List *savedIncidences)
+bool SqliteStorage::Private::saveIncidences(const QMultiHash<QString, Incidence::Ptr> &list, DBOperation dbop, Incidence::List *savedIncidences)
 {
     int rv = 0;
     int errors = 0;
@@ -1314,15 +1176,10 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
     query = BEGIN_TRANSACTION;
     SL3_exec(mDatabase);
 
+    savedIncidences->clear();
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
-        QString notebookUid = mCalendar->notebook(*it);
-        if ((dbop == DBInsert || dbop == DBUpdate)
-            && !mStorage->isValidNotebook(notebookUid)) {
-            qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
-            continue;
-        } else {
-            (*savedIncidences) << *it;
-        }
+        const QString &notebookUid = it.key();
+        savedIncidences->append(*it);
 
         // lastModified is a public field of iCal RFC, so user should be
         // able to set its value to arbitrary date and time. This field is
@@ -1345,14 +1202,10 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         }
     }
 
-    list.clear();
     // TODO What if there were errors? Options: 1) rollback 2) best effort.
 
     query = COMMIT_TRANSACTION;
     SL3_exec(mDatabase);
-
-    if (!savedIncidences->isEmpty())
-        mIsSaved = true;
 
     return errors == 0;
 
@@ -1383,80 +1236,6 @@ bool SqliteStorage::close()
         d->mDatabase = 0;
     }
     return ExtendedStorage::close();
-}
-
-void SqliteStorage::calendarModified(bool modified, Calendar *calendar)
-{
-    Q_UNUSED(calendar);
-    qCDebug(lcMkcal) << "calendarModified called:" << modified;
-}
-
-void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
-{
-    if (d->mIsLoading) {
-        return;
-    }
-
-    QMultiHash<QString, KCalendarCore::Incidence::Ptr>::Iterator deleted =
-        d->mIncidencesToDelete.find(incidence->uid());
-    if (deleted != d->mIncidencesToDelete.end()) {
-        qCDebug(lcMkcal) << "removing incidence from deleted" << incidence->uid();
-        while (deleted != d->mIncidencesToDelete.end()) {
-            if ((*deleted)->recurrenceId() == incidence->recurrenceId()) {
-                deleted = d->mIncidencesToDelete.erase(deleted);
-                calendarIncidenceChanged(incidence);
-            } else {
-                ++deleted;
-            }
-        }
-    } else if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence)) {
-
-        QString uid = incidence->uid();
-
-        if (uid.length() < 7) {   // We force a minimum length of uid to grant uniqness
-            QByteArray suuid(QUuid::createUuid().toByteArray());
-            qCDebug(lcMkcal) << "changing" << uid << "to" << suuid;
-            incidence->setUid(suuid.mid(1, suuid.length() - 2));
-        }
-
-        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
-        d->mIncidencesToInsert.insert(incidence->uid(), incidence);
-    }
-}
-
-void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
-{
-    if (!d->mIncidencesToUpdate.contains(incidence->uid(), incidence) &&
-            !d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
-            !d->mIsLoading) {
-        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database update";
-        d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
-    }
-}
-
-void SqliteStorage::calendarIncidenceDeleted(const Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar)
-{
-    Q_UNUSED(calendar);
-
-    if (d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
-            !d->mIsLoading) {
-        qCDebug(lcMkcal) << "removing incidence from inserted" << incidence->uid();
-        d->mIncidencesToInsert.remove(incidence->uid(), incidence);
-    } else {
-        if (!d->mIncidencesToDelete.contains(incidence->uid(), incidence) &&
-                !d->mIsLoading) {
-            qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database delete";
-            d->mIncidencesToDelete.insert(incidence->uid(), incidence);
-        }
-    }
-}
-
-void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &incidence)
-{
-    if (d->mIncidencesToInsert.contains(incidence->uid()) && !d->mIsLoading) {
-        qCDebug(lcMkcal) << "duplicate - removing incidence from inserted" << incidence->uid();
-        d->mIncidencesToInsert.remove(incidence->uid(), incidence);
-    }
 }
 
 //@cond PRIVATE
@@ -1724,7 +1503,6 @@ QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
     }
 
 error:
-    sqlite3_reset(stmt);
     sqlite3_finalize(stmt);
 
     if (!d->mSem.release()) {
@@ -1791,7 +1569,7 @@ int SqliteStorage::journalCount()
     return d->selectCount(query, qsize);
 }
 
-bool SqliteStorage::loadNotebooks()
+bool SqliteStorage::loadNotebooks(Notebook::List *notebooks, Notebook::Ptr *defaultNotebook)
 {
     const char *query = SELECT_CALENDARS_ALL;
     int qsize = sizeof(SELECT_CALENDARS_ALL);
@@ -1802,7 +1580,7 @@ bool SqliteStorage::loadNotebooks()
 
     Notebook::Ptr nb;
 
-    if (!d->mDatabase) {
+    if (!d->mDatabase || !notebooks) {
         return false;
     }
 
@@ -1811,18 +1589,15 @@ bool SqliteStorage::loadNotebooks()
         return false;
     }
 
-    d->mIsLoading = true;
+    notebooks->clear();
 
     SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, nullptr);
 
     while ((nb = d->mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        if (isDefault && !setDefaultNotebook(nb)) {
-            qCWarning(lcMkcal) << "cannot add default notebook" << nb->uid() << nb->name() << "to storage";
-            nb = Notebook::Ptr();
-        } else if (!isDefault && !addNotebook(nb)) {
-            qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
-            nb = Notebook::Ptr();
+        notebooks->append(nb);
+        if (isDefault && defaultNotebook) {
+            *defaultNotebook = nb;
         }
     }
 
@@ -1831,77 +1606,72 @@ bool SqliteStorage::loadNotebooks()
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
-    d->mIsLoading = false;
     return true;
 
 error:
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
-    d->mIsLoading = false;
     return false;
 }
 
 bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
 {
     int rv = 0;
-    bool success = d->mIsLoading; // true if we are currently loading
     const char *query = NULL;
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
     const char *tail = NULL;
-    const char *operation = (dbop == DBInsert) ? "inserting" :
-                            (dbop == DBUpdate) ? "updating" : "deleting";
 
     if (!d->mDatabase) {
         return false;
     }
 
-    if (!d->mIsLoading) {
-        // Execute database operation.
-        if (dbop == DBInsert) {
-            query = INSERT_CALENDARS;
-            qsize = sizeof(INSERT_CALENDARS);
-            nb->setCreationDate(QDateTime::currentDateTimeUtc());
-        } else if (dbop == DBUpdate) {
-            query = UPDATE_CALENDARS;
-            qsize = sizeof(UPDATE_CALENDARS);
-        } else if (dbop == DBDelete) {
-            query = DELETE_CALENDARS;
-            qsize = sizeof(DELETE_CALENDARS);
-        } else {
-            return false;
-        }
+    // Execute database operation.
+    if (dbop == DBInsert) {
+        query = INSERT_CALENDARS;
+        qsize = sizeof(INSERT_CALENDARS);
+        nb->setCreationDate(QDateTime::currentDateTimeUtc());
+    } else if (dbop == DBUpdate) {
+        query = UPDATE_CALENDARS;
+        qsize = sizeof(UPDATE_CALENDARS);
+    } else if (dbop == DBDelete) {
+        query = DELETE_CALENDARS;
+        qsize = sizeof(DELETE_CALENDARS);
+    } else {
+        return false;
+    }
 
-        if (!d->mSem.acquire()) {
-            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-            return false;
-        }
+    if (!d->mSem.acquire()) {
+        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        return false;
+    }
 
-        SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
-            qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
-        }
+    bool success;
+    if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
+        const char *operation = (dbop == DBInsert) ? "inserting" :
+                                (dbop == DBUpdate) ? "updating" : "deleting";
+        qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
+    }
 
-        sqlite3_reset(stmt);
-        sqlite3_finalize(stmt);
+    sqlite3_finalize(stmt);
 
-        if (success) {
-            // Don't save the incremented transactionId at the moment,
-            // let it be seen as an external modification.
-            // Todo: add a method for observers on notebook changes.
-            if (!d->mFormat->incrementTransactionId(nullptr))
-                d->mSavedTransactionId = -1;
-        }
+    if (success) {
+        // Don't save the incremented transactionId at the moment,
+        // let it be seen as an external modification.
+        // Todo: add a method for observers on notebook changes.
+        if (!d->mFormat->incrementTransactionId(nullptr))
+            d->mSavedTransactionId = -1;
+    }
 
-        if (!d->mSem.release()) {
-            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-        }
+    if (!d->mSem.release()) {
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+    }
 
-        if (success) {
-            d->mChanged.resize(0);   // make a change to create signal
-        }
+    if (success) {
+        d->mChanged.resize(0);   // make a change to create signal
     }
     return success;
 
@@ -1925,9 +1695,8 @@ bool SqliteStorage::Private::saveTimezones()
     int qsize1 = sizeof(UPDATE_TIMEZONES);
     sqlite3_stmt *stmt1 = NULL;
 
-    const QTimeZone &zone = mCalendar->timeZone();
-    if (zone.isValid()) {
-        MemoryCalendar::Ptr temp = MemoryCalendar::Ptr(new MemoryCalendar(mCalendar->timeZone()));
+    if (mTimeZone.isValid()) {
+        MemoryCalendar::Ptr temp(new MemoryCalendar(mTimeZone));
         ICalFormat ical;
         QByteArray data = ical.toString(temp, QString()).toUtf8();
 
@@ -1935,7 +1704,6 @@ bool SqliteStorage::Private::saveTimezones()
         SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
         SL3_bind_text(stmt1, index, data, data.length(), SQLITE_STATIC);
         SL3_step(stmt1);
-        mIsSaved = true;
         qCDebug(lcMkcal) << "updated timezones in database";
         sqlite3_finalize(stmt1);
     }
@@ -1974,13 +1742,11 @@ bool SqliteStorage::Private::loadTimezones()
     if (rv == SQLITE_ROW) {
         QString zoneData = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
         if (!zoneData.isEmpty()) {
-            MemoryCalendar::Ptr temp = MemoryCalendar::Ptr(new MemoryCalendar(mCalendar->timeZone()));
+            MemoryCalendar::Ptr temp(new MemoryCalendar(mTimeZone));
             ICalFormat ical;
-            if (ical.fromString(temp, zoneData)) {
-                qCDebug(lcMkcal) << "loaded timezones from database";
-                mCalendar->setTimeZone(temp->timeZone());
-            } else {
+            if (!ical.fromString(temp, zoneData)) {
                 qCWarning(lcMkcal) << "failed to load timezones from database";
+                mTimeZone = QTimeZone();
             }
         }
     }
@@ -1995,6 +1761,11 @@ error:
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     return success;
+}
+
+QTimeZone SqliteStorage::timeZone() const
+{
+    return d->mTimeZone;
 }
 
 void SqliteStorage::fileChanged(const QString &path)
