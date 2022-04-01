@@ -35,7 +35,7 @@
 #define MKCAL_SQLITESTORAGE_H
 
 #include "mkcal_export.h"
-#include "extendedstorage.h"
+#include "storagebackend.h"
 
 namespace mKCal {
 
@@ -45,7 +45,7 @@ namespace mKCal {
 
   @warning When saving Attendees, the CustomProperties are not saved.
 */
-class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
+class MKCAL_EXPORT SqliteStorage : public StorageBackend
 {
     Q_OBJECT
 
@@ -57,29 +57,23 @@ public:
     typedef QSharedPointer<SqliteStorage> Ptr;
 
     /**
-      Constructs a new SqliteStorage object for Calendar @p calendar with
+      Constructs a new SqliteStorage object with
       storage to file @p databaseName.
 
-      @param calendar is a pointer to a valid Calendar object.
+      @param timeZone is time zone definition.
       @param databaseName is the name of the database containing the Calendar data.
-      @param validateNotebooks set to true for saving only those incidences
-             that belong to an existing notebook of this storage
     */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
-                           const QString &databaseName,
-                           bool validateNotebooks = true);
+    explicit SqliteStorage(const QTimeZone &timeZone,
+                           const QString &databaseName);
 
     /**
-      Constructs a new SqliteStorage object for Calendar @p calendar. Location
+      Constructs a new SqliteStorage object. Location
       of the database is using default location, or is taken from SQLITESTORAGEDB
       enivronment variable.
 
-      @param calendar is a pointer to a valid Calendar object.
-      @param validateNotebooks set to true for saving only those incidences
-             that belong to an existing notebook of this storage
+      @param timeZone is time zone definition.
     */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
-                           bool validateNotebooks = true);
+    explicit SqliteStorage(const QTimeZone &timeZone);
 
     /**
       Destructor.
@@ -93,190 +87,178 @@ public:
 
     /**
       @copydoc
-      CalStorage::open()
+      StorageBackend::open()
     */
     bool open();
 
     /**
       @copydoc
-      CalStorage::load()
+      StorageBackend::load()
     */
     bool load();
 
     /**
       @copydoc
-      ExtendedStorage::load(const QString &, const QDateTime &)
+      StorageBackend::load(const QString &, const QDateTime &)
     */
     bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime());
 
     /**
       @copydoc
-      ExtendedStorage::load(const QDate &)
+      StorageBackend::load(const QDate &)
     */
     bool load(const QDate &date);
 
     /**
       @copydoc
-      ExtendedStorage::load(const QDate &, const QDate &)
+      StorageBackend::load(const QDate &, const QDate &)
     */
     bool load(const QDate &start, const QDate &end);
 
     /**
       @copydoc
-      ExtendedStorage::loadSeries(const QString &)
+      StorageBackend::loadSeries(const QString &)
     */
     bool loadSeries(const QString &uid);
 
     /**
       @copydoc
-      ExtendedStorage::loadIncidenceInstance(const QString &)
+      StorageBackend::loadIncidenceInstance(const QString &)
     */
     bool loadIncidenceInstance(const QString &instanceIdentifier);
 
     /**
       @copydoc
-      ExtendedStorage::loadNotebookIncidences(const QString &)
+      StorageBackend::loadNotebookIncidences(const QString &)
     */
     bool loadNotebookIncidences(const QString &notebookUid);
 
     /**
       @copydoc
-      ExtendedStorage::loadJournals()
+      StorageBackend::loadJournals()
     */
     bool loadJournals();
 
     /**
       @copydoc
-      ExtendedStorage::loadPlainIncidences()
+      StorageBackend::loadPlainIncidences()
     */
     bool loadPlainIncidences();
 
     /**
       @copydoc
-      ExtendedStorage::loadRecurringIncidences()
+      StorageBackend::loadRecurringIncidences()
     */
     bool loadRecurringIncidences();
 
     /**
       @copydoc
-      ExtendedStorage::loadGeoIncidences()
+      StorageBackend::loadGeoIncidences()
     */
     bool loadGeoIncidences();
 
     /**
       @copydoc
-      ExtendedStorage::loadGeoIncidences(float, float, float, float)
+      StorageBackend::loadGeoIncidences(float, float, float, float)
     */
     bool loadGeoIncidences(float geoLatitude, float geoLongitude,
                            float diffLatitude, float diffLongitude);
 
     /**
       @copydoc
-      ExtendedStorage::loadAttendeeIncidences()
+      StorageBackend::loadAttendeeIncidences()
     */
     bool loadAttendeeIncidences();
 
     /**
       @copydoc
-      ExtendedStorage::loadUncompletedTodos()
+      StorageBackend::loadUncompletedTodos()
     */
     int loadUncompletedTodos();
 
     /**
       @copydoc
-      ExtendedStorage::loadCompletedTodos()
+      StorageBackend::loadCompletedTodos()
     */
     int loadCompletedTodos(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadIncidences( bool, bool, int, QDateTime* );
+      StorageBackend::loadIncidences( bool, bool, int, QDateTime* );
     */
     int loadIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadFutureIncidences( bool, int, QDateTime* );
+      StorageBackend::loadFutureIncidences( bool, int, QDateTime* );
     */
     int loadFutureIncidences(int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadGeoIncidences( bool, bool, int, QDateTime* );
+      StorageBackend::loadGeoIncidences( bool, bool, int, QDateTime* );
     */
     int loadGeoIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadContacts()
+      StorageBackend::loadContacts()
     */
     KCalendarCore::Person::List loadContacts();
 
     /**
       @copydoc
-      ExtendedStorage::loadContactIncidences( const KCalendarCore::Person & )
+      StorageBackend::loadContactIncidences( const KCalendarCore::Person & )
     */
     int loadContactIncidences(const KCalendarCore::Person &person, int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::loadJournals()
+      StorageBackend::loadJournals()
     */
     int loadJournals(int limit, QDateTime *last);
 
     /**
       @copydoc
-      ExtendedStorage::notifyOpened( const KCalendarCore::Incidence::Ptr & )
+      StorageBackend::storeIncidences(const StorageBackend::Collection &,
+                                      const StorageBackend::Collection &,
+                                      const StorageBackend::Collection &,
+                                      StorageBackend::DeleteAction)
     */
-    bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence);
+    bool storeIncidences(const StorageBackend::Collection &additions,
+                         const StorageBackend::Collection &modifications,
+                         const StorageBackend::Collection &deletions,
+                         StorageBackend::DeleteAction deleteAction);
 
     /**
       @copydoc
-      ExtendedStorage::store(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
-                             const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
-                             const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &,
-                             ExtendedStorage::DeleteAction)
-    */
-    bool store(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
-               const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modifications,
-               const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
-               ExtendedStorage::DeleteAction deleteAction);
-
-    /**
-      @copydoc
-      ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
+      StorageBackend::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
 
     /**
       @copydoc
-      ExtendedStorage::cancel()
-    */
-    bool cancel();
-
-    /**
-      @copydoc
-      CalStorage::close()
+      StorageBackend::close()
     */
     bool close();
 
     /**
       @copydoc
-      ExtendedStorage::insertedIncidences()
+      StorageBackend::insertedIncidences()
     */
     bool insertedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
                             const QString &notebookUid = QString());
 
     /**
       @copydoc
-      ExtendedStorage::modifiedIncidences()
+      StorageBackend::modifiedIncidences()
     */
     bool modifiedIncidences(KCalendarCore::Incidence::List *list, const QDateTime &after,
                             const QString &notebookUid = QString());
 
     /**
       @copydoc
-      ExtendedStorage::deletedIncidences()
+      StorageBackend::deletedIncidences()
     */
     bool deletedIncidences(KCalendarCore::Incidence::List *list,
                            const QDateTime &after = QDateTime(),
@@ -284,13 +266,13 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::allIncidences()
+      StorageBackend::allIncidences()
     */
     bool allIncidences(KCalendarCore::Incidence::List *list, const QString &notebookUid = QString());
 
     /**
       @copydoc
-      ExtendedStorage::duplicateIncidences()
+      StorageBackend::duplicateIncidences()
     */
     bool duplicateIncidences(KCalendarCore::Incidence::List *list,
                              const KCalendarCore::Incidence::Ptr &incidence,
@@ -298,42 +280,37 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::incidenceDeletedDate()
+      StorageBackend::incidenceDeletedDate()
     */
     QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence);
 
     /**
       @copydoc
-      ExtendedStorage::eventCount()
+      StorageBackend::eventCount()
     */
     int eventCount();
 
     /**
       @copydoc
-      ExtendedStorage::todoCount()
+      StorageBackend::todoCount()
     */
     int todoCount();
 
     /**
       @copydoc
-      ExtendedStorage::journalCount()
+      StorageBackend::journalCount()
     */
     int journalCount();
 
     /**
-      Returns the time zone used by the storage.
-     */
-    QTimeZone timeZone() const;
-
-    /**
       @copydoc
-      ExtendedStorage::virtual_hook()
+      StorageBackend::virtual_hook()
     */
     virtual void virtual_hook(int id, void *data);
 
 protected:
     bool loadNotebooks(Notebook::List *notebooks, Notebook::Ptr *defaultNotebook);
-    bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop);
+    bool modifyNotebook(const Notebook::Ptr &nb, StorageBackend::DBOperation dbop, bool isDefault);
 
 private:
     //@cond PRIVATE

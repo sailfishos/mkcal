@@ -143,7 +143,7 @@ public:
     bool insertRdates(Incidence::Ptr incidence, int rowid);
     bool insertRdate(int rowid, int type, const QDateTime &rdate, bool allDay);
     bool deleteListsForIncidence(int rowid);
-    bool modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop);
+    bool modifyCalendarProperties(Notebook::Ptr notebook, StorageBackend::DBOperation dbop);
     bool deleteCalendarProperties(const QByteArray &id);
     bool insertCalendarProperty(const QByteArray &id, const QByteArray &key,
                                 const QByteArray &value);
@@ -221,7 +221,7 @@ error:
 }
 
 bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
-                                   DBOperation dbop, sqlite3_stmt *stmt, bool isDefault)
+                                   StorageBackend::DBOperation dbop, sqlite3_stmt *stmt, bool isDefault)
 {
     int rv = 0;
     int index = 1;
@@ -237,10 +237,10 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
     sqlite3_int64  secs;
 
     index = 1;
-    if (dbop == DBInsert || dbop == DBDelete)
+    if (dbop == StorageBackend::DBInsert || dbop == StorageBackend::DBDelete)
         SL3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
 
-    if (dbop == DBInsert || dbop == DBUpdate) {
+    if (dbop == StorageBackend::DBInsert || dbop == StorageBackend::DBUpdate) {
         int flags = 0;
         if (isDefault) {
             const char *query = UNSET_FLAG_FROM_CALENDAR;
@@ -279,7 +279,7 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
         secs = toOriginTime(notebook->creationDate().toUTC());
         SL3_bind_int64(stmt, index, secs);
 
-        if (dbop == DBUpdate)
+        if (dbop == StorageBackend::DBUpdate)
             SL3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
     }
 
@@ -382,7 +382,7 @@ static bool setDateTime(SqliteFormat *format, sqlite3_stmt *stmt, int &index, co
     }
 
 bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QString &nbook,
-                                    DBOperation dbop)
+                                    StorageBackend::DBOperation dbop)
 {
     int rv = 0;
     int index = 1;
@@ -404,9 +404,9 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     int rowid = 0;
     sqlite3_stmt *stmt1;
 
-    if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
+    if (dbop == StorageBackend::DBDelete || dbop == StorageBackend::DBMarkDeleted || dbop == StorageBackend::DBUpdate) {
         rowid = d->selectRowId(incidence);
-        if (!rowid && dbop == DBDelete) {
+        if (!rowid && dbop == StorageBackend::DBDelete) {
             // Already deleted.
             return true;
         } else if (!rowid) {
@@ -416,7 +416,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     }
 
     switch (dbop) {
-    case DBDelete:
+    case StorageBackend::DBDelete:
         if (!d->mDeleteIncComponents) {
             const char *query = DELETE_COMPONENTS;
             int qsize = sizeof(DELETE_COMPONENTS);
@@ -426,7 +426,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         SL3_bind_int(d->mDeleteIncComponents, index, rowid);
         stmt1 = d->mDeleteIncComponents;
         break;
-    case DBMarkDeleted:
+    case StorageBackend::DBMarkDeleted:
         if (!d->mMarkDeletedIncidences) {
             const char *query = UPDATE_COMPONENTS_AS_DELETED;
             int qsize = sizeof(UPDATE_COMPONENTS_AS_DELETED);
@@ -438,7 +438,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         SL3_bind_int(d->mMarkDeletedIncidences, index, rowid);
         stmt1 = d->mMarkDeletedIncidences;
         break;
-    case DBInsert:
+    case StorageBackend::DBInsert:
         if (!d->mInsertIncComponents) {
             const char *query = INSERT_COMPONENTS;
             int qsize = sizeof(INSERT_COMPONENTS);
@@ -447,7 +447,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         SL3_reset(d->mInsertIncComponents);
         stmt1 = d->mInsertIncComponents;
         break;
-    case DBUpdate:
+    case StorageBackend::DBUpdate:
         if (!d->mUpdateIncComponents) {
             const char *query = UPDATE_COMPONENTS;
             int qsize = sizeof(UPDATE_COMPONENTS);
@@ -461,7 +461,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         goto error;
     }
 
-    if (dbop == DBInsert || dbop == DBUpdate) {
+    if (dbop == StorageBackend::DBInsert || dbop == StorageBackend::DBUpdate) {
         notebook = nbook.toUtf8();
         SL3_bind_text(stmt1, index, notebook.constData(), notebook.length(), SQLITE_STATIC);
 
@@ -560,7 +560,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             SL3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
 
-        if (dbop == DBInsert && incidence->created().isNull())
+        if (dbop == StorageBackend::DBInsert && incidence->created().isNull())
             incidence->setCreated(QDateTime::currentDateTimeUtc());
         secs = toOriginTime(incidence->created());
         SL3_bind_int64(stmt1, index, secs);
@@ -625,16 +625,16 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         colorstr = incidence->color().toUtf8();
         SL3_bind_text(stmt1, index, colorstr.constData(), colorstr.length(), SQLITE_STATIC);
 
-        if (dbop == DBUpdate)
+        if (dbop == StorageBackend::DBUpdate)
             SL3_bind_int(stmt1, index, rowid);
     }
 
     SL3_step(stmt1);
 
-    if ((dbop == DBDelete || dbop == DBUpdate) && !d->deleteListsForIncidence(rowid)) {
+    if ((dbop == StorageBackend::DBDelete || dbop == StorageBackend::DBUpdate) && !d->deleteListsForIncidence(rowid)) {
         qCWarning(lcMkcal) << "failed to delete lists for incidence" << incidence->uid();
-    } else if (dbop == DBInsert || dbop == DBUpdate) {
-        if (dbop == DBInsert)
+    } else if (dbop == StorageBackend::DBInsert || dbop == StorageBackend::DBUpdate) {
+        if (dbop == StorageBackend::DBInsert)
             rowid = sqlite3_last_insert_rowid(d->mDatabase);
 
         if (!d->insertCustomproperties(incidence, rowid))
@@ -1227,17 +1227,18 @@ error:
     return false;
 }
 
-bool SqliteFormat::Private::modifyCalendarProperties(Notebook::Ptr notebook, DBOperation dbop)
+bool SqliteFormat::Private::modifyCalendarProperties(Notebook::Ptr notebook,
+                                                     StorageBackend::DBOperation dbop)
 {
     QByteArray id(notebook->uid().toUtf8());
     // In Update always delete all first then insert all
-    if (dbop == DBUpdate && !deleteCalendarProperties(id)) {
+    if (dbop == StorageBackend::DBUpdate && !deleteCalendarProperties(id)) {
         qCWarning(lcMkcal) << "failed to delete calendarproperties for notebook" << id;
         return false;
     }
 
     bool success = true;
-    if (dbop == DBInsert || dbop == DBUpdate) {
+    if (dbop == StorageBackend::DBInsert || dbop == StorageBackend::DBUpdate) {
         QList<QByteArray> properties = notebook->customPropertyKeys();
         for (QList<QByteArray>::ConstIterator it = properties.constBegin();
              it != properties.constEnd(); ++it) {

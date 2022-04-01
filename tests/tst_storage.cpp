@@ -1979,7 +1979,7 @@ void tst_storage::reloadDb(const QDate &from, const QDate &to)
     m_storage->load(from, to);
 }
 
-class TestStorageObserver: public QObject, public ExtendedStorageObserver
+class TestStorageObserver: public QObject, public StorageBackend::Observer
 {
     Q_OBJECT
 public:
@@ -1992,30 +1992,31 @@ public:
         mStorage->unregisterObserver(this);
     }
 
-    void storageModified(ExtendedStorage *storage, const QString &info)
+    void storageModified(StorageBackend *storage,
+                         const Notebook::List &notebooks, const Notebook::Ptr &defaultNotebook) override
     {
         emit modified();
     }
 
-    void storageUpdated(ExtendedStorage *storage,
-                        const KCalendarCore::Incidence::List &added,
-                        const KCalendarCore::Incidence::List &modified,
-                        const KCalendarCore::Incidence::List &deleted)
+    void storageUpdated(StorageBackend *storage,
+                        const StorageBackend::Collection &added,
+                        const StorageBackend::Collection &modified,
+                        const StorageBackend::Collection &deleted) override
     {
         emit updated(added, modified, deleted);
     }
 
 signals:
     void modified();
-    void updated(const KCalendarCore::Incidence::List &added,
-                 const KCalendarCore::Incidence::List &modified,
-                 const KCalendarCore::Incidence::List &deleted);
+    void updated(const StorageBackend::Collection &added,
+                 const StorageBackend::Collection &modified,
+                 const StorageBackend::Collection &deleted);
 
 private:
     ExtendedStorage::Ptr mStorage;
 };
 
-Q_DECLARE_METATYPE(KCalendarCore::Incidence::List);
+Q_DECLARE_METATYPE(StorageBackend::Collection);
 void tst_storage::tst_storageObserver()
 {
     TestStorageObserver observer(m_storage);
@@ -2026,9 +2027,9 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(updated.count(), 1);
     QList<QVariant> args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
-    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[0].value<StorageBackend::Collection>().isEmpty());
+    QVERIFY(args[1].value<StorageBackend::Collection>().isEmpty());
+    QVERIFY(args[2].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
 
@@ -2039,10 +2040,10 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(updated.count(), 1);
     args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
-    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>().count(), 1);
-    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
-    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QCOMPARE(args[0].value<StorageBackend::Collection>().count(), 1);
+    QCOMPARE(args[0].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(args[1].value<StorageBackend::Collection>().isEmpty());
+    QVERIFY(args[2].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 
@@ -2052,10 +2053,10 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(updated.count(), 1);
     args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
-    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
-    QCOMPARE(args[1].value<KCalendarCore::Incidence::List>().count(), 1);
-    QCOMPARE(args[1].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
-    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
+    QVERIFY(args[0].value<StorageBackend::Collection>().isEmpty());
+    QCOMPARE(args[1].value<StorageBackend::Collection>().count(), 1);
+    QCOMPARE(args[1].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(args[2].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 
@@ -2065,10 +2066,10 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(updated.count(), 1);
     args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
-    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
-    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>().count(), 1);
-    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    QVERIFY(args[0].value<StorageBackend::Collection>().isEmpty());
+    QVERIFY(args[1].value<StorageBackend::Collection>().isEmpty());
+    QCOMPARE(args[2].value<StorageBackend::Collection>().count(), 1);
+    QCOMPARE(args[2].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 

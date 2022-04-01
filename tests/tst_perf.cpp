@@ -23,7 +23,7 @@
 #include <QTemporaryFile>
 
 #include "tst_perf.h"
-#include "sqlitestorage.h"
+#include "extendedstorage.h"
 
 tst_perf::tst_perf(QObject *parent)
     : QObject(parent)
@@ -42,7 +42,7 @@ void tst_perf::initTestCase()
         dbFile = db->fileName();
     }
     ExtendedCalendar::Ptr cal(new ExtendedCalendar(QTimeZone::systemTimeZone()));
-    m_storage = ExtendedStorage::Ptr(new SqliteStorage(cal, dbFile, true));
+    m_storage = ExtendedStorage::Ptr(new ExtendedStorage(cal, dbFile, true));
 }
 
 void tst_perf::cleanupTestCase()

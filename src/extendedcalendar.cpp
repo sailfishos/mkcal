@@ -37,7 +37,7 @@
  */
 
 #include "extendedcalendar.h"
-#include "sqlitestorage.h"
+#include "extendedstorage.h"
 #include "logging_p.h"
 
 #include <KCalendarCore/CalFilter>
@@ -1045,9 +1045,7 @@ Incidence::List ExtendedCalendar::incidences(const QDate &start, const QDate &en
 
 ExtendedStorage::Ptr ExtendedCalendar::defaultStorage(const ExtendedCalendar::Ptr &calendar)
 {
-    SqliteStorage::Ptr ss = SqliteStorage::Ptr(new SqliteStorage(calendar));
-
-    return ss.staticCast<ExtendedStorage>();
+    return ExtendedStorage::Ptr(new ExtendedStorage(calendar));
 }
 
 Todo::List ExtendedCalendar::uncompletedTodos(bool hasDate, int hasGeo)

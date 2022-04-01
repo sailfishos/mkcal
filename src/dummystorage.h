@@ -205,13 +205,13 @@ public:
     {
         return true;
     }
-    bool modifyNotebook(const mKCal::Notebook::Ptr &, mKCal::DBOperation)
+    bool modifyNotebook(const Notebook::Ptr &, StorageBackend::DBOperation)
     {
         return true;
     }
-    bool store(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
-               const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modification,
-               const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
+    bool store(const mKCal::StorageBackend::Collection &additions,
+               const mKCal::StorageBackend::Collection &modification,
+               const mKCal::StorageBackend::Collection &deletions,
                ExtendedStorage::DeleteAction deleteAction)
     {
         return true;

@@ -1,6 +1,7 @@
 set(SRC
 	extendedcalendar.cpp
 	extendedstorage.cpp
+	storagebackend.cpp
 	notebook.cpp
 	sqliteformat.cpp
 	sqlitestorage.cpp
@@ -10,7 +11,7 @@ set(SRC
 set(HEADERS
 	extendedcalendar.h
 	extendedstorage.h
-	extendedstorageobserver.h
+	storagebackend.h
 	notebook.h
 	sqliteformat.h
 	sqlitestorage.h
