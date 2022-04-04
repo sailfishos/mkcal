@@ -236,7 +236,7 @@ public:
     {
         return true;
     }
-    bool modifyNotebook(const mKCal::Notebook::Ptr &, mKCal::DBOperation)
+    bool modifyNotebook(const mKCal::Notebook &, mKCal::DBOperation)
     {
         return true;
     }

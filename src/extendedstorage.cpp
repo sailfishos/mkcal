@@ -429,7 +429,7 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!modifyNotebook(nb, DBInsert)) {
+    if (!modifyNotebook(*nb, DBInsert)) {
         return false;
     }
 
@@ -454,7 +454,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         qCWarning(lcMkcal) << "cannot update notebook" << nb->uid() << "in calendar";
         return false;
     }
-    if (!modifyNotebook(nb, DBUpdate)) {
+    if (!modifyNotebook(*nb, DBUpdate)) {
         return false;
     }
 
@@ -478,7 +478,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!modifyNotebook(nb, DBDelete)) {
+    if (!modifyNotebook(*nb, DBDelete)) {
         return false;
     }
 
