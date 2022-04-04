@@ -138,7 +138,7 @@ public:
     bool mIsLoading;
     bool mIsSaved;
 
-    bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
+    bool addIncidence(Incidence::Ptr incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
@@ -1082,7 +1082,7 @@ bool SqliteStorage::notifyOpened(const Incidence::Ptr &incidence)
     return false;
 }
 
-static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
+static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr incidence)
 {
     QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());
     for (; it != list.constEnd(); ++it) {
@@ -1093,7 +1093,7 @@ static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const 
     return false;
 }
 
-bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
+bool SqliteStorage::Private::addIncidence(Incidence::Ptr incidence, const QString &notebookUid)
 {
     bool added = true;
     bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
@@ -1208,7 +1208,7 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
 
     error = 0;
     for (const KCalendarCore::Incidence::Ptr &incidence: list) {
-        if (!d->mFormat->purgeDeletedComponents(incidence)) {
+        if (!d->mFormat->purgeDeletedComponents(*incidence)) {
             error += 1;
         }
     }
@@ -1332,13 +1332,16 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         if (!(*it)->lastModified().isValid()) {
             (*it)->setLastModified(QDateTime::currentDateTimeUtc());
         }
+        if (dbop == DBInsert && (*it)->created().isNull()) {
+            (*it)->setCreated(QDateTime::currentDateTimeUtc());
+        }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
-        if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
+        if (!mFormat->modifyComponents(**it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
         } else  if (dbop == DBInsert) {
             // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it)) {
+            if (!mFormat->purgeDeletedComponents(**it)) {
                 qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
                 errors += 1;
             }
@@ -1800,7 +1803,7 @@ bool SqliteStorage::loadNotebooks()
     sqlite3_stmt *stmt = NULL;
     bool isDefault;
 
-    Notebook::Ptr nb;
+    Notebook *nb;
 
     if (!d->mDatabase) {
         return false;
@@ -1817,12 +1820,10 @@ bool SqliteStorage::loadNotebooks()
 
     while ((nb = d->mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        if (isDefault && !setDefaultNotebook(nb)) {
+        if (isDefault && !setDefaultNotebook(Notebook::Ptr(nb))) {
             qCWarning(lcMkcal) << "cannot add default notebook" << nb->uid() << nb->name() << "to storage";
-            nb = Notebook::Ptr();
-        } else if (!isDefault && !addNotebook(nb)) {
+        } else if (!isDefault && !addNotebook(Notebook::Ptr(nb))) {
             qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
-            nb = Notebook::Ptr();
         }
     }
 
@@ -1842,50 +1843,21 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
+bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop)
 {
-    int rv = 0;
-    bool success = d->mIsLoading; // true if we are currently loading
-    const char *query = NULL;
-    int qsize = 0;
-    sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
-    const char *operation = (dbop == DBInsert) ? "inserting" :
-                            (dbop == DBUpdate) ? "updating" : "deleting";
+    bool success = d->mIsLoading;
 
     if (!d->mDatabase) {
         return false;
     }
 
     if (!d->mIsLoading) {
-        // Execute database operation.
-        if (dbop == DBInsert) {
-            query = INSERT_CALENDARS;
-            qsize = sizeof(INSERT_CALENDARS);
-            nb->setCreationDate(QDateTime::currentDateTimeUtc());
-        } else if (dbop == DBUpdate) {
-            query = UPDATE_CALENDARS;
-            qsize = sizeof(UPDATE_CALENDARS);
-        } else if (dbop == DBDelete) {
-            query = DELETE_CALENDARS;
-            qsize = sizeof(DELETE_CALENDARS);
-        } else {
-            return false;
-        }
-
         if (!d->mSem.acquire()) {
             qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
             return false;
         }
 
-        SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
-
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
-            qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
-        }
-
-        sqlite3_reset(stmt);
-        sqlite3_finalize(stmt);
+        success = d->mFormat->modifyCalendars(nb, dbop, defaultNotebook() && nb.uid() == defaultNotebook()->uid());
 
         if (success) {
             // Don't save the incremented transactionId at the moment,
@@ -1903,13 +1875,8 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
             d->mChanged.resize(0);   // make a change to create signal
         }
     }
-    return success;
 
-error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-    }
-    return false;
+    return success;
 }
 
 bool SqliteStorage::Private::saveTimezones()

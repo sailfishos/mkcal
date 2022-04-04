@@ -96,11 +96,10 @@ public:
 
       @param notebook notebook to update
       @param dbop database operation
-      @param stmt prepared sqlite statement for calendars table
       @param isDefault if the notebook is the default one in the DB
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
+    bool modifyCalendars(const Notebook &notebook, DBOperation dbop, bool isDefault);
 
     /**
       Select notebooks from Calendars table.
@@ -109,7 +108,7 @@ public:
       @param isDefault true if the selected notebook is the DB default one
       @return the queried notebook.
     */
-    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
+    Notebook* selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
 
     /**
       Update incidence data in Components table.
@@ -119,10 +118,10 @@ public:
       @param dbop database operation
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
+    bool modifyComponents(const KCalendarCore::Incidence &incidence, const QString &notebook,
                           DBOperation dbop);
 
-    bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence);
+    bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence);
 
     /**
       Select incidences from Components table.
