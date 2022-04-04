@@ -95,14 +95,14 @@ public:
     QHash<QString, bool> mNotebookVisibility;
     // These alarm methods are used to communicate with an external
     // daemon, like timed, to bind Incidence::Alarm with the system notification.
-    void clearAlarms(const Incidence::Ptr &incidence);
+    void clearAlarms(const Incidence &incidence);
     void clearAlarms(const StorageBackend::Collection &incidences);
     void clearAlarms(const QString &notebookUid);
     void setAlarms(const StorageBackend::Collection &incidences);
     void resetAlarms(const StorageBackend::Collection &incidences);
 
     void setAlarmsForNotebook(const Incidence::List &incidences, const QString &notebookUid);
-    void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const QDateTime &now);
+    void setAlarms(const Incidence &incidence, const QString &nbuid, Timed::Event::List &events, const QDateTime &now);
     void commitEvents(Timed::Event::List &events);
 #endif
 };
@@ -413,61 +413,49 @@ void StorageBackend::incidenceLoaded(const StorageBackend::Collection &incidence
     }
 }
 
-bool StorageBackend::addNotebook(const Notebook::Ptr &nb, bool isDefault)
+bool StorageBackend::addNotebook(const Notebook &nb, bool isDefault)
 {
-    if (!nb) {
-        return false;
-    }
-
     if (!modifyNotebook(nb, DBInsert, isDefault)) {
         return false;
     }
 
 #if defined(TIMED_SUPPORT)
-    d->mNotebookVisibility.insert(nb->uid(), nb->isVisible());
+    d->mNotebookVisibility.insert(nb.uid(), nb.isVisible());
 #endif
 
     return true;
 }
 
-bool StorageBackend::updateNotebook(const Notebook::Ptr &nb, bool isDefault)
+bool StorageBackend::updateNotebook(const Notebook &nb, bool isDefault)
 {
-    if (!nb) {
-        return false;
-    }
-
     if (!modifyNotebook(nb, DBUpdate, isDefault)) {
         return false;
     }
 
 #if defined(TIMED_SUPPORT)
-    bool wasVisible = d->mNotebookVisibility.value(nb->uid());
-    if (wasVisible && !nb->isVisible()) {
-        d->clearAlarms(nb->uid());
-    } else if (!wasVisible && nb->isVisible()) {
+    bool wasVisible = d->mNotebookVisibility.value(nb.uid());
+    if (wasVisible && !nb.isVisible()) {
+        d->clearAlarms(nb.uid());
+    } else if (!wasVisible && nb.isVisible()) {
         Incidence::List list;
-        if (allIncidences(&list, nb->uid())) {
-            d->setAlarmsForNotebook(list, nb->uid());
+        if (allIncidences(&list, nb.uid())) {
+            d->setAlarmsForNotebook(list, nb.uid());
         }
     }
-    d->mNotebookVisibility.insert(nb->uid(), nb->isVisible());
+    d->mNotebookVisibility.insert(nb.uid(), nb.isVisible());
 #endif
 
     return true;
 }
 
-bool StorageBackend::deleteNotebook(const Notebook::Ptr &nb)
+bool StorageBackend::deleteNotebook(const Notebook &nb)
 {
-    if (!nb) {
-        return false;
-    }
-
     if (!modifyNotebook(nb, DBDelete, false)) {
         return false;
     }
 
 #if defined(TIMED_SUPPORT)
-    d->clearAlarms(nb->uid());
+    d->clearAlarms(nb.uid());
 #endif
 
     return true;
@@ -505,28 +493,28 @@ void StorageBackend::Private::setAlarms(const StorageBackend::Collection &incide
             || !mNotebookVisibility.value(it.key())) {
             continue;
         }
-        setAlarms(it.value(), it.key(), events, now);
+        setAlarms(**it, it.key(), events, now);
     }
     commitEvents(events);
 }
 
-void StorageBackend::Private::clearAlarms(const Incidence::Ptr &incidence)
+void StorageBackend::Private::clearAlarms(const Incidence &incidence)
 {
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";
-    map["uid"] = incidence->uid();
+    map["uid"] = incidence.uid();
 
     Timed::Interface timed;
     if (!timed.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
+        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence.uid()
+                           << (incidence.hasRecurrenceId() ? incidence.recurrenceId().toString(Qt::ISODate) : "-")
                            << "alarm interface is not valid" << timed.lastError();
         return;
     }
     QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
     if (!reply.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
+        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence.uid()
+                           << (incidence.hasRecurrenceId() ? incidence.recurrenceId().toString(Qt::ISODate) : "-")
                            << timed.lastError();
         return;
     }
@@ -540,21 +528,21 @@ void StorageBackend::Private::clearAlarms(const Incidence::Ptr &incidence)
         //   recurrenceId attribute is empty (thus invalid QDateTime)
         // - recurring exception event -> the hasRecurrenceId() case,
         //   delete if the recurrenceId attribute is matching in terms of QDateTime.
-        if (incidence->recurs() || incidence->hasRecurrenceId()) {
+        if (incidence.recurs() || incidence.hasRecurrenceId()) {
             QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
             const QMap<QString, QVariant> attributeMap = attributesReply.value();
             const QVariant recurrenceId = attributeMap.value("recurrenceId", QVariant(QString()));
             QDateTime recid = QDateTime::fromString(recurrenceId.toString(), Qt::ISODate);
-            if (incidence->recurrenceId() != recid) {
+            if (incidence.recurrenceId() != recid) {
                 continue;
             }
         }
-        qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
-                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-");
+        qCDebug(lcMkcal) << "removing alarm" << cookie << incidence.uid()
+                         << (incidence.hasRecurrenceId() ? incidence.recurrenceId().toString(Qt::ISODate) : "-");
         QDBusReply<bool> reply = timed.cancel_sync(cookie);
         if (!reply.isValid() || !reply.value()) {
-            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
-                               << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
+            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence.uid()
+                               << (incidence.hasRecurrenceId() ? incidence.recurrenceId().toString(Qt::ISODate) : "-")
                                << reply.value() << timed.lastError();
         }
     }
@@ -563,7 +551,7 @@ void StorageBackend::Private::clearAlarms(const Incidence::Ptr &incidence)
 void StorageBackend::Private::clearAlarms(const StorageBackend::Collection &incidences)
 {
     for (const Incidence::Ptr incidence : incidences) {
-        clearAlarms(incidence);
+        clearAlarms(*incidence);
     }
 }
 
@@ -601,29 +589,29 @@ void StorageBackend::Private::setAlarmsForNotebook(const Incidence::List &incide
     // list of all timed events
     Timed::Event::List events;
     foreach (const Incidence::Ptr incidence, incidences) {
-        setAlarms(incidence, notebookUid, events, now);
+        setAlarms(*incidence, notebookUid, events, now);
     }
     commitEvents(events);
 }
 
-void StorageBackend::Private::setAlarms(const Incidence::Ptr &incidence,
+void StorageBackend::Private::setAlarms(const Incidence &incidence,
                                          const QString &nbuid,
                                          Timed::Event::List &events,
                                          const QDateTime &now)
 {
-    if (incidence->status() == Incidence::StatusCanceled) {
+    if (incidence.status() == Incidence::StatusCanceled) {
         return;
     }
 
-    const Alarm::List alarms = incidence->alarms();
+    const Alarm::List alarms = incidence.alarms();
     foreach (const Alarm::Ptr alarm, alarms) {
         if (!alarm->enabled()) {
             continue;
         }
 
         QDateTime preTime = now;
-        if (incidence->recurs()) {
-            QDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(now);
+        if (incidence.recurs()) {
+            QDateTime nextRecurrence = incidence.recurrence()->getNextDateTime(now);
             if (nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0) {
                 if (now.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
                     preTime = nextRecurrence;
@@ -651,7 +639,7 @@ void StorageBackend::Private::setAlarms(const Incidence::Ptr &incidence,
         // we have to check here.
         QString s;
 
-        s = incidence->summary();
+        s = incidence.summary();
         // Timed braindeath: Required field, BUT if empty, it asserts
         if (s.isEmpty()) {
             s = ' ';
@@ -661,51 +649,51 @@ void StorageBackend::Private::setAlarms(const Incidence::Ptr &incidence,
         e.setAttribute("APPLICATION", "libextendedkcal");
         //e.setAttribute( "translation", "organiser" );
         // This really has to exist or code is badly broken
-        Q_ASSERT(!incidence->uid().isEmpty());
-        e.setAttribute("uid", incidence->uid());
+        Q_ASSERT(!incidence.uid().isEmpty());
+        e.setAttribute("uid", incidence.uid());
 #ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
         e.setAttribute("alarmtime", alarmTime.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
 #endif
-        if (!incidence->location().isEmpty()) {
-            e.setAttribute("location", incidence->location());
+        if (!incidence.location().isEmpty()) {
+            e.setAttribute("location", incidence.location());
         }
-        if (incidence->recurs()) {
+        if (incidence.recurs()) {
             e.setAttribute("recurs", "true");
             Timed::Event::Action &a = e.addAction();
             a.runCommand(QString("%1 %2 %3")
                          .arg(RESET_ALARMS_CMD)
                          .arg(nbuid)
-                         .arg(incidence->uid()));
+                         .arg(incidence.uid()));
             a.whenServed();
         }
 
         // TODO - consider this how it should behave for recurrence
-        if ((incidence->type() == Incidence::TypeTodo)) {
-            Todo::Ptr todo = incidence.staticCast<Todo>();
+        if ((incidence.type() == Incidence::TypeTodo)) {
+            const Todo &todo = static_cast<const Todo&>(incidence);
 
-            if (todo->hasDueDate()) {
-                e.setAttribute("time", todo->dtDue(true).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
+            if (todo.hasDueDate()) {
+                e.setAttribute("time", todo.dtDue(true).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             }
             e.setAttribute("type", "todo");
-        } else if (incidence->dtStart().isValid()) {
+        } else if (incidence.dtStart().isValid()) {
             QDateTime eventStart;
 
-            if (incidence->recurs()) {
+            if (incidence.recurs()) {
                 // assuming alarms not later than event start
-                eventStart = incidence->recurrence()->getNextDateTime(alarmTime.addSecs(-60));
+                eventStart = incidence.recurrence()->getNextDateTime(alarmTime.addSecs(-60));
             } else {
-                eventStart = incidence->dtStart();
+                eventStart = incidence.dtStart();
             }
             e.setAttribute("time", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             e.setAttribute("startDate", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-            if (incidence->endDateForStart(eventStart).isValid()) {
-                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
+            if (incidence.endDateForStart(eventStart).isValid()) {
+                e.setAttribute("endDate", incidence.endDateForStart(eventStart).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
             }
             e.setAttribute("type", "event");
         }
 
-        if (incidence->hasRecurrenceId()) {
-            e.setAttribute("recurrenceId", incidence->recurrenceId().toString(Qt::ISODate));
+        if (incidence.hasRecurrenceId()) {
+            e.setAttribute("recurrenceId", incidence.recurrenceId().toString(Qt::ISODate));
         }
         e.setAttribute("notebook", nbuid);
 

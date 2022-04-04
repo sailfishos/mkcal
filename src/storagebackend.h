@@ -489,7 +489,7 @@ public:
       @param isDefault true if nb is the default notebook for the storage.
       @return true if operation was successful; false otherwise.
     */
-    bool addNotebook(const Notebook::Ptr &nb, bool isDefault = false);
+    bool addNotebook(const Notebook &nb, bool isDefault = false);
 
     /**
       Update notebook parameters.
@@ -498,7 +498,7 @@ public:
       @param isDefault true if nb is the default notebook for the storage.
       @return true if add was successful; false otherwise.
     */
-    bool updateNotebook(const Notebook::Ptr &nb, bool isDefault = false);
+    bool updateNotebook(const Notebook &nb, bool isDefault = false);
 
     /**
       Delete notebook from storage.
@@ -506,7 +506,7 @@ public:
       @param nb notebook
       @return true if delete was successful; false otherwise.
     */
-    virtual bool deleteNotebook(const Notebook::Ptr &nb);
+    bool deleteNotebook(const Notebook &nb);
 
     /**
       Creates a default notebook. The notebook is not added to the storage.
@@ -519,7 +519,7 @@ public:
                                                QString color = QString());
 
 protected:
-    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool isDefault) = 0;
+    virtual bool modifyNotebook(const Notebook &nb, DBOperation dbop, bool isDefault) = 0;
     void setTimeZone(const QTimeZone &timeZone);
 
     bool getLoadDates(const QDate &start, const QDate &end,

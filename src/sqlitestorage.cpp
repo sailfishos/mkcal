@@ -1008,7 +1008,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            bool ignoreEnd)
 {
     int count = 0;
-    Incidence::Ptr incidence;
+    Incidence *incidence;
     QDateTime previous, date;
     QString notebookUid;
 
@@ -1040,7 +1040,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 break;
             }
         }
-        incidences.insert(notebookUid, incidence);
+        incidences.insert(notebookUid, Incidence::Ptr(incidence));
         count += 1;
     }
     if (last) {
@@ -1092,7 +1092,7 @@ bool SqliteStorage::Private::purgeDeletedIncidences(const Incidence::List &list)
 
     error = 0;
     for (const Incidence::Ptr &incidence: list) {
-        if (!mFormat->purgeDeletedComponents(incidence)) {
+        if (!mFormat->purgeDeletedComponents(*incidence)) {
             error += 1;
         }
     }
@@ -1184,13 +1184,16 @@ bool SqliteStorage::Private::saveIncidences(const StorageBackend::Collection &li
         if (!(*it)->lastModified().isValid()) {
             (*it)->setLastModified(QDateTime::currentDateTimeUtc());
         }
+        if (dbop == DBInsert && (*it)->created().isNull()) {
+            (*it)->setCreated(QDateTime::currentDateTimeUtc());
+        }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
-        if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
+        if (!mFormat->modifyComponents(**it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
         } else  if (dbop == DBInsert) {
             // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it)) {
+            if (!mFormat->purgeDeletedComponents(**it)) {
                 qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
                 errors += 1;
             }
@@ -1240,7 +1243,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
     int index;
     QByteArray n;
     QByteArray s;
-    Incidence::Ptr incidence;
+    Incidence *incidence;
     sqlite3_int64 secs;
     QString nbook;
 
@@ -1308,7 +1311,7 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
     while ((incidence = mFormat->selectComponents(stmt1, nbook))) {
         qCDebug(lcMkcal) << "adding incidence" << incidence->uid() << "into list"
                  << incidence->created() << incidence->lastModified();
-        list->append(incidence);
+        list->append(Incidence::Ptr(incidence));
     }
     sqlite3_finalize(stmt1);
 
@@ -1572,8 +1575,8 @@ Notebook::List SqliteStorage::Private::init(Notebook::Ptr *defaultNotebook)
     }
     if (books.isEmpty()) {
         qCDebug(lcMkcal) << "Storage is empty, initializing";
-        *defaultNotebook = StorageBackend::createDefaultNotebook();
-        if (!mStorage->modifyNotebook(*defaultNotebook, DBInsert, true)) {
+        *defaultNotebook = Notebook::Ptr(StorageBackend::createDefaultNotebook());
+        if (!mStorage->modifyNotebook(**defaultNotebook, DBInsert, true)) {
             qCWarning(lcMkcal) << "inserting default notebook failed";
             return {};
         }
@@ -1592,7 +1595,7 @@ bool SqliteStorage::Private::loadNotebooks(Notebook::List *notebooks, Notebook::
     sqlite3_stmt *stmt = NULL;
     bool isDefault;
 
-    Notebook::Ptr nb;
+    Notebook *nb;
 
     if (!mDatabase || !notebooks) {
         return false;
@@ -1609,9 +1612,10 @@ bool SqliteStorage::Private::loadNotebooks(Notebook::List *notebooks, Notebook::
 
     while ((nb = mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        notebooks->append(nb);
+        Notebook::Ptr notebook(nb);
+        notebooks->append(notebook);
         if (isDefault && defaultNotebook) {
-            *defaultNotebook = nb;
+            *defaultNotebook = notebook;
         }
     }
 
@@ -1629,35 +1633,17 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool isDefault)
+bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop, bool isDefault)
 {
-    int rv = 0;
-    const char *query = NULL;
-    int qsize = 0;
-    sqlite3_stmt *stmt = NULL;
-
     if (!d->mDatabase) {
         return false;
     }
 
     Incidence::List deleted;
     Incidence::List all;
-
-    // Execute database operation.
-    if (dbop == DBInsert) {
-        query = INSERT_CALENDARS;
-        qsize = sizeof(INSERT_CALENDARS);
-        nb->setCreationDate(QDateTime::currentDateTimeUtc());
-    } else if (dbop == DBUpdate) {
-        query = UPDATE_CALENDARS;
-        qsize = sizeof(UPDATE_CALENDARS);
-    } else if (dbop == DBDelete) {
-        query = DELETE_CALENDARS;
-        qsize = sizeof(DELETE_CALENDARS);
-        deletedIncidences(&deleted, QDateTime(), nb->uid());
-        allIncidences(&all, nb->uid());
-    } else {
-        return false;
+    if (dbop == StorageBackend::DBDelete) {
+        deletedIncidences(&deleted, QDateTime(), nb.uid());
+        allIncidences(&all, nb.uid());
     }
 
     if (!d->mSem.acquire()) {
@@ -1665,32 +1651,23 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
         return false;
     }
 
-    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, nullptr);
-
-    bool success;
-    if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, isDefault))) {
-        const char *operation = (dbop == DBInsert) ? "inserting" :
-                                (dbop == DBUpdate) ? "updating" : "deleting";
-        qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
-    }
-
-    sqlite3_finalize(stmt);
+    bool success = d->mFormat->modifyCalendars(nb, dbop, isDefault);
 
     // Don't leave orphaned incidences behind.
     if (success && !deleted.isEmpty()) {
-        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
+        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb.name();
         if (!d->purgeDeletedIncidences(deleted)) {
-            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
+            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb.uid();
         }
     }
     if (success && !all.isEmpty()) {
-        qCDebug(lcMkcal) << "deleting" << all.size() << "incidences of notebook" << nb->name();
+        qCDebug(lcMkcal) << "deleting" << all.size() << "incidences of notebook" << nb.name();
         StorageBackend::Collection deletions;
         for (const Incidence::Ptr &incidence : all) {
-            deletions.insert(nb->uid(), incidence);
+            deletions.insert(nb.uid(), incidence);
         }
         if (!d->saveIncidences(deletions, StorageBackend::DBDelete)) {
-            qCWarning(lcMkcal) << "error when purging incidences from notebook" << nb->uid();
+            qCWarning(lcMkcal) << "error when purging incidences from notebook" << nb.uid();
         }
     }
 
@@ -1710,12 +1687,6 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
         d->mChanged.resize(0);   // make a change to create signal
     }
     return success;
-
-error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-    }
-    return false;
 }
 
 bool SqliteStorage::Private::saveTimezones(const QTimeZone &timeZone)

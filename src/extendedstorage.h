@@ -124,7 +124,7 @@ public:
 
     /**
       @copydoc
-      StorageBackend::addNotebook(const Notebook::Ptr &nb)
+      StorageBackend::addNotebook(const Notebook::Ptr nb)
 
       @note if the Notebook doesn't have a uid that is a valid UUID a new one will
       be generated on insertion.
@@ -133,13 +133,13 @@ public:
 
     /**
       @copydoc
-      StorageBackend::updateNotebook(const Notebook::Ptr &nb)
+      StorageBackend::updateNotebook(const Notebook::Ptr nb)
     */
     bool updateNotebook(const Notebook::Ptr &nb);
 
     /**
       @copydoc
-      StorageBackend::deleteNotebook(const Notebook::Ptr &nb)
+      StorageBackend::deleteNotebook(const Notebook::Ptr nb)
     */
     bool deleteNotebook(const Notebook::Ptr &nb);
 
