@@ -763,7 +763,7 @@ error:
 
 int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -787,7 +787,7 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     int index = 1;
     qint64 secsStart;
 
-    if (last->isValid()) {
+    if (last && last->isValid()) {
         secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
@@ -820,7 +820,7 @@ error:
 }
 int SqliteStorage::loadJournals(int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last)
+    if (!d->mDatabase)
         return -1;
 
     if (isJournalsLoaded())
@@ -837,7 +837,7 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     int index = 1;
     qint64 secsStart;
 
-    if (last->isValid())
+    if (last && last->isValid())
         secsStart = d->mFormat->toOriginTime(*last);
     else
         secsStart = LLONG_MAX; // largest time
@@ -861,7 +861,7 @@ error:
 
 int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -885,7 +885,7 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     int index = 1;
     qint64 secsStart;
 
-    if (last->isValid()) {
+    if (last && last->isValid()) {
         secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
@@ -919,7 +919,7 @@ error:
 
 int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -937,7 +937,7 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     int index = 1;
     qint64 secsStart;
 
-    if (last->isValid()) {
+    if (last && last->isValid()) {
         secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
@@ -962,7 +962,7 @@ error:
 
 int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -986,7 +986,7 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     int index = 1;
     qint64 secsStart;
 
-    if (last->isValid()) {
+    if (last && last->isValid()) {
         secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
@@ -1034,7 +1034,7 @@ Person::List SqliteStorage::loadContacts()
 
 int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateTime *last)
 {
-    if (!d->mDatabase || !last) {
+    if (!d->mDatabase) {
         return -1;
     }
 
@@ -1061,7 +1061,7 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
         qsize1 = sizeof(SELECT_COMPONENTS_BY_ATTENDEE_AND_CREATED);
         SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     }
-    if (last->isValid()) {
+    if (last && last->isValid()) {
         secsStart = d->mFormat->toOriginTime(*last);
     } else {
         secsStart = LLONG_MAX; // largest time
