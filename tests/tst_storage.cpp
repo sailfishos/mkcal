@@ -1992,8 +1992,7 @@ public:
         mStorage->unregisterObserver(this);
     }
 
-    void storageModified(StorageBackend *storage,
-                         const Notebook::List &notebooks, const Notebook::Ptr &defaultNotebook) override
+    void storageModified(StorageBackend *storage) override
     {
         emit modified();
     }
@@ -2041,7 +2040,7 @@ void tst_storage::tst_storageObserver()
     args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
     QCOMPARE(args[0].value<StorageBackend::Collection>().count(), 1);
-    QCOMPARE(args[0].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
+    QCOMPARE(*static_cast<KCalendarCore::Event*>(args[0].value<StorageBackend::Collection>().value(NotebookId)), *event);
     QVERIFY(args[1].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(args[2].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(modified.isEmpty());
@@ -2055,7 +2054,7 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(args.count(), 3);
     QVERIFY(args[0].value<StorageBackend::Collection>().isEmpty());
     QCOMPARE(args[1].value<StorageBackend::Collection>().count(), 1);
-    QCOMPARE(args[1].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
+    QCOMPARE(*static_cast<KCalendarCore::Event*>(args[1].value<StorageBackend::Collection>().value(NotebookId)), *event);
     QVERIFY(args[2].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
@@ -2069,7 +2068,7 @@ void tst_storage::tst_storageObserver()
     QVERIFY(args[0].value<StorageBackend::Collection>().isEmpty());
     QVERIFY(args[1].value<StorageBackend::Collection>().isEmpty());
     QCOMPARE(args[2].value<StorageBackend::Collection>().count(), 1);
-    QCOMPARE(args[2].value<StorageBackend::Collection>().value(NotebookId).staticCast<KCalendarCore::Event>(), event);
+    QCOMPARE(*static_cast<KCalendarCore::Event*>(args[2].value<StorageBackend::Collection>().value(NotebookId)), *event);
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 

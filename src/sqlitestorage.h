@@ -220,18 +220,6 @@ public:
 
     /**
       @copydoc
-      StorageBackend::storeIncidences(const StorageBackend::Collection &,
-                                      const StorageBackend::Collection &,
-                                      const StorageBackend::Collection &,
-                                      StorageBackend::DeleteAction)
-    */
-    bool storeIncidences(const StorageBackend::Collection &additions,
-                         const StorageBackend::Collection &modifications,
-                         const StorageBackend::Collection &deletions,
-                         StorageBackend::DeleteAction deleteAction);
-
-    /**
-      @copydoc
       StorageBackend::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
@@ -309,8 +297,11 @@ public:
     virtual void virtual_hook(int id, void *data);
 
 protected:
-    bool loadNotebooks(Notebook::List *notebooks, Notebook::Ptr *defaultNotebook);
-    bool modifyNotebook(const Notebook &nb, StorageBackend::DBOperation dbop, bool isDefault);
+    bool modifyNotebook(const Notebook &nb, StorageBackend::DBOperation dbop, bool isDefault) override;
+    bool modifyIncidences(const StorageBackend::Collection &additions,
+                          const StorageBackend::Collection &modifications,
+                          const StorageBackend::Collection &deletions,
+                          StorageBackend::DeleteAction deleteAction) override;
 
 private:
     //@cond PRIVATE

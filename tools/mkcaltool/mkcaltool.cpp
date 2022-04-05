@@ -48,7 +48,7 @@ int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
     }
 
     mKCal::StorageBackend::Collection update;
-    update.insert(notebookUid, event);
+    update.insert(notebookUid, event.data());
     storage->storageUpdated({}, update, {});
     return 0;
 }

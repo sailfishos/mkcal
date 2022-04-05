@@ -48,6 +48,7 @@ using namespace mKCal;
 //@cond PRIVATE
 class mKCal::ExtendedStorage::Private
     : public StorageBackend::Observer
+    , public StorageBackend::Manager
     , public KCalendarCore::Calendar::CalendarObserver
 {
 public:
@@ -64,13 +65,14 @@ public:
     QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
     QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
 
-    void storageOpened(StorageBackend *storage,
-                       const Notebook::List &notebooks, const Notebook::Ptr &defaultNotebook) override;
+    void newNotebooks(StorageBackend *storage,
+                      const StorageBackend::Library &notebooks, const QString &defaultNotebookId) override;
+    void newIncidences(StorageBackend *storage,
+                       const StorageBackend::Collection &incidences) override;
+
+    void storageOpened(StorageBackend *storage) override;
     void storageClosed(StorageBackend *storage) override;
-    void storageModified(StorageBackend *storage,
-                         const Notebook::List &notebooks, const Notebook::Ptr &defaultNotebook) override;
-    void incidenceLoaded(StorageBackend *storage,
-                         const StorageBackend::Collection &incidences) override;
+    void storageModified(StorageBackend *storage) override;
 
     void calendarModified(bool modified, KCalendarCore::Calendar *calendar);
     void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence);
@@ -86,6 +88,7 @@ ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, const QString
       d(new ExtendedStorage::Private(cal, validateNotebooks))
 {
     cal->registerObserver(d);
+    registerManager(d);
     registerObserver(d);
 }
 
@@ -93,6 +96,7 @@ ExtendedStorage::~ExtendedStorage()
 {
     d->mCalendar->unregisterObserver(d);
     unregisterObserver(d);
+    unregisterManager(d);
     delete d;
 }
 
@@ -113,11 +117,11 @@ bool ExtendedStorage::save()
 
 bool ExtendedStorage::save(ExtendedStorage::DeleteAction deleteAction)
 {
-    StorageBackend::Collection added;
-    StorageBackend::Collection modified;
-    StorageBackend::Collection deleted;
+    StorageBackend::SharedCollection added;
+    StorageBackend::SharedCollection modified;
+    StorageBackend::SharedCollection deleted;
 
-    QHash<QString, Incidence::Ptr>::ConstIterator it;
+    QMultiHash<QString, Incidence::Ptr>::ConstIterator it;
     for (it = d->mIncidencesToInsert.constBegin();
          it != d->mIncidencesToInsert.constEnd(); it++) {
         const QString notebookUid = calendar()->notebook(*it);
@@ -127,7 +131,6 @@ bool ExtendedStorage::save(ExtendedStorage::DeleteAction deleteAction)
             qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
         }
     }
-    d->mIncidencesToInsert.clear();
     for (it = d->mIncidencesToUpdate.constBegin();
          it != d->mIncidencesToUpdate.constEnd(); it++) {
         const QString notebookUid = calendar()->notebook(*it);
@@ -137,11 +140,12 @@ bool ExtendedStorage::save(ExtendedStorage::DeleteAction deleteAction)
             qCWarning(lcMkcal) << "invalid notebook - not updating incidence" << (*it)->uid();
         }
     }
-    d->mIncidencesToUpdate.clear();
     for (it = d->mIncidencesToDelete.constBegin();
          it != d->mIncidencesToDelete.constEnd(); it++) {
         deleted.insert(calendar()->notebook(*it), *it);
     }
+    d->mIncidencesToInsert.clear();
+    d->mIncidencesToUpdate.clear();
     d->mIncidencesToDelete.clear();
 
     return storeIncidences(added, modified, deleted, deleteAction);
@@ -219,47 +223,24 @@ void ExtendedStorage::Private::calendarIncidenceAdditionCanceled(const Incidence
     }
 }
 
-void ExtendedStorage::Private::storageOpened(StorageBackend *storage,
-                                             const Notebook::List &notebooks, const Notebook::Ptr &defaultNotebook)
+void ExtendedStorage::Private::newNotebooks(StorageBackend *storage,
+                                            const StorageBackend::Library &notebooks,
+                                            const QString &defaultNotebookId)
 {
-    for (const Notebook::Ptr &nb : notebooks) {
+    for (Notebook *notebook : notebooks) {
+        const Notebook::Ptr nb(notebook);
         mNotebooks.insert(nb->uid(), nb);
         if (!mCalendar->addNotebook(nb->uid(), nb->isVisible())
             && !mCalendar->updateNotebook(nb->uid(), nb->isVisible())) {
             qCWarning(lcMkcal) << "notebook" << nb->uid() << "already in calendar";
         }
-    }
-    mDefaultNotebook = defaultNotebook;
-    if (defaultNotebook && !mCalendar->setDefaultNotebook(defaultNotebook->uid())) {
-        qCWarning(lcMkcal) << "cannot set notebook" << defaultNotebook->uid() << "as default in calendar";
-    }
-    if (storage->timeZone().isValid()) {
-        mCalendar->setTimeZone(storage->timeZone());
-    }
-}
-
-void ExtendedStorage::Private::storageClosed(StorageBackend *storage)
-{
-    mIncidencesToInsert.clear();
-    mIncidencesToUpdate.clear();
-    mIncidencesToDelete.clear();
-
-    mNotebooks.clear();
-    mDefaultNotebook.clear();
-}
-
-void ExtendedStorage::Private::storageModified(StorageBackend *storage,
-                                               const Notebook::List &notebooks,
-                                               const Notebook::Ptr &defaultNotebook)
-{
-    for (const Notebook::Ptr &nb : mNotebooks.values()) {
-        if (!mCalendar->deleteNotebook(nb->uid())) {
-            qCDebug(lcMkcal) << "notebook" << nb->uid() << "already removed from calendar";
+        if (notebook->uid() == defaultNotebookId) {
+            mDefaultNotebook = nb;
+            if (!mCalendar->setDefaultNotebook(defaultNotebookId)) {
+                qCWarning(lcMkcal) << "cannot set notebook" << defaultNotebookId << "as default in calendar";
+            }
         }
     }
-    mCalendar->close();
-    mNotebooks.clear();
-    storageOpened(storage, notebooks, defaultNotebook);
 }
 
 static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
@@ -273,13 +254,13 @@ static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const 
     return false;
 }
 
-void ExtendedStorage::Private::incidenceLoaded(StorageBackend *storage,
-                                               const StorageBackend::Collection &incidences)
+void ExtendedStorage::Private::newIncidences(StorageBackend *storage,
+                                             const StorageBackend::Collection &incidences)
 {
     mCalendar->unregisterObserver(this);
     for(StorageBackend::Collection::ConstIterator it = incidences.constBegin();
         it != incidences.constEnd(); it++) {
-        const Incidence::Ptr &incidence = it.value();
+        const Incidence::Ptr incidence(it.value());
         bool added = true;
         bool hasNotebook = mCalendar->hasValidNotebook(it.key());
         // Cannot use .contains(incidence->uid(), incidence) here, like
@@ -311,6 +292,35 @@ void ExtendedStorage::Private::incidenceLoaded(StorageBackend *storage,
         }
     }
     mCalendar->registerObserver(this);
+}
+
+void ExtendedStorage::Private::storageOpened(StorageBackend *storage)
+{
+    if (storage->timeZone().isValid()) {
+        mCalendar->setTimeZone(storage->timeZone());
+    }
+}
+
+void ExtendedStorage::Private::storageClosed(StorageBackend *storage)
+{
+    mIncidencesToInsert.clear();
+    mIncidencesToUpdate.clear();
+    mIncidencesToDelete.clear();
+
+    mNotebooks.clear();
+    mDefaultNotebook.clear();
+}
+
+void ExtendedStorage::Private::storageModified(StorageBackend *storage)
+{
+    for (const Notebook::Ptr &nb : mNotebooks.values()) {
+        if (!mCalendar->deleteNotebook(nb->uid())) {
+            qCDebug(lcMkcal) << "notebook" << nb->uid() << "already removed from calendar";
+        }
+    }
+    mCalendar->close();
+    mNotebooks.clear();
+    mDefaultNotebook = Notebook::Ptr();
 }
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)

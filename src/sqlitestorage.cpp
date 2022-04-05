@@ -160,8 +160,8 @@ public:
         return dbFile;
     }
 
-    Notebook::List init(Notebook::Ptr *defaultNotebook);
-    bool loadNotebooks(Notebook::List *notebooks, Notebook::Ptr *defaultNotebook);
+    bool init();
+    bool loadNotebooks(StorageBackend::Library *notebooks, QString *defaultNotebookId);
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
@@ -248,15 +248,11 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    {
-        Notebook::Ptr defaultNotebook;
-        Notebook::List books = d->init(&defaultNotebook);
-        if (books.isEmpty()) {
-            close();
-            return false;
-        }
-        storageOpened(books, defaultNotebook);
+    if (!d->init()) {
+        close();
+        return false;
     }
+    storageOpened();
 
     return true;
 
@@ -1007,7 +1003,6 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            bool useDate,
                                            bool ignoreEnd)
 {
-    int count = 0;
     Incidence *incidence;
     QDateTime previous, date;
     QString notebookUid;
@@ -1030,7 +1025,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
             date = incidence->created();
         }
         if (previous != date) {
-            if (!previous.isValid() || limit <= 0 || count <= limit) {
+            if (!previous.isValid() || limit <= 0 || incidences.count() <= limit) {
                 // If we don't have previous date, or we're within limits,
                 // we can just set the 'previous' and move onward
                 previous = date;
@@ -1040,8 +1035,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 break;
             }
         }
-        incidences.insert(notebookUid, Incidence::Ptr(incidence));
-        count += 1;
+        incidences.insert(notebookUid, incidence);
     }
     if (last) {
         *last = date;
@@ -1052,9 +1046,9 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
-    mStorage->incidenceLoaded(incidences);
+    mStorage->newIncidences(incidences);
 
-    return count;
+    return incidences.count();
 }
 //@endcond
 
@@ -1108,10 +1102,10 @@ bool SqliteStorage::Private::purgeDeletedIncidences(const Incidence::List &list)
 }
 //@endcond
 
-bool SqliteStorage::storeIncidences(const StorageBackend::Collection &additions,
-                                    const StorageBackend::Collection &modifications,
-                                    const StorageBackend::Collection &deletions,
-                                    StorageBackend::DeleteAction deleteAction)
+bool SqliteStorage::modifyIncidences(const StorageBackend::Collection &additions,
+                                     const StorageBackend::Collection &modifications,
+                                     const StorageBackend::Collection &deletions,
+                                     StorageBackend::DeleteAction deleteAction)
 {
     if (!d->mDatabase) {
         return false;
@@ -1561,32 +1555,36 @@ int SqliteStorage::journalCount()
     return d->selectCount(query, qsize);
 }
 
-Notebook::List SqliteStorage::Private::init(Notebook::Ptr *defaultNotebook)
+bool SqliteStorage::Private::init()
 {
     if (!loadTimezones()) {
         qCWarning(lcMkcal) << "cannot load timezones from database";
-        return {};
+        return false;
     }
 
-    Notebook::List books;
-    if (!loadNotebooks(&books, defaultNotebook)) {
+    QString defaultNotebookId;
+    StorageBackend::Library books;
+    if (!loadNotebooks(&books, &defaultNotebookId)) {
         qCWarning(lcMkcal) << "loading notebooks failed";
-        return {};
+        return false;
     }
     if (books.isEmpty()) {
         qCDebug(lcMkcal) << "Storage is empty, initializing";
-        *defaultNotebook = Notebook::Ptr(StorageBackend::createDefaultNotebook());
-        if (!mStorage->modifyNotebook(**defaultNotebook, DBInsert, true)) {
+        Notebook *nbDefault = StorageBackend::createDefaultNotebook();
+        if (!mStorage->modifyNotebook(*nbDefault, DBInsert, true)) {
             qCWarning(lcMkcal) << "inserting default notebook failed";
-            return {};
+            delete nbDefault;
+            return false;
         }
-        books.append(*defaultNotebook);
+        books.append(nbDefault);
+        defaultNotebookId = nbDefault->uid();
     }
+    mStorage->newNotebooks(books, defaultNotebookId);
 
-    return books;
+    return true;
 }
 
-bool SqliteStorage::Private::loadNotebooks(Notebook::List *notebooks, Notebook::Ptr *defaultNotebook)
+bool SqliteStorage::Private::loadNotebooks(StorageBackend::Library *notebooks, QString *defaultNotebookId)
 {
     const char *query = SELECT_CALENDARS_ALL;
     int qsize = sizeof(SELECT_CALENDARS_ALL);
@@ -1612,10 +1610,9 @@ bool SqliteStorage::Private::loadNotebooks(Notebook::List *notebooks, Notebook::
 
     while ((nb = mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        Notebook::Ptr notebook(nb);
-        notebooks->append(notebook);
-        if (isDefault && defaultNotebook) {
-            *defaultNotebook = notebook;
+        notebooks->append(nb);
+        if (isDefault && defaultNotebookId) {
+            *defaultNotebookId = nb->uid();
         }
     }
 
@@ -1664,7 +1661,7 @@ bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop, bool is
         qCDebug(lcMkcal) << "deleting" << all.size() << "incidences of notebook" << nb.name();
         StorageBackend::Collection deletions;
         for (const Incidence::Ptr &incidence : all) {
-            deletions.insert(nb.uid(), incidence);
+            deletions.insert(nb.uid(), incidence.data());
         }
         if (!d->saveIncidences(deletions, StorageBackend::DBDelete)) {
             qCWarning(lcMkcal) << "error when purging incidences from notebook" << nb.uid();
@@ -1787,14 +1784,11 @@ void SqliteStorage::fileChanged(const QString &path)
 
     if (transactionId != d->mSavedTransactionId) {
         d->mSavedTransactionId = transactionId;
-        Notebook::Ptr defaultNotebook;
-        Notebook::List books = d->init(&defaultNotebook);
-        if (books.isEmpty()) {
-            qCWarning(lcMkcal) << "reinitialising storage failed";
-        } else {
-            storageModified(books, defaultNotebook);
-        }
         qCDebug(lcMkcal) << path << "has been modified";
+        storageModified();
+        if (d->init()) {
+            storageOpened();
+        }
     }
 }
 
