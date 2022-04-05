@@ -107,7 +107,8 @@ public:
           mModifiedDate(other.mModifiedDate),
           mSharedWith(other.mSharedWith),
           mSyncProfile(other.mSyncProfile),
-          mCreationDate(other.mCreationDate)
+          mCreationDate(other.mCreationDate),
+          mCustomProperties(other.mCustomProperties)
     {}
 
     QString mUid;
