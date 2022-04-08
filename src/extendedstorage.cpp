@@ -97,8 +97,6 @@ public:
           mIsFutureDateLoaded(false),
           mIsGeoDateLoaded(false),
           mIsGeoCreatedLoaded(false),
-          mIsUnreadIncidencesLoaded(false),
-          mIsInvitationIncidencesLoaded(false),
           mIsJournalsLoaded(false),
           mDefaultNotebook(0)
     {}
@@ -114,8 +112,6 @@ public:
     bool mIsFutureDateLoaded;
     bool mIsGeoDateLoaded;
     bool mIsGeoCreatedLoaded;
-    bool mIsUnreadIncidencesLoaded;
-    bool mIsInvitationIncidencesLoaded;
     bool mIsJournalsLoaded;
     QList<ExtendedStorageObserver *> mObservers;
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
@@ -172,8 +168,6 @@ void ExtendedStorage::clearLoaded()
     d->mIsFutureDateLoaded = false;
     d->mIsGeoDateLoaded = false;
     d->mIsGeoCreatedLoaded = false;
-    d->mIsUnreadIncidencesLoaded  = false;
-    d->mIsInvitationIncidencesLoaded  = false;
     d->mIsJournalsLoaded = false;
 }
 
@@ -338,26 +332,6 @@ bool ExtendedStorage::isGeoCreatedLoaded()
 void ExtendedStorage::setIsGeoCreatedLoaded(bool loaded)
 {
     d->mIsGeoCreatedLoaded = loaded;
-}
-
-bool ExtendedStorage::isUnreadIncidencesLoaded()
-{
-    return d->mIsUnreadIncidencesLoaded;
-}
-
-void ExtendedStorage::setIsUnreadIncidencesLoaded(bool loaded)
-{
-    d->mIsUnreadIncidencesLoaded = loaded;
-}
-
-bool ExtendedStorage::isInvitationIncidencesLoaded()
-{
-    return d->mIsInvitationIncidencesLoaded;
-}
-
-void ExtendedStorage::setIsInvitationIncidencesLoaded(bool loaded)
-{
-    d->mIsInvitationIncidencesLoaded = loaded;
 }
 
 void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,

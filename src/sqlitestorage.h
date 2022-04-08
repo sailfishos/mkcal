@@ -208,18 +208,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::loadUnreadInvitationIncidences()
-    */
-    int loadUnreadInvitationIncidences();
-
-    /**
-      @copydoc
-      ExtendedStorage::loadInvitationIncidences()
-    */
-    int loadOldInvitationIncidences(int limit, QDateTime *last);
-
-    /**
-      @copydoc
       ExtendedStorage::loadContacts()
     */
     KCalendarCore::Person::List loadContacts();

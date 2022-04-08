@@ -558,8 +558,6 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         contact = incidence->contacts().join(" ").toUtf8();
         SL3_bind_text(stmt1, index, contact.constData(), contact.length(), SQLITE_STATIC);
 
-        SL3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
-
         // Never save recurrenceId as FLOATING_DATE, because the time of a
         // floating date is not guaranteed on read and recurrenceId is used
         // for date-time comparisons.
