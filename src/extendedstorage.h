@@ -650,8 +650,7 @@ public:
 
 protected:
     virtual bool loadNotebooks() = 0;
-    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop,
-                                bool signal = true) = 0;
+    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;

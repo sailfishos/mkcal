@@ -56,9 +56,8 @@ void tst_load::init()
     if (!mStorage->defaultNotebook()) {
         Notebook::Ptr notebook(new Notebook({}, QString::fromLatin1("Default"), {}, {},
                                             false, false, false, false, true));
-        QVERIFY(mStorage->addNotebook(notebook));
-        mCreatedNotebookUid = notebook->uid();
         QVERIFY(mStorage->setDefaultNotebook(notebook));
+        mCreatedNotebookUid = notebook->uid();
     }
 }
 

@@ -65,6 +65,23 @@ public:
     };
 
     /**
+      Values stored in the flag column of the calendars table.
+     */
+    enum CalendarFlag {
+        AllowEvents   = (1 << 0),
+        AllowJournals = (1 << 1),
+        AllowTodos    = (1 << 2),
+        Shared        = (1 << 3),
+        Master        = (1 << 4),
+        Synchronized  = (1 << 5),
+        ReadOnly      = (1 << 6),
+        Visible       = (1 << 7),
+        RunTimeOnly   = (1 << 8),
+        Default       = (1 << 9),
+        Shareable     = (1 << 10)
+    };
+
+    /**
       Constructor a new Sqlite Format object.
     */
     SqliteFormat(sqlite3 *database, const QTimeZone &timeZone = {});
@@ -80,17 +97,19 @@ public:
       @param notebook notebook to update
       @param dbop database operation
       @param stmt prepared sqlite statement for calendars table
+      @param isDefault if the notebook is the default one in the DB
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt);
+    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
 
     /**
       Select notebooks from Calendars table.
 
       @param stmt prepared sqlite statement for calendars table
+      @param isDefault true if the selected notebook is the DB default one
       @return the queried notebook.
     */
-    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt);
+    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
 
     /**
       Update incidence data in Components table.
@@ -491,6 +510,9 @@ private:
 "select count(*) from Components where Type='Todo' and DateDeleted=0"
 #define SELECT_JOURNAL_COUNT \
 "select count(*) from Components where Type='Journal' and DateDeleted=0"
+
+#define UNSET_FLAG_FROM_CALENDAR \
+"update Calendars set Flags=(Flags & (~?))"
 
 #define BEGIN_TRANSACTION \
 "BEGIN IMMEDIATE;"

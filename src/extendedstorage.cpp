@@ -432,8 +432,8 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
     if (!modifyNotebook(nb, DBInsert)) {
         return false;
     }
-    d->mNotebooks.insert(nb->uid(), nb);
 
+    d->mNotebooks.insert(nb->uid(), nb);
     if (!calendar()->addNotebook(nb->uid(), nb->isVisible())
         && !calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
         qCWarning(lcMkcal) << "notebook" << nb->uid() << "already in calendar";
@@ -457,6 +457,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     if (!modifyNotebook(nb, DBUpdate)) {
         return false;
     }
+
 #if defined(TIMED_SUPPORT)
     if (wasVisible && !nb->isVisible()) {
         d->clearAlarms(nb->uid());
@@ -525,20 +526,11 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
 
 bool ExtendedStorage::setDefaultNotebook(const Notebook::Ptr &nb)
 {
-    if (!nb || !d->mNotebooks.contains(nb->uid())) {
-        return false;
-    }
-
-    if (d->mDefaultNotebook) {
-        d->mDefaultNotebook->setIsDefault(false);
-        if (!modifyNotebook(d->mDefaultNotebook, DBUpdate, false)) {
-            return false;
-        }
-    }
-
     d->mDefaultNotebook = nb;
-    d->mDefaultNotebook->setIsDefault(true);
-    if (!modifyNotebook(d->mDefaultNotebook, DBUpdate)) {
+
+    if (!nb
+        || (d->mNotebooks.contains(nb->uid()) && !updateNotebook(nb))
+        || (!d->mNotebooks.contains(nb->uid()) && !addNotebook(nb))) {
         return false;
     }
 
@@ -602,15 +594,7 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
         color = "#0000FF";
     Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
                                          false, true, false, false, true));
-    if (modifyNotebook(nbDefault, DBInsert, false)) {
-        d->mNotebooks.insert(nbDefault->uid(), nbDefault);
-        if (!calendar()->addNotebook(nbDefault->uid(), nbDefault->isVisible())
-            && !calendar()->updateNotebook(nbDefault->uid(), nbDefault->isVisible())) {
-            qCWarning(lcMkcal) << "notebook" << nbDefault->uid() << "already in calendar";
-        }
-    }
-    setDefaultNotebook(nbDefault);
-    return nbDefault;
+    return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
 }
 
 Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,

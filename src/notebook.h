@@ -306,18 +306,6 @@ public:
     void setCreationDate(const QDateTime &date);
 
     /**
-      Returns true if notebook is default notebook.
-      @see setIsDefault().
-    */
-    bool isDefault() const;
-
-    /**
-      Set notebook to default notebook.
-      @param isDefault true to set default.
-    */
-    void setIsDefault(bool isDefault);
-
-    /**
       Returns true if notebook is shareable.
       @see setIsShareable().
     */
@@ -413,26 +401,6 @@ public:
       within this notebook or not.
     */
     bool incidenceAllowed(KCalendarCore::Incidence::Ptr incidence) const;
-
-    /**
-      Set the notebook flags.
-
-      This utility function mostly facilitates easy database loading and saving,
-      as setting the 'flags' is equivalent to setting all the booleans in this API.
-      The content of flags is not public as such.
-
-      @param flags The flags to be set for the notebook.
-    */
-    void setFlags(int flags);
-
-    /**
-      Get the flags associated with the notebook.
-
-      This utility function mostly facilitates easy database loading and saving,
-      as storing the 'flags' is equivalent to getting all the booleans in this API.
-      The content of flags is not public as such.
-    */
-    int flags() const;
 
     /**
        Set a key/value property. Setting the value to the empty string

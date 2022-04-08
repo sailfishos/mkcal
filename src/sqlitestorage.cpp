@@ -1798,7 +1798,7 @@ bool SqliteStorage::loadNotebooks()
 
     int rv = 0;
     sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
+    bool isDefault;
 
     Notebook::Ptr nb;
 
@@ -1813,22 +1813,19 @@ bool SqliteStorage::loadNotebooks()
 
     d->mIsLoading = true;
 
-    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, nullptr);
 
-    while ((nb = d->mFormat->selectCalendars(stmt))) {
+    while ((nb = d->mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        if (!addNotebook(nb)) {
+        if (isDefault && !setDefaultNotebook(nb)) {
+            qCWarning(lcMkcal) << "cannot add default notebook" << nb->uid() << nb->name() << "to storage";
+            nb = Notebook::Ptr();
+        } else if (!isDefault && !addNotebook(nb)) {
             qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
-            if (nb) {
-                nb = Notebook::Ptr();
-            }
-        } else {
-            if (nb->isDefault()) {
-                setDefaultNotebook(nb);
-            }
+            nb = Notebook::Ptr();
         }
     }
-    sqlite3_reset(stmt);
+
     sqlite3_finalize(stmt);
 
     if (!d->mSem.release()) {
@@ -1845,7 +1842,7 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal)
+bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
 {
     int rv = 0;
     bool success = d->mIsLoading; // true if we are currently loading
@@ -1883,14 +1880,14 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
 
         SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt))) {
+        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
         sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
 
-        if (success && signal) {
+        if (success) {
             // Don't save the incremented transactionId at the moment,
             // let it be seen as an external modification.
             // Todo: add a method for observers on notebook changes.
@@ -1901,9 +1898,8 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
         if (!d->mSem.release()) {
             qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         }
-    }
-    if (success) {
-        if (!d->mIsLoading && signal) {
+
+        if (success) {
             d->mChanged.resize(0);   // make a change to create signal
         }
     }
