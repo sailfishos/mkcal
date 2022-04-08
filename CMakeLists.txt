@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11.4)
+cmake_minimum_required(VERSION 3.16)
 
 project(mkcal
 	VERSION 0.6.3
