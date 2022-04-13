@@ -285,24 +285,6 @@ public:
     virtual int loadGeoIncidences(bool hasDate, int limit, QDateTime *last) = 0;
 
     /**
-      Load all unread incidences that are related to an invitation.
-
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadUnreadInvitationIncidences() = 0;
-
-    /**
-      Load incidences that are related to an invitation.
-      Load direction is descending, i.e., starting from most distant
-      upcoming incidence.
-
-      @param limit load only that many incidences
-      @param last last loaded incidence due/creation date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadOldInvitationIncidences(int limit, QDateTime *last) = 0;
-
-    /**
       Load all contacts in the database. Doesn't put anything into calendar.
       Resulting list of persons is ordered by the number of appearances.
       Use Person::count to get the number of appearances.
@@ -668,8 +650,7 @@ public:
 
 protected:
     virtual bool loadNotebooks() = 0;
-    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop,
-                                bool signal = true) = 0;
+    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;
@@ -706,12 +687,6 @@ protected:
     void setIsGeoDateLoaded(bool loaded);
     bool isGeoCreatedLoaded();
     void setIsGeoCreatedLoaded(bool loaded);
-
-    bool isUnreadIncidencesLoaded();
-    void setIsUnreadIncidencesLoaded(bool loaded);
-
-    bool isInvitationIncidencesLoaded();
-    void setIsInvitationIncidencesLoaded(bool loaded);
 
     void clearLoaded();
 

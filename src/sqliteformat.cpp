@@ -221,7 +221,7 @@ error:
 }
 
 bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
-                                   DBOperation dbop, sqlite3_stmt *stmt)
+                                   DBOperation dbop, sqlite3_stmt *stmt, bool isDefault)
 {
     int rv = 0;
     int index = 1;
@@ -236,14 +236,37 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
 
     sqlite3_int64  secs;
 
+    index = 1;
     if (dbop == DBInsert || dbop == DBDelete)
         SL3_bind_text(stmt, index, uid, uid.length(), SQLITE_STATIC);
 
     if (dbop == DBInsert || dbop == DBUpdate) {
+        int flags = 0;
+        if (isDefault) {
+            const char *query = UNSET_FLAG_FROM_CALENDAR;
+            int qsize = sizeof(UNSET_FLAG_FROM_CALENDAR);
+            sqlite3_stmt *unset;
+            int idx = 1;
+            SL3_prepare_v2(d->mDatabase, query, qsize, &unset, nullptr);
+            SL3_bind_int(unset, idx, SqliteFormat::Default);
+            SL3_step(unset);
+            sqlite3_finalize(unset);
+            flags |= SqliteFormat::Default;
+        }
+        flags |= notebook->eventsAllowed() ? SqliteFormat::AllowEvents : 0;
+        flags |= notebook->todosAllowed() ? SqliteFormat::AllowTodos : 0;
+        flags |= notebook->journalsAllowed() ? SqliteFormat::AllowJournals : 0;
+        flags |= notebook->isShared() ? SqliteFormat::Shared : 0;
+        flags |= notebook->isMaster() ? SqliteFormat::Master : 0;
+        flags |= notebook->isSynchronized() ? SqliteFormat::Synchronized : 0;
+        flags |= notebook->isReadOnly() ? SqliteFormat::ReadOnly : 0;
+        flags |= notebook->isVisible() ? SqliteFormat::Visible : 0;
+        flags |= notebook->isRunTimeOnly() ? SqliteFormat::RunTimeOnly : 0;
+        flags |= notebook->isShareable() ? SqliteFormat::Shareable : 0;
         SL3_bind_text(stmt, index, name, name.length(), SQLITE_STATIC);
         SL3_bind_text(stmt, index, description, description.length(), SQLITE_STATIC);
         SL3_bind_text(stmt, index, color, color.length(), SQLITE_STATIC);
-        SL3_bind_int(stmt, index, notebook->flags());
+        SL3_bind_int(stmt, index, flags);
         secs = toOriginTime(notebook->syncDate().toUTC());
         SL3_bind_int64(stmt, index, secs);
         SL3_bind_text(stmt, index, plugin, plugin.length(), SQLITE_STATIC);
@@ -269,6 +292,7 @@ bool SqliteFormat::modifyCalendars(const Notebook::Ptr &notebook,
     return true;
 
 error:
+    qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(d->mDatabase);
     return false;
 }
 
@@ -557,8 +581,6 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         contact = incidence->contacts().join(" ").toUtf8();
         SL3_bind_text(stmt1, index, contact.constData(), contact.length(), SQLITE_STATIC);
-
-        SL3_bind_int(stmt1, index, 0);      //Invitation status removed. Needed? FIXME
 
         // Never save recurrenceId as FLOATING_DATE, because the time of a
         // floating date is not guaranteed on read and recurrenceId is used
@@ -1276,7 +1298,7 @@ error:
 }
 //@endcond
 
-Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
+Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt, bool *isDefault)
 {
     int rv = 0;
     Notebook::Ptr notebook;
@@ -1287,6 +1309,7 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
 
     SL3_step(stmt);
 
+    *isDefault = false;
     if (rv == SQLITE_ROW) {
         QString id = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 0));
         QString name = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
@@ -1308,7 +1331,16 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
         notebook = Notebook::Ptr(new Notebook(name, description));
         notebook->setUid(id);
         notebook->setColor(color);
-        notebook->setFlags(flags);
+        notebook->setEventsAllowed(flags & SqliteFormat::AllowEvents);
+        notebook->setTodosAllowed(flags & SqliteFormat::AllowTodos);
+        notebook->setJournalsAllowed(flags & SqliteFormat::AllowJournals);
+        notebook->setIsShared(flags & SqliteFormat::Shared);
+        notebook->setIsMaster(flags & SqliteFormat::Master);
+        notebook->setIsSynchronized(flags & SqliteFormat::Synchronized);
+        notebook->setIsReadOnly(flags & SqliteFormat::ReadOnly);
+        notebook->setIsVisible(flags & SqliteFormat::Visible);
+        notebook->setRunTimeOnly(flags & SqliteFormat::RunTimeOnly);
+        notebook->setIsShareable(flags & SqliteFormat::Shareable);
         notebook->setPluginName(plugin);
         notebook->setAccount(account);
         notebook->setAttachmentSize(attachmentSize);
@@ -1325,6 +1357,8 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt)
         // will be roughly now, and not whenever notebook was really last
         // modified.
         notebook->setModifiedDate(modifiedDate);
+
+        *isDefault = flags & SqliteFormat::Default;
     }
 
 error:

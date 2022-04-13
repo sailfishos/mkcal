@@ -208,18 +208,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::loadUnreadInvitationIncidences()
-    */
-    int loadUnreadInvitationIncidences();
-
-    /**
-      @copydoc
-      ExtendedStorage::loadInvitationIncidences()
-    */
-    int loadOldInvitationIncidences(int limit, QDateTime *last);
-
-    /**
-      @copydoc
       ExtendedStorage::loadContacts()
     */
     KCalendarCore::Person::List loadContacts();
@@ -376,7 +364,7 @@ public:
 
 protected:
     bool loadNotebooks();
-    bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal = true);
+    bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop);
 
 private:
     //@cond PRIVATE

@@ -1017,83 +1017,6 @@ error:
     return count;
 }
 
-int SqliteStorage::loadUnreadInvitationIncidences()
-{
-    if (!d->mDatabase) {
-        return false;
-    }
-
-    if (isUnreadIncidencesLoaded()) {
-        return 0;
-    }
-
-    int rv = 0;
-    int count = -1;
-    d->mIsLoading = true;
-
-    const char *query1 = NULL;
-    int qsize1 = 0;
-
-    sqlite3_stmt *stmt1 = NULL;
-
-    query1 = SELECT_COMPONENTS_BY_INVITATION_UNREAD;
-    qsize1 = sizeof(SELECT_COMPONENTS_BY_INVITATION_UNREAD);
-
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-
-    count = d->loadIncidences(stmt1);
-
-    setIsUnreadIncidencesLoaded(count >= 0);
-
-error:
-    d->mIsLoading = false;
-
-    return count;
-}
-
-int SqliteStorage::loadOldInvitationIncidences(int limit, QDateTime *last)
-{
-    if (!d->mDatabase || !last) {
-        return -1;
-    }
-
-    if (isInvitationIncidencesLoaded()) {
-        return 0;
-    }
-
-    int rv = 0;
-    int count = 0;
-    d->mIsLoading = true;
-
-    const char *query1 = NULL;
-    int qsize1 = 0;
-
-    sqlite3_stmt *stmt1 = NULL;
-    int index = 1;
-    qint64 secsStart;
-
-    query1 = SELECT_COMPONENTS_BY_INVITATION_AND_CREATED;
-    qsize1 = sizeof(SELECT_COMPONENTS_BY_INVITATION_AND_CREATED);
-    if (last->isValid()) {
-        secsStart = d->mFormat->toOriginTime(*last);
-    } else {
-        secsStart = LLONG_MAX; // largest time
-    }
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-    SL3_bind_int64(stmt1, index, secsStart);
-
-    count = d->loadIncidences(stmt1, limit, last, false);
-
-    if (count >= 0 && count < limit) {
-        setIsInvitationIncidencesLoaded(true);
-    }
-
-error:
-    d->mIsLoading = false;
-
-    return count;
-}
-
 Person::List SqliteStorage::loadContacts()
 {
     Person::List list;
@@ -1875,7 +1798,7 @@ bool SqliteStorage::loadNotebooks()
 
     int rv = 0;
     sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
+    bool isDefault;
 
     Notebook::Ptr nb;
 
@@ -1890,22 +1813,19 @@ bool SqliteStorage::loadNotebooks()
 
     d->mIsLoading = true;
 
-    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, nullptr);
 
-    while ((nb = d->mFormat->selectCalendars(stmt))) {
+    while ((nb = d->mFormat->selectCalendars(stmt, &isDefault))) {
         qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        if (!addNotebook(nb)) {
+        if (isDefault && !setDefaultNotebook(nb)) {
+            qCWarning(lcMkcal) << "cannot add default notebook" << nb->uid() << nb->name() << "to storage";
+            nb = Notebook::Ptr();
+        } else if (!isDefault && !addNotebook(nb)) {
             qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
-            if (nb) {
-                nb = Notebook::Ptr();
-            }
-        } else {
-            if (nb->isDefault()) {
-                setDefaultNotebook(nb);
-            }
+            nb = Notebook::Ptr();
         }
     }
-    sqlite3_reset(stmt);
+
     sqlite3_finalize(stmt);
 
     if (!d->mSem.release()) {
@@ -1922,7 +1842,7 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bool signal)
+bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
 {
     int rv = 0;
     bool success = d->mIsLoading; // true if we are currently loading
@@ -1960,14 +1880,14 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
 
         SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt))) {
+        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
         sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
 
-        if (success && signal) {
+        if (success) {
             // Don't save the incremented transactionId at the moment,
             // let it be seen as an external modification.
             // Todo: add a method for observers on notebook changes.
@@ -1978,9 +1898,8 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop, bo
         if (!d->mSem.release()) {
             qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         }
-    }
-    if (success) {
-        if (!d->mIsLoading && signal) {
+
+        if (success) {
             d->mChanged.resize(0);   // make a change to create signal
         }
     }

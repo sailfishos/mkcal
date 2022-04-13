@@ -48,9 +48,7 @@ static const int FLAG_IS_SYNCED = (1 << 5);
 static const int FLAG_IS_READONLY = (1 << 6);
 static const int FLAG_IS_VISIBLE = (1 << 7);
 static const int FLAG_IS_RUNTIMEONLY = (1 << 8);
-static const int FLAG_IS_DEFAULT = (1 << 9);
-static const int FLAG_IS_SHAREABLE = (1 << 10);
-static const int ALL_FLAGS = (1 << 11) - 1;
+static const int FLAG_IS_SHAREABLE = (1 << 9);
 
 #define NOTEBOOK_FLAGS_ALLOW_ALL        \
   ( FLAG_ALLOW_EVENT |                  \
@@ -107,7 +105,8 @@ public:
           mModifiedDate(other.mModifiedDate),
           mSharedWith(other.mSharedWith),
           mSyncProfile(other.mSyncProfile),
-          mCreationDate(other.mCreationDate)
+          mCreationDate(other.mCreationDate),
+          mCustomProperties(other.mCustomProperties)
     {}
 
     QString mUid;
@@ -204,7 +203,7 @@ bool Notebook::operator==(const Notebook &i2) const
         d->mName == i2.name() &&
         d->mDescription == i2.description() &&
         d->mColor == i2.color() &&
-        d->mFlags == i2.flags() &&
+        d->mFlags == i2.d->mFlags &&
         d->mSyncDate == i2.syncDate() &&
         d->mPluginName == i2.pluginName() &&
         d->mModifiedDate == i2.modifiedDate() &&
@@ -383,17 +382,6 @@ void Notebook::setCreationDate(const QDateTime &date)
     d->mCreationDate = date;
 }
 
-bool Notebook::isDefault() const
-{
-    return d->mFlags & FLAG_IS_DEFAULT;
-}
-
-void Notebook::setIsDefault(bool isDefault)
-{
-    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_DEFAULT, isDefault);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
-}
-
 bool Notebook::isShareable() const
 {
     return d->mFlags & FLAG_IS_SHAREABLE;
@@ -480,16 +468,6 @@ void Notebook::setTodosAllowed(bool todosAllowed)
 bool Notebook::todosAllowed() const
 {
     return d->mFlags & FLAG_ALLOW_TODO;
-}
-
-void Notebook::setFlags(int flags)
-{
-    d->mFlags = flags;
-}
-
-int Notebook::flags() const
-{
-    return d->mFlags;
 }
 
 bool Notebook::incidenceAllowed(Incidence::Ptr incidence) const

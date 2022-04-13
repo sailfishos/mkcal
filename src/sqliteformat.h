@@ -65,6 +65,23 @@ public:
     };
 
     /**
+      Values stored in the flag column of the calendars table.
+     */
+    enum CalendarFlag {
+        AllowEvents   = (1 << 0),
+        AllowJournals = (1 << 1),
+        AllowTodos    = (1 << 2),
+        Shared        = (1 << 3),
+        Master        = (1 << 4),
+        Synchronized  = (1 << 5),
+        ReadOnly      = (1 << 6),
+        Visible       = (1 << 7),
+        RunTimeOnly   = (1 << 8),
+        Default       = (1 << 9),
+        Shareable     = (1 << 10)
+    };
+
+    /**
       Constructor a new Sqlite Format object.
     */
     SqliteFormat(sqlite3 *database, const QTimeZone &timeZone = {});
@@ -80,17 +97,19 @@ public:
       @param notebook notebook to update
       @param dbop database operation
       @param stmt prepared sqlite statement for calendars table
+      @param isDefault if the notebook is the default one in the DB
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt);
+    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
 
     /**
       Select notebooks from Calendars table.
 
       @param stmt prepared sqlite statement for calendars table
+      @param isDefault true if the selected notebook is the DB default one
       @return the queried notebook.
     */
-    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt);
+    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
 
     /**
       Update incidence data in Components table.
@@ -336,7 +355,7 @@ private:
 #define INSERT_CALENDARS \
 "insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_CALENDARPROPERTIES \
@@ -359,7 +378,7 @@ private:
 #define UPDATE_CALENDARS \
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, InvitationStatus=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, extra1=? where ComponentId=?"
+"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, extra1=? where ComponentId=?"
 #define UPDATE_COMPONENTS_AS_DELETED \
 "update Components set DateDeleted=? where ComponentId=?"
 //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
@@ -447,10 +466,6 @@ private:
 "select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc, DateCreated desc"
 #define SELECT_COMPONENTS_BY_GEO_AND_CREATED \
 "select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
-#define SELECT_COMPONENTS_BY_INVITATION_UNREAD \
-"select * from Components where InvitationStatus=1 and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_INVITATION_AND_CREATED \
-"select * from Components where InvitationStatus>1 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_ATTENDEE_EMAIL_AND_CREATED \
 "select * from Components where ComponentId in (select distinct ComponentId from Attendee where email=?) and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_COMPONENTS_BY_ATTENDEE_AND_CREATED \
@@ -495,6 +510,9 @@ private:
 "select count(*) from Components where Type='Todo' and DateDeleted=0"
 #define SELECT_JOURNAL_COUNT \
 "select count(*) from Components where Type='Journal' and DateDeleted=0"
+
+#define UNSET_FLAG_FROM_CALENDAR \
+"update Calendars set Flags=(Flags & (~?))"
 
 #define BEGIN_TRANSACTION \
 "BEGIN IMMEDIATE;"
