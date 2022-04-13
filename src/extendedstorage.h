@@ -571,15 +571,6 @@ public:
     Notebook::Ptr notebook(const QString &uid);
 
     /**
-      Search for notebook in a list.
-
-      @param list notebook list
-      @param uid notebook uid
-      @return pointer to notebook
-    */
-    Notebook::Ptr notebook(Notebook::List &list, const QString &uid);
-
-    /**
       List all notebooks.
 
       @return list of notebooks
