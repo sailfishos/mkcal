@@ -38,8 +38,6 @@
 #include <KCalendarCore/Calendar>
 using namespace KCalendarCore;
 
-#include <QtCore/QUuid>
-
 #ifdef TIMED_SUPPORT
 # include <timed-qt5/interface.h>
 # include <timed-qt5/event-declarations.h>
@@ -419,12 +417,6 @@ void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
 {
-    if (nb->uid().length() < 7) {
-        // Cannot accept this id, create better one.
-        QString uid(QUuid::createUuid().toString());
-        nb->setUid(uid.mid(1, uid.length() - 2));
-    }
-
     if (!nb || d->mNotebooks.contains(nb->uid())) {
         return false;
     }
@@ -586,14 +578,9 @@ bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
 
 Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
 {
-    // Could use QUuid::WithoutBraces when moving to Qt5.11.
-    const QString uid(QUuid::createUuid().toString());
     if (name.isEmpty())
         name = "Default";
-    if (color.isEmpty())
-        color = "#0000FF";
-    Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
-                                         false, true, false, false, true));
+    Notebook::Ptr nbDefault(new Notebook(name, QString(), color));
     return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
 }
 
