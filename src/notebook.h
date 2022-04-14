@@ -83,12 +83,17 @@ public:
       Constructs an Notebook as a copy of another Notebook object.
       @param n is the Notebook to copy.
     */
-    explicit Notebook(const Notebook &n);
+    Notebook(const Notebook &n);
 
     /**
       Destructor.
     */
     virtual ~Notebook();
+
+    /**
+      Returns if the notebook is valid or null constructed.
+    */
+    bool isValid() const;
 
     /**
       Returns the uid of the notebook.

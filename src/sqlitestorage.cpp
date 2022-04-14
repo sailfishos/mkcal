@@ -215,7 +215,6 @@ bool SqliteStorage::open()
     int rv;
     char *errmsg = NULL;
     const char *query = NULL;
-    Notebook::List list;
 
     if (d->mDatabase) {
         return false;
@@ -269,10 +268,13 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    list = notebooks();
-    if (list.isEmpty()) {
+    if (notebooks().isEmpty()) {
         qCDebug(lcMkcal) << "Storage is empty, initializing";
-        createDefaultNotebook();
+        if (!setDefaultNotebook(Notebook(QString::fromLatin1("Default"), QString()))) {
+            qCWarning(lcMkcal) << "Unable to add a default notebook.";
+            close();
+            return false;
+        }
     }
 
     return true;
@@ -1796,15 +1798,6 @@ int SqliteStorage::journalCount()
 
 bool SqliteStorage::loadNotebooks()
 {
-    const char *query = SELECT_CALENDARS_ALL;
-    int qsize = sizeof(SELECT_CALENDARS_ALL);
-
-    int rv = 0;
-    sqlite3_stmt *stmt = NULL;
-    bool isDefault;
-
-    Notebook *nb;
-
     if (!d->mDatabase) {
         return false;
     }
@@ -1813,34 +1806,25 @@ bool SqliteStorage::loadNotebooks()
         qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
     }
-
     d->mIsLoading = true;
 
-    SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, nullptr);
-
-    while ((nb = d->mFormat->selectCalendars(stmt, &isDefault))) {
-        qCDebug(lcMkcal) << "loaded notebook" << nb->uid() << nb->name() << "from database";
-        if (isDefault && !setDefaultNotebook(Notebook::Ptr(nb))) {
-            qCWarning(lcMkcal) << "cannot add default notebook" << nb->uid() << nb->name() << "to storage";
-        } else if (!isDefault && !addNotebook(Notebook::Ptr(nb))) {
-            qCWarning(lcMkcal) << "cannot add notebook" << nb->uid() << nb->name() << "to storage";
+    bool isDefault;
+    for (Notebook nb = d->mFormat->selectCalendars(&isDefault); nb.isValid();
+         nb = d->mFormat->selectCalendars(&isDefault)) {
+        qCDebug(lcMkcal) << "loaded notebook" << nb.uid() << nb.name() << "from database";
+        if (isDefault && !setDefaultNotebook(nb)) {
+            qCWarning(lcMkcal) << "cannot add default notebook" << nb.uid() << nb.name() << "to storage";
+        } else if (!isDefault && !addNotebook(nb)) {
+            qCWarning(lcMkcal) << "cannot add notebook" << nb.uid() << nb.name() << "to storage";
         }
     }
 
-    sqlite3_finalize(stmt);
-
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
     }
     d->mIsLoading = false;
+
     return true;
-
-error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-    }
-    d->mIsLoading = false;
-    return false;
 }
 
 bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop)
@@ -1857,7 +1841,7 @@ bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop)
             return false;
         }
 
-        success = d->mFormat->modifyCalendars(nb, dbop, defaultNotebook() && nb.uid() == defaultNotebook()->uid());
+        success = d->mFormat->modifyCalendars(nb, dbop, nb.uid() == defaultNotebookId());
 
         if (success) {
             // Don't save the incremented transactionId at the moment,

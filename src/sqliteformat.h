@@ -104,11 +104,10 @@ public:
     /**
       Select notebooks from Calendars table.
 
-      @param stmt prepared sqlite statement for calendars table
       @param isDefault true if the selected notebook is the DB default one
       @return the queried notebook.
     */
-    Notebook* selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
+    Notebook selectCalendars(bool *isDefault);
 
     /**
       Update incidence data in Components table.

@@ -212,6 +212,11 @@ bool Notebook::operator==(const Notebook &i2) const
         d->mCreationDate == i2.creationDate();
 }
 
+bool Notebook::isValid() const
+{
+    return !d->mUid.isEmpty();
+}
+
 QString Notebook::uid() const
 {
     return d->mUid;

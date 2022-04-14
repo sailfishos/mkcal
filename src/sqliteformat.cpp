@@ -56,6 +56,7 @@ public:
     {
         sqlite3_finalize(mSelectMetadata);
         sqlite3_finalize(mUpdateMetadata);
+        sqlite3_finalize(mSelectCalendar);
         sqlite3_finalize(mInsertCalendar);
         sqlite3_finalize(mUpdateCalendar);
         sqlite3_finalize(mDeleteCalendar);
@@ -93,6 +94,7 @@ public:
     sqlite3_stmt *mSelectMetadata = nullptr;
     sqlite3_stmt *mUpdateMetadata = nullptr;
 
+    sqlite3_stmt *mSelectCalendar = nullptr;
     sqlite3_stmt *mInsertCalendar = nullptr;
     sqlite3_stmt *mUpdateCalendar = nullptr;
     sqlite3_stmt *mDeleteCalendar = nullptr;
@@ -1273,7 +1275,7 @@ bool SqliteFormat::Private::modifyCalendarProperties(const Notebook &notebook,
 {
     QByteArray id(notebook.uid().toUtf8());
     // In Update always delete all first then insert all
-    if (dbop == DBUpdate && !deleteCalendarProperties(id)) {
+    if ((dbop == DBUpdate || dbop == DBDelete) && !deleteCalendarProperties(id)) {
         qCWarning(lcMkcal) << "failed to delete calendarproperties for notebook" << id;
         return false;
     }
@@ -1340,71 +1342,72 @@ error:
 }
 //@endcond
 
-Notebook* SqliteFormat::selectCalendars(sqlite3_stmt *stmt, bool *isDefault)
+Notebook SqliteFormat::selectCalendars(bool *isDefault)
 {
     int rv = 0;
-    Notebook* notebook = nullptr;
-    sqlite3_int64 date;
-    QDateTime syncDate = QDateTime();
-    QDateTime modifiedDate = QDateTime();
-    QDateTime creationDate = QDateTime();
 
-    SL3_step(stmt);
+    if (!d->mSelectCalendar) {
+        const char *query = SELECT_CALENDARS_ALL;
+        int qsize = sizeof(SELECT_CALENDARS_ALL);
+        SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectCalendar, NULL);
+    }
+
+    SL3_step(d->mSelectCalendar);
 
     *isDefault = false;
     if (rv == SQLITE_ROW) {
-        QString id = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 0));
-        QString name = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
-        QString description = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 2));
-        QString color = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 3));
-        int flags = (int)sqlite3_column_int(stmt, 4);
-        date = sqlite3_column_int64(stmt, 5);
-        QString plugin = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 6));
-        QString account = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7));
-        int attachmentSize = sqlite3_column_int(stmt, 8);
-        syncDate = fromOriginTime(date);
-        date = sqlite3_column_int64(stmt, 9);
-        modifiedDate = fromOriginTime(date);
-        QString sharedWith = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 10));
-        QString syncProfile = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 11));
-        date = sqlite3_column_int64(stmt, 12);
-        creationDate = fromOriginTime(date);
+        sqlite3_int64 date;
+        const QString id = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 0));
+        const QString name = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 1));
+        const QString description = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 2));
+        const QString color = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 3));
+        const int flags = (int)sqlite3_column_int(d->mSelectCalendar, 4);
+        date = sqlite3_column_int64(d->mSelectCalendar, 5);
+        const QString plugin = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 6));
+        const QString account = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 7));
+        const int attachmentSize = sqlite3_column_int(d->mSelectCalendar, 8);
+        const QDateTime syncDate = fromOriginTime(date);
+        date = sqlite3_column_int64(d->mSelectCalendar, 9);
+        const QDateTime modifiedDate = fromOriginTime(date);
+        const QString sharedWith = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 10));
+        const QString syncProfile = QString::fromUtf8((const char *)sqlite3_column_text(d->mSelectCalendar, 11));
+        date = sqlite3_column_int64(d->mSelectCalendar, 12);
+        const QDateTime creationDate = fromOriginTime(date);
 
-        notebook = new Notebook(name, description);
-        notebook->setUid(id);
-        notebook->setColor(color);
-        notebook->setEventsAllowed(flags & SqliteFormat::AllowEvents);
-        notebook->setTodosAllowed(flags & SqliteFormat::AllowTodos);
-        notebook->setJournalsAllowed(flags & SqliteFormat::AllowJournals);
-        notebook->setIsShared(flags & SqliteFormat::Shared);
-        notebook->setIsMaster(flags & SqliteFormat::Master);
-        notebook->setIsSynchronized(flags & SqliteFormat::Synchronized);
-        notebook->setIsReadOnly(flags & SqliteFormat::ReadOnly);
-        notebook->setIsVisible(flags & SqliteFormat::Visible);
-        notebook->setRunTimeOnly(flags & SqliteFormat::RunTimeOnly);
-        notebook->setIsShareable(flags & SqliteFormat::Shareable);
-        notebook->setPluginName(plugin);
-        notebook->setAccount(account);
-        notebook->setAttachmentSize(attachmentSize);
-        notebook->setSyncDate(syncDate);
-        notebook->setSharedWithStr(sharedWith);
-        notebook->setSyncProfile(syncProfile);
-        notebook->setCreationDate(creationDate);
+        Notebook notebook(id, name, description, color,
+                          flags & SqliteFormat::Shared,
+                          flags & SqliteFormat::Master,
+                          flags & SqliteFormat::Synchronized,
+                          flags & SqliteFormat::ReadOnly,
+                          flags & SqliteFormat::Visible,
+                          plugin, account, attachmentSize);
+        notebook.setEventsAllowed(flags & SqliteFormat::AllowEvents);
+        notebook.setTodosAllowed(flags & SqliteFormat::AllowTodos);
+        notebook.setJournalsAllowed(flags & SqliteFormat::AllowJournals);
+        notebook.setRunTimeOnly(flags & SqliteFormat::RunTimeOnly);
+        notebook.setIsShareable(flags & SqliteFormat::Shareable);
+        notebook.setSyncDate(syncDate);
+        notebook.setSharedWithStr(sharedWith);
+        notebook.setSyncProfile(syncProfile);
+        notebook.setCreationDate(creationDate);
 
-        if (!d->selectCalendarProperties(notebook)) {
+        if (!d->selectCalendarProperties(&notebook)) {
             qCWarning(lcMkcal) << "failed to get calendarproperties for notebook" << id;
         }
 
         // This has to be called last! Otherwise the last modified date
         // will be roughly now, and not whenever notebook was really last
         // modified.
-        notebook->setModifiedDate(modifiedDate);
+        notebook.setModifiedDate(modifiedDate);
 
         *isDefault = flags & SqliteFormat::Default;
+
+        return notebook;
     }
 
 error:
-    return notebook;
+    sqlite3_reset(d->mSelectCalendar);
+    return Notebook();
 }
 
 static QDateTime getDateTime(SqliteFormat *format, sqlite3_stmt *stmt, int index, bool *isDate = 0)

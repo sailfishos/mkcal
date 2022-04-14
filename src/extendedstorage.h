@@ -518,34 +518,30 @@ public:
 
     /**
       Add new notebook to the storage.
-      Notebook object is owned by the storage if operation succeeds.
-      Operation is executed immediately into storage, @see modifyNotebook().
+      Operation is executed immediately into storage.
 
       @param nb notebook
       @return true if operation was successful; false otherwise.
-
-      @note if the Notebook doesn't have a uid that is a valid UUID a new one will
-      be generated on insertion.
     */
-    bool addNotebook(const Notebook::Ptr &nb);
+    bool addNotebook(const Notebook &nb);
 
     /**
       Update notebook parameters.
-      Operation is executed immediately into storage, @see modifyNotebook().
+      Operation is executed immediately into storage.
 
       @param nb notebook
       @return true if add was successful; false otherwise.
     */
-    bool updateNotebook(const Notebook::Ptr &nb);
+    bool updateNotebook(const Notebook &nb);
 
     /**
       Delete notebook from storage.
-      Operation is executed immediately into storage, @see modifyNotebook().
+      Operation is executed immediately into storage.
 
-      @param nb notebook
+      @param nbid the id of the notebook to delete
       @return true if delete was successful; false otherwise.
     */
-    bool deleteNotebook(const Notebook::Ptr &nb);
+    bool deleteNotebook(const QString &nbid);
 
     /**
       setDefaultNotebook to the storage.
@@ -553,29 +549,36 @@ public:
       @param nb notebook
       @return true if operation was successful; false otherwise.
     */
-    bool setDefaultNotebook(const Notebook::Ptr &nb);
+    bool setDefaultNotebook(const Notebook &nb);
 
     /**
-      defaultNotebook.
+      defaultNotebookId.
 
-      @return pointer to default notebook.
+      @return the default notebook id, if any.
     */
-    Notebook::Ptr defaultNotebook();
+    QString defaultNotebookId() const;
 
     /**
       Search for notebook.
 
       @param uid notebook uid
-      @return pointer to notebook
+      @return the notebook
     */
-    Notebook::Ptr notebook(const QString &uid);
+    Notebook notebook(const QString &uid) const;
 
     /**
       List all notebooks.
 
       @return list of notebooks
     */
-    Notebook::List notebooks();
+    QList<Notebook> notebooks() const;
+
+    /**
+      containsNotebook.
+
+      @return true if the storage contains the notebook identified by uid.
+    */
+    bool containsNotebook(const QString &uid) const;
 
     /**
       Determine if notebooks should be validated in saves and loads.
@@ -593,7 +596,7 @@ public:
 
       @return true to validate notebooks
     */
-    bool validateNotebooks();
+    bool validateNotebooks() const;
 
     /**
       Returns true if the given notebook is valid for the storage.
@@ -618,17 +621,6 @@ public:
     */
     KCalendarCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
                                         bool loadAlways = false);
-
-    /**
-      Creates and sets a default notebook. Usually called for an empty
-      calendar.
-
-      @param name notebook's name, if empty default used
-      @param color notebook's color in format "#FF0042", if empty default used
-      @return pointer to the created notebook
-    */
-    Notebook::Ptr createDefaultNotebook(QString name = QString(),
-                                        QString color = QString());
 
     /**
       Standard trick to add virtuals later.

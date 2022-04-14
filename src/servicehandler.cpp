@@ -92,11 +92,11 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
     if (!mLoaded)
         loadPlugins();
 
-    Notebook::Ptr accountNotebook;
+    Notebook accountNotebook;
     QString notebookUid;
 
     if (!notebook.isNull()) {
-        accountNotebook = notebook;
+        accountNotebook = *notebook;
         notebookUid = notebook->uid();
     } else {
         notebookUid = calendar->notebook(invitation);
@@ -105,13 +105,13 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
         }
     }
 
-    if (accountNotebook.isNull()) {
+    if (!accountNotebook.isValid()) {
         qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
         return false;
     }
 
-    QString pluginName = accountNotebook->pluginName();
-    QString accountId = accountNotebook->account() ;
+    QString pluginName = accountNotebook.pluginName();
+    QString accountId = accountNotebook.account() ;
 
     if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
         pluginName = defaultName;
