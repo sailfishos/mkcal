@@ -34,8 +34,6 @@
 
 #include <KCalendarCore/Incidence>
 
-#include <QtCore/QList>
-
 namespace mKCal {
 
 /**
@@ -45,21 +43,6 @@ namespace mKCal {
 class MKCAL_EXPORT Notebook
 {
 public:
-    /**
-      A shared pointer to a Notebook object.
-    */
-    typedef QSharedPointer<Notebook> Ptr;
-
-    /**
-      A shared pointer to a non-mutable Notebook.
-    */
-    typedef QSharedPointer<const Notebook> ConstPtr;
-
-    /**
-      List of notebooks.
-    */
-    typedef QList<Ptr> List;
-
     /**
       Constructs a new Notebook object.
     */

@@ -55,17 +55,17 @@ public:
 
     bool multiCalendar() const;
 
-    QString emailAddress(const mKCal::Notebook::Ptr &notebook);
+    QString emailAddress(const mKCal::Notebook &notebook);
 
-    QString displayName(const mKCal::Notebook::Ptr &notebook) const;
+    QString displayName(const mKCal::Notebook &notebook) const;
 
-    bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path);
+    bool downloadAttachment(const mKCal::Notebook &notebook, const QString &uri, const QString &path);
 
-    bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence, const QString &uri);
+    bool deleteAttachment(const mKCal::Notebook &notebook, const Incidence::Ptr &incidence, const QString &uri);
 
-    bool shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith);
+    bool shareNotebook(const mKCal::Notebook &notebook, const QStringList &sharedWith);
 
-    QStringList sharedWith(const mKCal::Notebook::Ptr &notebook);
+    QStringList sharedWith(const mKCal::Notebook &notebook);
 
     QString serviceName() const;
 
