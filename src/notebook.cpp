@@ -36,6 +36,7 @@ using namespace KCalendarCore;
 
 #include <QtCore/QStringList>
 #include <QtCore/QHash>
+#include <QtCore/QUuid>
 
 using namespace mKCal;
 
@@ -81,16 +82,17 @@ class mKCal::Notebook::Private
 {
 public:
     Private()
-        : mFlags(DEFAULT_NOTEBOOK_FLAGS),
-          mSyncDate(QDateTime()),
-          mPluginName(QString()),
-          mAccount(QString()),
-          mAttachmentSize(-1),
-          mModifiedDate(QDateTime()),
-          mSharedWith(QStringList()),
-          mSyncProfile(QString()),
-          mCreationDate(QDateTime())
     {}
+
+    Private(const QString &uid)
+        : mUid(uid)
+    {
+        if (mUid.length() < 7) {
+            // Could use QUuid::WithoutBraces when moving to Qt5.11.
+            const QString uid(QUuid::createUuid().toString());
+            mUid = uid.mid(1, uid.length() - 2);
+        }
+    }
 
     Private(const Private &other)
         : mUid(other.mUid),
@@ -113,11 +115,11 @@ public:
     QString mName;
     QString mDescription;
     QString mColor;
-    int mFlags;
+    int mFlags = DEFAULT_NOTEBOOK_FLAGS;
     QDateTime mSyncDate;
     QString mPluginName;
     QString mAccount;
-    int mAttachmentSize;
+    int mAttachmentSize = -1;
     QDateTime mModifiedDate;
     QStringList mSharedWith;
     QString mSyncProfile;
@@ -131,20 +133,20 @@ Notebook::Notebook()
 {
 }
 
-Notebook::Notebook(const QString &name, const QString &description)
-    : d(new Notebook::Private())
+Notebook::Notebook(const QString &name, const QString &description, const QString &color)
+    : d(new Notebook::Private(QString()))
 {
     setName(name);
     setDescription(description);
+    setColor(color);
 }
 
 Notebook::Notebook(const QString &uid, const QString &name,
                    const QString &description, const QString &color,
                    bool isShared, bool isMaster, bool isSynced,
                    bool isReadOnly, bool isVisible)
-    : d(new Notebook::Private())
+    : d(new Notebook::Private(uid))
 {
-    setUid(uid);
     setName(name);
     setDescription(description);
     setColor(color);
@@ -160,9 +162,8 @@ Notebook::Notebook(const QString &uid, const QString &name,
                    bool isShared, bool isMaster, bool isSynced,
                    bool isReadOnly, bool isVisible, const QString &pluginName,
                    const QString &account, int attachmentSize)
-    : d(new Notebook::Private())
+    : d(new Notebook::Private(uid))
 {
-    setUid(uid);
     setName(name);
     setDescription(description);
     setColor(color);
@@ -249,7 +250,7 @@ QString Notebook::color() const
 void Notebook::setColor(const QString &color)
 {
     d->mModifiedDate = QDateTime::currentDateTimeUtc();
-    d->mColor = color;
+    d->mColor = color.isEmpty() ? QString::fromLatin1("#0000FF") : color;
 }
 
 bool Notebook::isShared() const

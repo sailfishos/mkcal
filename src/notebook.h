@@ -65,7 +65,8 @@ public:
     */
     explicit Notebook();
 
-    explicit Notebook(const QString &name, const QString &description);
+    explicit Notebook(const QString &name, const QString &description,
+                      const QString &color = {});
 
     explicit Notebook(const QString &uid, const QString &name,
                       const QString &description, const QString &color,
