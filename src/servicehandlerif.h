@@ -86,13 +86,13 @@ public:
         @param notebook pointer to the notebook that we want to share
         @return email address of service
     */
-    virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) = 0;
+    virtual QString emailAddress(const mKCal::Notebook &notebook) = 0;
 
     /** \brief returns the display name of account of service.
         @param notebook pointer to the notebook that we want to share
         @return display name of account of service
     */
-    virtual QString displayName(const mKCal::Notebook::Ptr &notebook) const = 0;
+    virtual QString displayName(const mKCal::Notebook &notebook) const = 0;
 
     /** \brief Start the download of an attachment.
         This cannot be a blocking operation.
@@ -112,7 +112,7 @@ public:
         @param path path where attachment to be downloaded to
     @return True if OK, false otherwise.
     */
-    virtual bool downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri, const QString &path) = 0;
+    virtual bool downloadAttachment(const mKCal::Notebook &notebook, const QString &uri, const QString &path) = 0;
 
     /** \brief start the deletion of an attachment.
         @param notebook pointer to the notebook
@@ -120,7 +120,7 @@ public:
         @param uri uri of attachment to be deleted
     @return True if OK, false otherwise.
     */
-    virtual bool deleteAttachment(const mKCal::Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &incidence,
+    virtual bool deleteAttachment(const mKCal::Notebook &notebook, const KCalendarCore::Incidence::Ptr &incidence,
                                   const QString &uri) = 0;
 
     /** \brief Share notebook.
@@ -128,13 +128,13 @@ public:
         @param sharedWith email address or phone number of users
         @return True if OK, false otherwise.
     */
-    virtual bool shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith) = 0;
+    virtual bool shareNotebook(const mKCal::Notebook &notebook, const QStringList &sharedWith) = 0;
 
     /** \brief Returns list of emails, phones# of the persons that a notebook is shared with.
         @param notebook pointer to the notebook
         @return list of email addresses or phone numbers
     */
-    virtual QStringList sharedWith(const mKCal::Notebook::Ptr &notebook) = 0;
+    virtual QStringList sharedWith(const mKCal::Notebook &notebook) = 0;
 
     /** \brief The name of this service.
         It should be a uniq name specifying which service to use

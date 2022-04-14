@@ -85,7 +85,7 @@ public:
       */
     bool sendInvitation(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
                         const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                        const Notebook::Ptr &notebook = Notebook::Ptr());
+                        const Notebook &notebook = Notebook());
 
     /** Send the updated invitation to the list of people stated as attendees.
       It would load the appropriate plugin to do it, and if there
@@ -98,7 +98,7 @@ public:
       @return True if OK, false in case of error
       */
     bool sendUpdate(const KCalendarCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
-                    const ExtendedStorage::Ptr &storage, const Notebook::Ptr &notebook = Notebook::Ptr());
+                    const ExtendedStorage::Ptr &storage, const Notebook &notebook = Notebook());
 
     /** Send the updated invitation to the organiser.
       It would load the appropriate plugin to do it, and if there
@@ -112,7 +112,7 @@ public:
       */
     bool sendResponse(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                      const Notebook::Ptr &notebook = Notebook::Ptr());
+                      const Notebook &notebook = Notebook());
 
     /** Icon
       It would load the appropriate plugin to do it
@@ -120,7 +120,7 @@ public:
       @param storage Pointer to the storage in use
       @return Icon
       */
-    QString icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString icon(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     /** multiCalendar
       It would load the appropriate plugin to do it
@@ -128,7 +128,7 @@ public:
       @param storage Pointer to the storage in use
       @return True if multicalendar otherwise false
       */
-    bool multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    bool multiCalendar(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     /** emailAddress
       It would load the appropriate plugin to do it
@@ -136,7 +136,7 @@ public:
       @param storage Pointer to the storage in use
       @return email address
       */
-    QString emailAddress(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString emailAddress(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     /** displayName
       It would load the appropriate plugin to do it
@@ -144,7 +144,7 @@ public:
       @param storage Pointer to the storage in use
       @return display name
       */
-    QString displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString displayName(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     /** downloadAttachment
       It would load the appropriate plugin to do it
@@ -155,7 +155,7 @@ public:
       @return Id of the attachment download. It will be used to notify changes about it. If < 0
       there was an error.
       */
-    int downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri,
+    int downloadAttachment(const Notebook &notebook, const ExtendedStorage::Ptr &storage, const QString &uri,
                            const QString &path);
 
     /** deleteAttachment
@@ -166,7 +166,7 @@ public:
       @param uri uri of attachment to be deleted
       @return True if OK, false in case of error
       */
-    bool deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
+    bool deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook &notebook,
                           const ExtendedStorage::Ptr &storage, const QString &uri);
 
     /** Share notebook
@@ -176,7 +176,7 @@ public:
       @param storage Pointer to the storage in use
       @return True if OK, false in case of error
       */
-    bool shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith, const ExtendedStorage::Ptr &storage);
+    bool shareNotebook(const Notebook &notebook, const QStringList &sharedWith, const ExtendedStorage::Ptr &storage);
 
     /** sharedWith
       It would load the appropriate plugin to do it
@@ -184,7 +184,7 @@ public:
       @param storage Pointer to the storage in use
       @return list of users to share with
       */
-    QStringList sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QStringList sharedWith(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     /** Try to get the notebook where to put the inviatation.
       This is done based on the product Id of the invitation received. (in the iCal file).

@@ -332,27 +332,27 @@ bool DefaultInvitationPlugin::multiCalendar() const
     return false;
 }
 
-QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook::Ptr &notebook)
+QString DefaultInvitationPlugin::emailAddress(const mKCal::Notebook &notebook)
 {
-    if (notebook.isNull()) {
-        qCritical() << "Invalid notebook";
+    if (!notebook.isValid()) {
+        qWarning() << "Invalid notebook";
         return QString();
     }
-    if (notebook->account().isEmpty()) {
+    if (notebook.account().isEmpty()) {
         // just return quietly, it can be a local notebook
         return QString();
     }
 
-    return d->accountEmailAddress(notebook->account());
+    return d->accountEmailAddress(notebook.account());
 }
 
-QString DefaultInvitationPlugin::displayName(const mKCal::Notebook::Ptr &notebook) const
+QString DefaultInvitationPlugin::displayName(const mKCal::Notebook &notebook) const
 {
     Q_UNUSED(notebook);
     return QString();
 }
 
-bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &notebook, const QString &uri,
+bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook &notebook, const QString &uri,
                                                  const QString &path)
 {
     Q_UNUSED(notebook);
@@ -362,7 +362,7 @@ bool DefaultInvitationPlugin::downloadAttachment(const mKCal::Notebook::Ptr &not
     return false;
 }
 
-bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &notebook, const Incidence::Ptr &incidence,
+bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook &notebook, const Incidence::Ptr &incidence,
                                                const QString &uri)
 {
     Q_UNUSED(notebook);
@@ -372,7 +372,7 @@ bool DefaultInvitationPlugin::deleteAttachment(const mKCal::Notebook::Ptr &noteb
     return false;
 }
 
-bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook, const QStringList &sharedWith)
+bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook &notebook, const QStringList &sharedWith)
 {
     Q_UNUSED(notebook);
     Q_UNUSED(sharedWith);
@@ -380,7 +380,7 @@ bool DefaultInvitationPlugin::shareNotebook(const mKCal::Notebook::Ptr &notebook
     return false;
 }
 
-QStringList DefaultInvitationPlugin::sharedWith(const mKCal::Notebook::Ptr &notebook)
+QStringList DefaultInvitationPlugin::sharedWith(const mKCal::Notebook &notebook)
 {
     Q_UNUSED(notebook);
     d->mErrorCode = ServiceInterface::ErrorNotSupported;

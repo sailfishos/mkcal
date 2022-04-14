@@ -38,8 +38,8 @@ public:
     void loadPlugins();
     bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                       const Notebook::Ptr &notebook);
-    ServiceInterface *getServicePlugin(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+                       const Notebook &notebook);
+    ServiceInterface *getServicePlugin(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     ServiceHandlerPrivate();
 };
@@ -84,7 +84,7 @@ void ServiceHandlerPrivate::loadPlugins()
 
 bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
                                           const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                          const Notebook::Ptr &notebook)
+                                          const Notebook &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
@@ -93,21 +93,17 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
         loadPlugins();
 
     Notebook accountNotebook;
-    QString notebookUid;
-
-    if (!notebook.isNull()) {
-        accountNotebook = *notebook;
-        notebookUid = notebook->uid();
+    if (notebook.isValid()) {
+        accountNotebook = notebook;
     } else {
-        notebookUid = calendar->notebook(invitation);
+        const QString notebookUid = calendar->notebook(invitation);
         if (storage->isValidNotebook(notebookUid)) {
             accountNotebook = storage->notebook(notebookUid);
         }
-    }
-
-    if (!accountNotebook.isValid()) {
-        qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
-        return false;
+        if (!accountNotebook.isValid()) {
+            qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
+            return false;
+        }
     }
 
     QString pluginName = accountNotebook.pluginName();
@@ -127,7 +123,7 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
 
         switch (action) {
         case SendInvitation:
-            if (i.value()->sendInvitation(accountId, notebookUid, invitation, body)) {
+            if (i.value()->sendInvitation(accountId, accountNotebook.uid(), invitation, body)) {
                 return true;
             } else {
                 mError = (ServiceHandler::ErrorCode) is.value()->error();
@@ -158,16 +154,16 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
     }
 }
 
-ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook::Ptr &notebook,
+ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook &notebook,
                                                           const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return 0;
 
-    if (!storage->isValidNotebook(notebook->uid()))
+    if (!storage->isValidNotebook(notebook.uid()))
         return 0;
 
-    QString name(notebook->pluginName());
+    QString name(notebook.pluginName());
 
     if (name.isEmpty() || !mServices.contains(name)) {
         name = defaultName;
@@ -195,7 +191,7 @@ ServiceHandler::ServiceHandler()
 
 bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QString &body,
                                     const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                    const Notebook::Ptr &notebook)
+                                    const Notebook &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
@@ -206,7 +202,7 @@ bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QStr
 
 bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString &body,
                                 const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                const Notebook::Ptr &notebook)
+                                const Notebook &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
@@ -217,7 +213,7 @@ bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString 
 
 bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QString &body,
                                   const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                  const Notebook::Ptr &notebook)
+                                  const Notebook &notebook)
 {
     if (storage.isNull() || invitation.isNull() || calendar.isNull())
         return false;
@@ -225,9 +221,9 @@ bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QStrin
     return d->executePlugin(SendResponse, invitation, body, calendar, storage, notebook);
 }
 
-QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QString ServiceHandler::icon(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return QString();
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -243,9 +239,9 @@ QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorag
     }
 }
 
-bool ServiceHandler::multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+bool ServiceHandler::multiCalendar(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return false;
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -261,9 +257,9 @@ bool ServiceHandler::multiCalendar(const Notebook::Ptr &notebook, const Extended
     }
 }
 
-QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QString ServiceHandler::emailAddress(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return QString();
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -279,9 +275,9 @@ QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const Extend
     }
 }
 
-QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QString ServiceHandler::displayName(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return QString();
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -297,10 +293,10 @@ QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const Extende
     }
 }
 
-int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage,
+int ServiceHandler::downloadAttachment(const Notebook &notebook, const ExtendedStorage::Ptr &storage,
                                        const QString &uri, const QString &path)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return -1;
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -316,10 +312,10 @@ int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Exte
     }
 }
 
-bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
+bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook &notebook,
                                       const ExtendedStorage::Ptr &storage, const QString &uri)
 {
-    if (storage.isNull() || notebook.isNull() || incidence.isNull())
+    if (storage.isNull() || !notebook.isValid() || incidence.isNull())
         return false;
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
@@ -335,10 +331,10 @@ bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incid
     }
 }
 
-bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith,
+bool ServiceHandler::shareNotebook(const Notebook &notebook, const QStringList &sharedWith,
                                    const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return false;
 
     qCDebug(lcMkcal) <<  "shareNotebook";
@@ -356,9 +352,9 @@ bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringL
     }
 }
 
-QStringList ServiceHandler::sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QStringList ServiceHandler::sharedWith(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
 {
-    if (storage.isNull() || notebook.isNull())
+    if (storage.isNull() || !notebook.isValid())
         return QStringList();
 
     ServiceInterface *service = d->getServicePlugin(notebook, storage);
