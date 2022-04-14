@@ -53,18 +53,18 @@ void tst_load::init()
     mStorage = ExtendedCalendar::defaultStorage(calendar);
     mStorage->open();
 
-    if (!mStorage->defaultNotebook()) {
-        Notebook::Ptr notebook(new Notebook({}, QString::fromLatin1("Default"), {}, {},
-                                            false, false, false, false, true));
+    if (mStorage->defaultNotebookId().isEmpty()) {
+        Notebook notebook({}, QString::fromLatin1("Default"), {}, {},
+                          false, false, false, false, true);
         QVERIFY(mStorage->setDefaultNotebook(notebook));
-        mCreatedNotebookUid = notebook->uid();
+        mCreatedNotebookUid = notebook.uid();
     }
 }
 
 void tst_load::cleanup()
 {
     if (!mCreatedNotebookUid.isEmpty()) {
-        QVERIFY(mStorage->deleteNotebook(mStorage->notebook(mCreatedNotebookUid)));
+        QVERIFY(mStorage->deleteNotebook(mCreatedNotebookUid));
     }
     mStorage.clear();
 }

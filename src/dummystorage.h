@@ -37,8 +37,7 @@ class MKCAL_EXPORT DummyStorage : public mKCal::ExtendedStorage
 public:
     DummyStorage(const mKCal::ExtendedCalendar::Ptr &cal) : mKCal::ExtendedStorage(cal)
     {
-        mKCal::Notebook::Ptr nb = mKCal::Notebook::Ptr(new mKCal::Notebook("dummy-name",
-                                                                           "dummy-desc"));
+        mKCal::Notebook nb("dummy-name", "dummy-desc");
         bool r;
         r = addNotebook(nb);
         Q_ASSERT(r);

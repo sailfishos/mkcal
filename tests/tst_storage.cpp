@@ -58,9 +58,7 @@ void tst_storage::initTestCase()
 
 void tst_storage::cleanupTestCase()
 {
-    mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
-    if (notebook)
-        QVERIFY(m_storage->deleteNotebook(notebook));
+    QVERIFY(m_storage->deleteNotebook(NotebookId));
 }
 
 void tst_storage::init()
@@ -70,9 +68,7 @@ void tst_storage::init()
 
 void tst_storage::cleanup()
 {
-    mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
-    if (notebook)
-        QVERIFY(m_storage->deleteNotebook(notebook));
+    QVERIFY(m_storage->deleteNotebook(NotebookId));
 }
 
 void tst_storage::tst_timezone()
@@ -1264,19 +1260,18 @@ void tst_storage::tst_dissociateSingleOccurrence()
 // Accessor check for the deleted incidences.
 void tst_storage::tst_deleted()
 {
-    mKCal::Notebook::Ptr notebook =
-        mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-deletion",
-                                                 "test notebook for deletion",
-                                                 QLatin1String(""),
-                                                 "#001122",
-                                                 false, // Not shared.
-                                                 true, // Is master.
-                                                 false, // Not synced to Ovi.
-                                                 false, // Writable.
-                                                 true, // Visible.
-                                                 QLatin1String(""),
-                                                 QLatin1String(""),
-                                                 0));
+    mKCal::Notebook notebook("123456789-deletion",
+                             "test notebook for deletion",
+                             QLatin1String(""),
+                             "#001122",
+                             false, // Not shared.
+                             true, // Is master.
+                             false, // Not synced to Ovi.
+                             false, // Writable.
+                             true, // Visible.
+                             QLatin1String(""),
+                             QLatin1String(""),
+                             0);
     m_storage->addNotebook(notebook);
 
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
@@ -1296,12 +1291,12 @@ void tst_storage::tst_deleted()
     event3->setSummary("Re-created event");
     event3->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
 
-    QVERIFY(m_calendar->addEvent(event, notebook->uid()));
-    QVERIFY(m_calendar->addEvent(event2, notebook->uid()));
-    QVERIFY(m_calendar->addEvent(event3, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event, notebook.uid()));
+    QVERIFY(m_calendar->addEvent(event2, notebook.uid()));
+    QVERIFY(m_calendar->addEvent(event3, notebook.uid()));
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
 
     KCalendarCore::Event::Ptr fetchEvent = m_calendar->event(event->uid());
     QVERIFY(fetchEvent);
@@ -1314,12 +1309,12 @@ void tst_storage::tst_deleted()
     // Deleted events are marked as deleted but remains in the DB
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
 
     KCalendarCore::Incidence::List deleted;
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), notebook.uid()));
     QVERIFY(deleted.isEmpty());
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook.uid()));
     QCOMPARE(deleted.length(), 1);
     QCOMPARE(deleted[0]->uid(), event->uid());
     QCOMPARE(deleted[0]->nonKDECustomProperty("X-TEST-PROPERTY"), customValue);
@@ -1330,20 +1325,20 @@ void tst_storage::tst_deleted()
     // One can purge previously deleted events from DB
     QVERIFY(m_storage->purgeDeletedIncidences(deleted));
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook.uid()));
     QCOMPARE(deleted.length(), 0);
 
     // One can purge deleted events from DB directly when they are
     // removed from a calendar.
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
     KCalendarCore::Event::Ptr fetchEvent2 = m_calendar->event(event2->uid());
     QVERIFY(fetchEvent2);
     QVERIFY(m_calendar->deleteIncidence(fetchEvent2));
     QVERIFY(m_storage->save(ExtendedStorage::PurgeDeleted));
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook.uid()));
     QCOMPARE(deleted.length(), 0);
 
     // One can re-create event after deletion using the same UID
@@ -1352,16 +1347,16 @@ void tst_storage::tst_deleted()
     QVERIFY(m_calendar->deleteIncidence(fetchEvent3));
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
     // For instance a sync wants to re-create this because remote override local deletion
-    QVERIFY(m_calendar->addEvent(event3, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event3, notebook.uid()));
     QVERIFY(m_storage->save());
     reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(m_storage->loadNotebookIncidences(notebook.uid()));
     fetchEvent3 = m_calendar->event(event3->uid());
     QVERIFY(fetchEvent3);
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook.uid()));
     QCOMPARE(deleted.length(), 0);
 
     // Test notebook deletion (with non-purged deleted incidences)
@@ -1369,35 +1364,34 @@ void tst_storage::tst_deleted()
     QVERIFY(m_storage->save());
     reloadDb();
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook.uid()));
     QCOMPARE(deleted.length(), 1);
-    QVERIFY(m_storage->deleteNotebook(m_storage->notebook(notebook->uid())));
+    QVERIFY(m_storage->deleteNotebook(notebook.uid()));
     reloadDb();
-    QVERIFY(m_storage->notebook(notebook->uid()).isNull());
+    QVERIFY(!m_storage->notebook(notebook.uid()).isValid());
     deleted.clear();
-    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook->uid()));
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), notebook.uid()));
     QVERIFY(deleted.isEmpty());
     KCalendarCore::Incidence::List incidences;
-    QVERIFY(m_storage->allIncidences(&incidences, notebook->uid()));
+    QVERIFY(m_storage->allIncidences(&incidences, notebook.uid()));
     QVERIFY(incidences.isEmpty());
 }
 
 // Accessor check for modified incidences.
 void tst_storage::tst_modified()
 {
-    mKCal::Notebook::Ptr notebook =
-        mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-modified",
-                                                 "test notebook",
-                                                 QLatin1String(""),
-                                                 "#001122",
-                                                 false, // Not shared.
-                                                 true, // Is master.
-                                                 false, // Not synced to Ovi.
-                                                 false, // Writable.
-                                                 true, // Visible.
-                                                 QLatin1String(""),
-                                                 QLatin1String(""),
-                                                 0));
+    mKCal::Notebook notebook("123456789-modified",
+                             "test notebook",
+                             QLatin1String(""),
+                             "#001122",
+                             false, // Not shared.
+                             true, // Is master.
+                             false, // Not synced to Ovi.
+                             false, // Writable.
+                             true, // Visible.
+                             QLatin1String(""),
+                             QLatin1String(""),
+                             0);
     m_storage->addNotebook(notebook);
 
     KCalendarCore::Event::Ptr event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
@@ -1429,19 +1423,18 @@ void tst_storage::tst_modified()
 // dissociation of a recurring event.
 void tst_storage::tst_inserted()
 {
-    mKCal::Notebook::Ptr notebook =
-        mKCal::Notebook::Ptr(new mKCal::Notebook("123456789-inserted",
-                                                 "test notebook",
-                                                 QLatin1String(""),
-                                                 "#001122",
-                                                 false, // Not shared.
-                                                 true, // Is master.
-                                                 false, // Not synced to Ovi.
-                                                 false, // Writable.
-                                                 true, // Visible.
-                                                 QLatin1String(""),
-                                                 QLatin1String(""),
-                                                 0));
+    mKCal::Notebook notebook("123456789-inserted",
+                             "test notebook",
+                             QLatin1String(""),
+                             "#001122",
+                             false, // Not shared.
+                             true, // Is master.
+                             false, // Not synced to Ovi.
+                             false, // Writable.
+                             true, // Visible.
+                             QLatin1String(""),
+                             QLatin1String(""),
+                             0);
     m_storage->addNotebook(notebook);
 
     KCalendarCore::Event::Ptr event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
@@ -1589,56 +1582,56 @@ void tst_storage::tst_deleteAllEvents()
 
 void tst_storage::tst_calendarProperties()
 {
-    Notebook::Ptr notebook = Notebook::Ptr(new Notebook(QStringLiteral("Notebook"), QString()));
+    Notebook notebook(QStringLiteral("Notebook"), QString());
 
-    QCOMPARE(notebook->customPropertyKeys().count(), 0);
+    QCOMPARE(notebook.customPropertyKeys().count(), 0);
     const QByteArray propKey("a key");
     const QString propValue = QStringLiteral("a value");
-    notebook->setCustomProperty(propKey, propValue);
-    QCOMPARE(notebook->customPropertyKeys().count(), 1);
-    QCOMPARE(notebook->customProperty(propKey), propValue);
+    notebook.setCustomProperty(propKey, propValue);
+    QCOMPARE(notebook.customPropertyKeys().count(), 1);
+    QCOMPARE(notebook.customProperty(propKey), propValue);
 
     QVERIFY(m_storage->addNotebook(notebook));
-    QString uid = notebook->uid();
+    QString uid = notebook.uid();
 
     reloadDb();
     notebook = m_storage->notebook(uid);
-    QVERIFY(notebook);
-    QCOMPARE(notebook->customPropertyKeys().count(), 1);
-    QCOMPARE(notebook->customProperty(propKey), propValue);
+    QVERIFY(notebook.isValid());
+    QCOMPARE(notebook.customPropertyKeys().count(), 1);
+    QCOMPARE(notebook.customProperty(propKey), propValue);
 
     const QByteArray propKey2("a second key");
     const QString propValue2 = QStringLiteral("another value");
-    notebook->setCustomProperty(propKey2, propValue2);
-    QCOMPARE(notebook->customPropertyKeys().count(), 2);
-    QCOMPARE(notebook->customProperty(propKey2), propValue2);
+    notebook.setCustomProperty(propKey2, propValue2);
+    QCOMPARE(notebook.customPropertyKeys().count(), 2);
+    QCOMPARE(notebook.customProperty(propKey2), propValue2);
 
     QVERIFY(m_storage->updateNotebook(notebook));
 
     reloadDb();
     notebook = m_storage->notebook(uid);
-    QVERIFY(notebook);
-    QCOMPARE(notebook->customPropertyKeys().count(), 2);
-    QCOMPARE(notebook->customProperty(propKey), propValue);
-    QCOMPARE(notebook->customProperty(propKey2), propValue2);
+    QVERIFY(notebook.isValid());
+    QCOMPARE(notebook.customPropertyKeys().count(), 2);
+    QCOMPARE(notebook.customProperty(propKey), propValue);
+    QCOMPARE(notebook.customProperty(propKey2), propValue2);
 
-    notebook->setCustomProperty(propKey2, QString());
-    QCOMPARE(notebook->customPropertyKeys().count(), 1);
-    QCOMPARE(notebook->customProperty(propKey), propValue);
-    QCOMPARE(notebook->customProperty(propKey2), QString());
+    notebook.setCustomProperty(propKey2, QString());
+    QCOMPARE(notebook.customPropertyKeys().count(), 1);
+    QCOMPARE(notebook.customProperty(propKey), propValue);
+    QCOMPARE(notebook.customProperty(propKey2), QString());
     QString defaultValue = QStringLiteral("default value");
-    QCOMPARE(notebook->customProperty(propKey2, defaultValue), defaultValue);
+    QCOMPARE(notebook.customProperty(propKey2, defaultValue), defaultValue);
 
     QVERIFY(m_storage->updateNotebook(notebook));
 
     reloadDb();
     notebook = m_storage->notebook(uid);
-    QVERIFY(notebook);
-    QCOMPARE(notebook->customPropertyKeys().count(), 1);
-    QCOMPARE(notebook->customProperty(propKey), propValue);
-    QCOMPARE(notebook->customProperty(propKey2), QString());
+    QVERIFY(notebook.isValid());
+    QCOMPARE(notebook.customPropertyKeys().count(), 1);
+    QCOMPARE(notebook.customProperty(propKey), propValue);
+    QCOMPARE(notebook.customProperty(propKey2), QString());
 
-    m_storage->deleteNotebook(notebook);
+    m_storage->deleteNotebook(notebook.uid());
 
     // Need to check by hand that property entries have been deleted.
     int rv;
@@ -1660,9 +1653,9 @@ void tst_storage::tst_calendarProperties()
 
 void tst_storage::tst_alarms()
 {
-    Notebook::Ptr notebook = Notebook::Ptr(new Notebook(QStringLiteral("Notebook for alarms"), QString()));
+    Notebook notebook(QStringLiteral("Notebook for alarms"), QString());
     QVERIFY(m_storage->addNotebook(notebook));
-    const QString uid = notebook->uid();
+    const QString uid = notebook.uid();
 
     const QDateTime dt = QDateTime::currentDateTimeUtc().addSecs(300);
     KCalendarCore::Event::Ptr ev = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
@@ -1696,8 +1689,8 @@ void tst_storage::tst_alarms()
 #endif
 
     notebook = m_storage->notebook(uid);
-    QVERIFY(notebook);
-    notebook->setIsVisible(false);
+    QVERIFY(notebook.isValid());
+    notebook.setIsVisible(false);
     QVERIFY(m_storage->updateNotebook(notebook));
 
     // Adding an event in a non visible notebook should not add alarm.
@@ -1714,7 +1707,7 @@ void tst_storage::tst_alarms()
     m_calendar->close();
 
     // Switching the notebook to visible should activate all alarms.
-    notebook->setIsVisible(true);
+    notebook.setIsVisible(true);
     QVERIFY(m_storage->updateNotebook(notebook));
 #if defined(TIMED_SUPPORT)
     reply = timed.query_sync(map);
@@ -1723,7 +1716,7 @@ void tst_storage::tst_alarms()
 #endif
 
     // Switching the notebook to non visible should deactivate all alarms.
-    notebook->setIsVisible(false);
+    notebook.setIsVisible(false);
     QVERIFY(m_storage->updateNotebook(notebook));
 #if defined(TIMED_SUPPORT)
     reply = timed.query_sync(map);
@@ -1933,27 +1926,26 @@ void tst_storage::openDb(bool clear)
     m_storage = m_calendar->defaultStorage(m_calendar);
     m_storage->open();
 
-    mKCal::Notebook::Ptr notebook = m_storage->notebook(NotebookId);
+    mKCal::Notebook notebook = m_storage->notebook(NotebookId);
 
-    if (notebook.data() && clear) {
-        m_storage->deleteNotebook(notebook);
-        notebook.clear();
+    if (notebook.isValid() && clear) {
+        m_storage->deleteNotebook(notebook.uid());
+        notebook = Notebook();
     }
 
-    if (notebook.isNull()) {
-        notebook = mKCal::Notebook::Ptr(new mKCal::Notebook(NotebookId,
-                                                            "test notebook",
-                                                            QLatin1String(""),
-                                                            "#001122",
-                                                            false, // Not shared.
-                                                            true, // Is master.
-                                                            false, // Not synced to Ovi.
-                                                            false, // Writable.
-                                                            true, // Visible.
-                                                            QLatin1String(""),
-                                                            QLatin1String(""),
-                                                            0));
-        m_storage->addNotebook(notebook);
+    if (!notebook.isValid()) {
+        notebook = Notebook(NotebookId,
+                            "test notebook",
+                            QLatin1String(""),
+                            "#001122",
+                            false, // Not shared.
+                            true, // Is master.
+                            false, // Not synced to Ovi.
+                            false, // Writable.
+                            true, // Visible.
+                            QLatin1String(""),
+                            QLatin1String(""),
+                            0);
         m_storage->setDefaultNotebook(notebook);
     }
 
