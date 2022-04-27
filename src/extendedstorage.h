@@ -598,15 +598,6 @@ public:
     */
     bool validateNotebooks() const;
 
-    /**
-      Returns true if the given notebook is valid for the storage.
-      That means that storage can load/save incidences on this notebook.
-
-      @param notebookUid notebook uid
-      @return true or false
-    */
-    bool isValidNotebook(const QString &notebookUid);
-
     // Alarm Methods //
 
     /**

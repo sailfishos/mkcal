@@ -566,24 +566,6 @@ bool ExtendedStorage::validateNotebooks() const
     return d->mValidateNotebooks;
 }
 
-bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
-{
-    const Notebook &nb = notebook(notebookUid);
-    if (nb.isValid()) {
-        if (nb.isRunTimeOnly() || nb.isReadOnly()) {
-            qCDebug(lcMkcal) << "notebook" << notebookUid << "isRunTimeOnly or isReadOnly";
-            return false;
-        }
-    } else if (validateNotebooks()) {
-        qCDebug(lcMkcal) << "notebook" << notebookUid << "is not valid for this storage";
-        return false;
-    } else if (calendar()->hasValidNotebook(notebookUid)) {
-        qCDebug(lcMkcal) << "notebook" << notebookUid << "is saved by another storage";
-        return false;
-    }
-    return true;
-}
-
 Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
                                            bool loadAlways)
 {
