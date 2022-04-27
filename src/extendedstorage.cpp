@@ -420,7 +420,7 @@ bool ExtendedStorage::addNotebook(const Notebook &nb)
         return false;
     }
 
-    if (!modifyNotebook(nb, DBInsert)) {
+    if (!nb.isRunTimeOnly() && !modifyNotebook(nb, DBInsert)) {
         return false;
     }
     d->mNotebooks.insert(nb.uid(), nb);
@@ -439,7 +439,7 @@ bool ExtendedStorage::updateNotebook(const Notebook &nb)
         return false;
     }
 
-    if (!modifyNotebook(nb, DBUpdate)) {
+    if (!nb.isRunTimeOnly() && !modifyNotebook(nb, DBUpdate)) {
         return false;
     }
     d->mNotebooks.insert(nb.uid(), nb);
@@ -448,13 +448,16 @@ bool ExtendedStorage::updateNotebook(const Notebook &nb)
     if (!calendar()->updateNotebook(nb.uid(), nb.isVisible())) {
         qCWarning(lcMkcal) << "cannot update notebook" << nb.uid() << "in calendar";
     }
+
 #if defined(TIMED_SUPPORT)
-    if (wasVisible && !nb.isVisible()) {
-        d->clearAlarms(nb.uid());
-    } else if (!wasVisible && nb.isVisible()) {
-        Incidence::List list;
-        if (allIncidences(&list, nb.uid())) {
-            d->setAlarmsForNotebook(list, nb.uid());
+    if (!nb.isRunTimeOnly()) {
+        if (wasVisible && !nb.isVisible()) {
+            d->clearAlarms(nb.uid());
+        } else if (!wasVisible && nb.isVisible()) {
+            Incidence::List list;
+            if (allIncidences(&list, nb.uid())) {
+                d->setAlarmsForNotebook(list, nb.uid());
+            }
         }
     }
 #endif
@@ -467,38 +470,41 @@ bool ExtendedStorage::deleteNotebook(const QString &nbid)
     if (!d->mNotebooks.contains(nbid)) {
         return true;
     }
+    const Notebook &nb = d->mNotebooks.value(nbid);
 
-    if (!modifyNotebook(d->mNotebooks.value(nbid), DBDelete)) {
+    if (!nb.isRunTimeOnly() && !modifyNotebook(d->mNotebooks.value(nbid), DBDelete)) {
         return false;
     }
 
     // purge all notebook incidences from storage
-    Incidence::List deleted;
-    deletedIncidences(&deleted, QDateTime(), nbid);
-    qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nbid;
-    if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
-        qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nbid;
-    }
-    if (loadNotebookIncidences(nbid)) {
-        const Incidence::List list = calendar()->incidences(nbid);
-        qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nbid;
-        for (const Incidence::Ptr &toDelete : list) {
-            // Need to test the existence of toDelete inside the calendar here,
-            // because KCalendarCore::Calendar::incidences(nbuid) is returning
-            // all incidences associated to nbuid, even those that have been
-            // deleted already.
-            // In addition, Calendar::deleteIncidence() is also deleting all exceptions
-            // of a recurring event, so exceptions may have been already removed and
-            // their existence should be checked to avoid warnings.
-            if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
-                calendar()->deleteIncidence(toDelete);
+    if (!nb.isRunTimeOnly()) {
+        Incidence::List deleted;
+        deletedIncidences(&deleted, QDateTime(), nbid);
+        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nbid;
+        if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
+            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nbid;
         }
-        if (!list.isEmpty()) {
-            save(ExtendedStorage::PurgeDeleted);
+        if (loadNotebookIncidences(nbid)) {
+            const Incidence::List list = calendar()->incidences(nbid);
+            qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nbid;
+            for (const Incidence::Ptr &toDelete : list) {
+                // Need to test the existence of toDelete inside the calendar here,
+                // because KCalendarCore::Calendar::incidences(nbuid) is returning
+                // all incidences associated to nbuid, even those that have been
+                // deleted already.
+                // In addition, Calendar::deleteIncidence() is also deleting all exceptions
+                // of a recurring event, so exceptions may have been already removed and
+                // their existence should be checked to avoid warnings.
+                if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
+                    calendar()->deleteIncidence(toDelete);
+            }
+            if (!list.isEmpty()) {
+                save(ExtendedStorage::PurgeDeleted);
+            }
+        } else {
+            qCWarning(lcMkcal) << "error when loading incidences for notebook" << nbid;
+            return false;
         }
-    } else {
-        qCWarning(lcMkcal) << "error when loading incidences for notebook" << nbid;
-        return false;
     }
 
     if (!calendar()->deleteNotebook(nbid)) {
