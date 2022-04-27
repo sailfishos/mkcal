@@ -568,7 +568,7 @@ public:
       @param uid notebook uid
       @return pointer to notebook
     */
-    Notebook::Ptr notebook(const QString &uid);
+    Notebook::Ptr notebook(const QString &uid) const;
 
     /**
       List all notebooks.
@@ -593,7 +593,7 @@ public:
 
       @return true to validate notebooks
     */
-    bool validateNotebooks();
+    bool validateNotebooks() const;
 
     /**
       Returns true if the given notebook is valid for the storage.
@@ -602,7 +602,7 @@ public:
       @param notebookUid notebook uid
       @return true or false
     */
-    bool isValidNotebook(const QString &notebookUid);
+    bool isValidNotebook(const QString &notebookUid) const;
 
     // Alarm Methods //
 
