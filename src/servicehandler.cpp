@@ -91,7 +91,6 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
         loadPlugins();
 
     Notebook accountNotebook;
-    const QString notebookUid = calendar.notebook(invitation);
     if (storage.isValidNotebook(notebookUid)) {
         accountNotebook = storage.notebook(notebookUid);
     }

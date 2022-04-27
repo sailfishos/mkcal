@@ -605,7 +605,7 @@ public:
       @param notebookUid notebook uid
       @return true or false
     */
-    bool isValidNotebook(const QString &notebookUid);
+    bool isValidNotebook(const QString &notebookUid) const;
 
     // Alarm Methods //
 
