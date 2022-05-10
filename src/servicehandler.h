@@ -78,41 +78,36 @@ public:
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to send
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
+      @param storage The storage in use
+      @param notebookUid uid of the notebook the invitation belongs to
       @return True if OK, false in case of error
       */
     bool sendInvitation(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
-                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                        const Notebook &notebook = Notebook());
+                        const ExtendedStorage &storage, const QString &notebookUid);
 
     /** Send the updated invitation to the list of people stated as attendees.
       It would load the appropriate plugin to do it, and if there
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
+      @param storage The storage in use
+      @param notebookUid uid of the notebook the invitation belongs to
       @return True if OK, false in case of error
       */
-    bool sendUpdate(const KCalendarCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
-                    const ExtendedStorage::Ptr &storage, const Notebook &notebook = Notebook());
+    bool sendUpdate(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
+                    const ExtendedStorage &storage, const QString &notebookUid);
 
     /** Send the updated invitation to the organiser.
       It would load the appropriate plugin to do it, and if there
       is no plugin it would use the default fall back plugin.
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
+      @param storage The storage in use
+      @param notebookUid uid of the notebook the invitation belongs to
       @return True if OK, false in case of error
       */
     bool sendResponse(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
-                      const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                      const Notebook &notebook = Notebook());
+                      const ExtendedStorage &storage, const QString &notebookUid);
 
     /** Icon
       It would load the appropriate plugin to do it

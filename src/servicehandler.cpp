@@ -37,8 +37,7 @@ public:
 
     void loadPlugins();
     bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
-                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                       const Notebook &notebook);
+                       const ExtendedStorage &storage, const QString &notebookUid);
     ServiceInterface *getServicePlugin(const Notebook &notebook, const ExtendedStorage::Ptr &storage);
 
     ServiceHandlerPrivate();
@@ -83,27 +82,22 @@ void ServiceHandlerPrivate::loadPlugins()
 }
 
 bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
-                                          const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                          const Notebook &notebook)
+                                          const ExtendedStorage &storage, const QString &notebookUid)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
+    if (invitation.isNull())
         return false;
 
     if (!mLoaded)
         loadPlugins();
 
     Notebook accountNotebook;
-    if (notebook.isValid()) {
-        accountNotebook = notebook;
-    } else {
-        const QString notebookUid = calendar->notebook(invitation);
-        if (storage->isValidNotebook(notebookUid)) {
-            accountNotebook = storage->notebook(notebookUid);
-        }
-        if (!accountNotebook.isValid()) {
-            qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
-            return false;
-        }
+    const QString notebookUid = calendar.notebook(invitation);
+    if (storage.isValidNotebook(notebookUid)) {
+        accountNotebook = storage.notebook(notebookUid);
+    }
+    if (!accountNotebook.isValid()) {
+        qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
+        return false;
     }
 
     QString pluginName = accountNotebook.pluginName();
@@ -190,35 +184,23 @@ ServiceHandler::ServiceHandler()
 }
 
 bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QString &body,
-                                    const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                    const Notebook &notebook)
+                                    const ExtendedStorage &storage, const QString &notebookUid)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
-    return d->executePlugin(SendInvitation, invitation, body, calendar, storage, notebook);
+    return d->executePlugin(SendInvitation, invitation, body, storage, notebookUid);
 }
 
 
 bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString &body,
-                                const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                const Notebook &notebook)
+                                const ExtendedStorage &storage, const QString &notebookUid)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
-    return d->executePlugin(SendUpdate, invitation, body, calendar, storage, notebook);
+    return d->executePlugin(SendUpdate, invitation, body, storage, notebookUid);
 }
 
 
 bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QString &body,
-                                  const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                  const Notebook &notebook)
+                                  const ExtendedStorage &storage, const QString &notebookUid)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
-    return d->executePlugin(SendResponse, invitation, body, calendar, storage, notebook);
+    return d->executePlugin(SendResponse, invitation, body, storage, notebookUid);
 }
 
 QString ServiceHandler::icon(const Notebook &notebook, const ExtendedStorage::Ptr &storage)
