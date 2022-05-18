@@ -138,6 +138,7 @@ public:
                           const char *query1, int qsize1,
                           DBOperation dbop, const QDateTime &after,
                           const QString &notebookUid, const QString &summary = QString());
+    bool purgeDeletedIncidences(const Incidence::List &list);
     int selectCount(const char *query, int qsize);
     bool saveTimezones();
     bool loadTimezones();
@@ -1077,6 +1078,18 @@ bool SqliteStorage::purgeDeletedIncidences(const Incidence::List &list)
         return false;
     }
 
+    bool success = d->purgeDeletedIncidences(list);
+
+    if (!d->mSem.release()) {
+        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+    }
+
+    return success;
+}
+
+//@cond PRIVATE
+bool SqliteStorage::Private::purgeDeletedIncidences(const Incidence::List &list)
+{
     int rv = 0;
     unsigned int error = 1;
 
@@ -1084,24 +1097,25 @@ bool SqliteStorage::purgeDeletedIncidences(const Incidence::List &list)
     const char *query = NULL;
 
     query = BEGIN_TRANSACTION;
-    SL3_exec(d->mDatabase);
+    SL3_exec(mDatabase);
 
     error = 0;
     for (const Incidence::Ptr &incidence: list) {
-        if (!d->mFormat->purgeDeletedComponents(*incidence)) {
+        if (!mFormat->purgeDeletedComponents(*incidence)) {
             error += 1;
         }
     }
 
     query = COMMIT_TRANSACTION;
-    SL3_exec(d->mDatabase);
+    SL3_exec(mDatabase);
+
+    return !error;
 
  error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-    }
-    return error == 0;
+    qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(mDatabase);
+    return false;
 }
+//@endcond
 
 bool SqliteStorage::storeIncidences(const QMultiHash<QString, Incidence::Ptr> &additions,
                                     const QMultiHash<QString, Incidence::Ptr> &modifications,
@@ -1601,12 +1615,37 @@ bool SqliteStorage::modifyNotebook(const Notebook &nb, DBOperation dbop)
         return false;
     }
 
+    Incidence::List deleted;
+    Incidence::List all;
+    if (dbop == DBDelete) {
+        deletedIncidences(&deleted, QDateTime(), nb.uid());
+        allIncidences(&all, nb.uid());
+    }
+
     if (!d->mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
     }
 
     success = d->mFormat->modifyCalendars(nb, dbop, nb.uid() == defaultNotebookId());
+
+    // Don't leave orphaned incidences behind.
+    if (success && !deleted.isEmpty()) {
+        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb.name();
+        if (!d->purgeDeletedIncidences(deleted)) {
+            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb.uid();
+        }
+    }
+    if (success && !all.isEmpty()) {
+        qCDebug(lcMkcal) << "deleting" << all.size() << "incidences of notebook" << nb.name();
+        QMultiHash<QString, Incidence::Ptr> deletions;
+        for (const Incidence::Ptr &incidence : all) {
+            deletions.insert(nb.uid(), incidence);
+        }
+        if (!d->saveIncidences(deletions, DBDelete)) {
+            qCWarning(lcMkcal) << "error when purging incidences from notebook" << nb.uid();
+        }
+    }
 
     if (success) {
         // Don't save the incremented transactionId at the moment,

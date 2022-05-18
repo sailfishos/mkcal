@@ -693,40 +693,27 @@ bool ExtendedStorage::deleteNotebook(const QString &nbid)
         return false;
     }
 
-    // purge all notebook incidences from storage
-    if (!nb.isRunTimeOnly()) {
-        Incidence::List deleted;
-        deletedIncidences(&deleted, QDateTime(), nbid);
-        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nbid;
-        if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
-            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nbid;
-        }
-        if (loadNotebookIncidences(nbid)) {
-            const Incidence::List list = calendar()->incidences(nbid);
-            qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nbid;
-            for (const Incidence::Ptr &toDelete : list) {
-                // Need to test the existence of toDelete inside the calendar here,
-                // because KCalendarCore::Calendar::incidences(nbuid) is returning
-                // all incidences associated to nbuid, even those that have been
-                // deleted already.
-                // In addition, Calendar::deleteIncidence() is also deleting all exceptions
-                // of a recurring event, so exceptions may have been already removed and
-                // their existence should be checked to avoid warnings.
-                if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
-                    calendar()->deleteIncidence(toDelete);
-            }
-            if (!list.isEmpty()) {
-                save(ExtendedStorage::PurgeDeleted);
-            }
-        } else {
-            qCWarning(lcMkcal) << "error when loading incidences for notebook" << nbid;
-            return false;
-        }
+    calendar()->unregisterObserver(d);
+    const Incidence::List list = calendar()->incidences(nbid);
+    qCDebug(lcMkcal) << "deleting" << list.size() << "incidences from calendar";
+    for (const Incidence::Ptr &toDelete : list) {
+        // Need to test the existence of toDelete inside the calendar here,
+        // because KCalendarCore::Calendar::incidences(nbuid) is returning
+        // all incidences associated to nbuid, even those that have been
+        // deleted already.
+        // In addition, Calendar::deleteIncidence() is also deleting all exceptions
+        // of a recurring event, so exceptions may have been already removed and
+        // their existence should be checked to avoid warnings.
+        if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
+            calendar()->deleteIncidence(toDelete);
     }
-
+    calendar()->registerObserver(d);
     if (!calendar()->deleteNotebook(nbid)) {
         qCWarning(lcMkcal) << "notebook" << nbid << "already deleted from calendar";
     }
+#if defined(TIMED_SUPPORT)
+    d->clearAlarms(nbid);
+#endif
 
     d->mNotebooks.remove(nbid);
 
