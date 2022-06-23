@@ -123,11 +123,13 @@ public:
     void clearAlarms(const Incidence::Ptr &incidence);
     void clearAlarms(const Incidence::List &incidences);
     void clearAlarms(const QString &notebookUid);
+    QDateTime getNextOccurrence(const Incidence::Ptr &incidence,
+                                const QDateTime &start,
+                                const Incidence::List &exceptions);
     void setAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
     void resetAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
 
-    void setAlarmsForNotebook(const Incidence::List &incidences, const QString &notebookUid);
-    void setAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List &events, const QDateTime &now);
+    void addAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List *events, const QDateTime &now);
     void commitEvents(Timed::Event::List &events);
 #endif
 };
@@ -464,7 +466,14 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     } else if (!wasVisible && nb->isVisible()) {
         Incidence::List list;
         if (allIncidences(&list, nb->uid())) {
-            d->setAlarmsForNotebook(list, nb->uid());
+            MemoryCalendar::Ptr calendar(new MemoryCalendar(QTimeZone::utc()));
+            if (calendar->addNotebook(nb->uid(), true)) {
+                for (const Incidence::Ptr &incidence : const_cast<const Incidence::List&>(list)) {
+                    calendar->addIncidence(incidence);
+                    calendar->setNotebook(incidence, nb->uid());
+                }
+            }
+            d->setAlarms(calendar->incidences(), calendar);
         }
     }
 #endif
@@ -626,18 +635,59 @@ void ExtendedStorage::Private::resetAlarms(const Incidence::List &incidences,
     setAlarms(incidences, calendar);
 }
 
+QDateTime ExtendedStorage::Private::getNextOccurrence(const Incidence::Ptr &incidence,
+                                                      const QDateTime &start,
+                                                      const Incidence::List &exceptions)
+{
+    if (!start.isNull() && incidence->recurs()) {
+        Recurrence *recurrence = incidence->recurrence();
+        QSet<QDateTime> recurrenceIds;
+        for (const Incidence::Ptr &exception : exceptions)
+            recurrenceIds.insert(exception->recurrenceId());
+
+        QDateTime match = start;
+        if (!recurrence->recursAt(start) || recurrenceIds.contains(start)) {
+            do {
+                match = recurrence->getNextDateTime(match);
+            } while (match.isValid() && recurrenceIds.contains(match));
+        }
+        return match;
+    } else {
+        return incidence->dtStart();
+    }
+}
+
 void ExtendedStorage::Private::setAlarms(const Incidence::List &incidences,
                                          const Calendar::Ptr &calendar)
 {
+    QSet<QString> recurringUids;
+    for (const Incidence::Ptr &incidence : incidences) {
+        if (incidence->recurs()) {
+            recurringUids.insert(incidence->uid());
+        }
+    }
     const QDateTime now = QDateTime::currentDateTime();
     Timed::Event::List events;
-    foreach (const Incidence::Ptr incidence, incidences) {
+    for (const Incidence::Ptr &incidence : incidences) {
         // The incidence from the list must be in the calendar and in a notebook.
         const QString &nbuid = calendar->notebook(incidence->uid());
         if (!calendar->isVisible(incidence) || nbuid.isEmpty()) {
             continue;
         }
-        setAlarms(incidence, nbuid, events, now);
+        if (incidence->recurs()) {
+            const QDateTime next = getNextOccurrence(incidence, now, calendar->instances(incidence));
+            addAlarms(incidence, nbuid, &events, next);
+        } else if (incidence->hasRecurrenceId()) {
+            const Incidence::Ptr parent = calendar->incidence(incidence->uid());
+            if (parent && !recurringUids.contains(parent->uid())) {
+                clearAlarms(parent);
+                const QDateTime next = getNextOccurrence(parent, now, calendar->instances(parent));
+                addAlarms(parent, nbuid, &events, next);
+            }
+            addAlarms(incidence, nbuid, &events, now);
+        } else {
+            addAlarms(incidence, nbuid, &events, now);
+        }
     }
     commitEvents(events);
 }
@@ -727,55 +777,46 @@ void ExtendedStorage::Private::clearAlarms(const QString &notebookUid)
     }
 }
 
-void ExtendedStorage::Private::setAlarmsForNotebook(const Incidence::List &incidences, const QString &notebookUid)
-{
-    const QDateTime now = QDateTime::currentDateTime();
-    // list of all timed events
-    Timed::Event::List events;
-    foreach (const Incidence::Ptr incidence, incidences) {
-        setAlarms(incidence, notebookUid, events, now);
-    }
-    commitEvents(events);
-}
-
-void ExtendedStorage::Private::setAlarms(const Incidence::Ptr &incidence,
+void ExtendedStorage::Private::addAlarms(const Incidence::Ptr &incidence,
                                          const QString &nbuid,
-                                         Timed::Event::List &events,
-                                         const QDateTime &now)
+                                         Timed::Event::List *events,
+                                         const QDateTime &laterThan)
 {
-    if (incidence->status() == Incidence::StatusCanceled) {
+    if (incidence->status() == Incidence::StatusCanceled || laterThan.isNull()) {
         return;
     }
 
+    const QDateTime now = QDateTime::currentDateTime();
     const Alarm::List alarms = incidence->alarms();
     foreach (const Alarm::Ptr alarm, alarms) {
         if (!alarm->enabled()) {
             continue;
         }
 
-        QDateTime preTime = now;
+        QDateTime preTime = laterThan;
         if (incidence->recurs()) {
-            QDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(now);
+            QDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(laterThan);
             if (nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0) {
-                if (now.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
+                if (laterThan.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
                     preTime = nextRecurrence;
                 }
             }
         }
 
-        QDateTime alarmTime = alarm->nextTime(preTime, true);
+        // nextTime() is returning time strictly later than its argument.
+        QDateTime alarmTime = alarm->nextTime(preTime.addDays(-1), true);
         if (!alarmTime.isValid()) {
             continue;
         }
 
         if (now.addSecs(60) > alarmTime) {
-            // don't allow alarms at the same minute -> take next alarm if so
+            // don't allow alarms within the current minute -> take next alarm if so
             alarmTime = alarm->nextTime(preTime.addSecs(60), true);
             if (!alarmTime.isValid()) {
                 continue;
             }
         }
-        Timed::Event &e = events.append();
+        Timed::Event &e = events->append();
         e.setUserModeFlag();
         e.setMaximalTimeoutSnoozeCounter(2);
         e.setTicker(alarmTime.toUTC().toTime_t());
