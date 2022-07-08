@@ -804,7 +804,7 @@ void ExtendedStorage::Private::addAlarms(const Incidence::Ptr &incidence,
         }
 
         // nextTime() is returning time strictly later than its argument.
-        QDateTime alarmTime = alarm->nextTime(preTime.addDays(-1), true);
+        QDateTime alarmTime = alarm->nextTime(preTime.addSecs(-1), true);
         if (!alarmTime.isValid()) {
             continue;
         }
