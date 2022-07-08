@@ -69,6 +69,7 @@ private slots:
     void tst_deleteAllEvents();
     void tst_calendarProperties();
     void tst_alarms();
+    void tst_recurringAlarms();
     void tst_url_data();
     void tst_url();
     void tst_color();
@@ -82,6 +83,7 @@ private:
     void openDb(bool clear = false);
     void reloadDb();
     void reloadDb(const QDate &from, const QDate &to);
+    void checkAlarms(const QSet<QDateTime> &alarms, const QString &uid) const;
 
     ExtendedCalendar::Ptr m_calendar;
     ExtendedStorage::Ptr m_storage;

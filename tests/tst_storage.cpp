@@ -1732,6 +1732,99 @@ void tst_storage::tst_alarms()
 #endif
 }
 
+void tst_storage::checkAlarms(const QSet<QDateTime> &alarms, const QString &uid) const
+{
+#if defined(TIMED_SUPPORT)
+    QMap<QString, QVariant> map;
+    map["APPLICATION"] = "libextendedkcal";
+    map["notebook"] = uid;
+
+    Timed::Interface timed;
+    QVERIFY(timed.isValid());
+    const QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
+    QVERIFY(reply.isValid());
+    QCOMPARE(reply.value().size(), alarms.size());
+    for (const QVariant &cookie : reply.value()) {
+        QDBusReply<QMap<QString, QVariant> > attReply = timed.query_attributes_sync(cookie.toUInt());
+        QVERIFY(attReply.isValid());
+        QMap<QString, QVariant> attMap = attReply.value();
+        QVERIFY(attMap.contains(QString::fromLatin1("time")));
+        QVERIFY(alarms.contains(attMap.value(QString::fromLatin1("time")).toDateTime()));
+    }
+#endif
+}
+
+void tst_storage::tst_recurringAlarms()
+{
+    Notebook::Ptr notebook = Notebook::Ptr(new Notebook(QStringLiteral("Notebook for alarms"), QString()));
+    QVERIFY(m_storage->addNotebook(notebook));
+    const QString uid = notebook->uid();
+
+    const QDateTime now = QDateTime::currentDateTimeUtc();
+    const QDateTime dt = QDateTime(now.date().addDays(1), QTime(12, 00));
+    KCalendarCore::Event::Ptr ev = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    ev->setDtStart(dt);
+    ev->recurrence()->setDaily(1);
+    KCalendarCore::Alarm::Ptr alarm = ev->newAlarm();
+    alarm->setDisplayAlarm(QLatin1String("Testing alarm"));
+    alarm->setStartOffset(KCalendarCore::Duration(0));
+    alarm->setEnabled(true);
+    QVERIFY(m_calendar->addEvent(ev, uid));
+    QVERIFY(m_storage->save());
+
+    // Simple recurring event
+    checkAlarms(QSet<QDateTime>() << ev->dtStart(), uid);
+
+    KCalendarCore::Incidence::Ptr exception = KCalendarCore::Calendar::createException(ev, ev->dtStart());
+    exception->setDtStart(dt.addSecs(300));
+    QVERIFY(m_calendar->addEvent(exception.staticCast<KCalendarCore::Event>(), uid));
+    QVERIFY(m_storage->save());
+
+    // Exception on the next occurrence
+    checkAlarms(QSet<QDateTime>() << exception->dtStart() << ev->dtStart().addDays(1), uid);
+
+    QVERIFY(m_calendar->deleteIncidence(exception));
+    ev->recurrence()->addExDateTime(ev->dtStart());
+    QVERIFY(m_storage->save());
+
+    // Exception deleted and exdate added on the next occurrence
+    checkAlarms(QSet<QDateTime>() << ev->dtStart().addDays(1), uid);
+
+    exception = KCalendarCore::Calendar::createException(ev, ev->dtStart().addDays(1));
+    exception->setStatus(KCalendarCore::Incidence::StatusCanceled);
+    QVERIFY(m_calendar->addEvent(exception.staticCast<KCalendarCore::Event>(), uid));
+    QVERIFY(m_storage->save());
+
+    // Cancelled next occurrence
+    checkAlarms(QSet<QDateTime>() << ev->dtStart().addDays(2), uid);
+
+    exception = KCalendarCore::Calendar::createException(ev, ev->dtStart().addDays(4));
+    exception->setSummary(QString::fromLatin1("Exception in the future."));
+    QVERIFY(m_calendar->addEvent(exception.staticCast<KCalendarCore::Event>(), uid));
+    QVERIFY(m_storage->save());
+
+    // Adding an exception later than the next occurrence
+    checkAlarms(QSet<QDateTime>() << exception->dtStart() << ev->dtStart().addDays(2), uid);
+
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    notebook->setIsVisible(false);
+    QVERIFY(m_storage->updateNotebook(notebook));
+
+    // Alarms have been removed for non visible notebook.
+    checkAlarms(QSet<QDateTime>(), uid);
+
+    notebook = m_storage->notebook(uid);
+    QVERIFY(notebook);
+    notebook->setIsVisible(true);
+    QVERIFY(m_storage->updateNotebook(notebook));
+
+    // Alarms are reset when visible is turned on.
+    checkAlarms(QSet<QDateTime>() << exception->dtStart() << ev->dtStart().addDays(2), uid);
+
+    QVERIFY(m_storage->deleteNotebook(m_storage->notebook(uid)));
+}
+
 void tst_storage::tst_url_data()
 {
     QTest::addColumn<QUrl>("url");
