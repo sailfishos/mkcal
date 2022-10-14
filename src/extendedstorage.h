@@ -623,6 +623,9 @@ public:
       Creates and sets a default notebook. Usually called for an empty
       calendar.
 
+      Notice: deprecated since 0.6.10. Instead, create a notebook
+              and call setDefaultNotebook().
+
       @param name notebook's name, if empty default used
       @param color notebook's color in format "#FF0042", if empty default used
       @return pointer to the created notebook

@@ -215,7 +215,6 @@ bool SqliteStorage::open()
     int rv;
     char *errmsg = NULL;
     const char *query = NULL;
-    Notebook::List list;
 
     if (d->mDatabase) {
         return false;
@@ -269,10 +268,16 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    list = notebooks();
-    if (list.isEmpty()) {
+    if (notebooks().isEmpty()) {
         qCDebug(lcMkcal) << "Storage is empty, initializing";
-        createDefaultNotebook();
+        Notebook::Ptr defaultNb(new Notebook(QString::fromLatin1("Default"),
+                                             QString(),
+                                             QString::fromLatin1("#0000FF")));
+        if (!setDefaultNotebook(defaultNb)) {
+            qCWarning(lcMkcal) << "Unable to add a default notebook.";
+            close();
+            return false;
+        }
     }
 
     return true;

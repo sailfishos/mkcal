@@ -592,6 +592,8 @@ bool ExtendedStorage::isValidNotebook(const QString &notebookUid) const
 
 Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
 {
+    qCWarning(lcMkcal) << "Deprecated call to createDefaultNotebook(),"
+                       << "create a notebook and make it default with setDefaultNotebook() instead";
     if (name.isEmpty())
         name = "Default";
     if (color.isEmpty())
