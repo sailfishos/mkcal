@@ -63,26 +63,27 @@ public:
     /**
       Constructs a new Notebook object.
     */
-    explicit Notebook();
+    Notebook();
 
-    explicit Notebook(const QString &name, const QString &description);
+    Notebook(const QString &name, const QString &description,
+             const QString &color = {});
 
-    explicit Notebook(const QString &uid, const QString &name,
-                      const QString &description, const QString &color,
-                      bool isShared, bool isMaster, bool oviSync,
-                      bool isReadOnly, bool isVisible);
+    Notebook(const QString &uid, const QString &name,
+             const QString &description, const QString &color,
+             bool isShared, bool isMaster, bool oviSync,
+             bool isReadOnly, bool isVisible);
 
-    explicit Notebook(const QString &uid, const QString &name,
-                      const QString &description, const QString &color,
-                      bool isShared, bool isMaster, bool isSynchronized,
-                      bool isReadOnly, bool isVisible, const QString &pluginName,
-                      const QString &account, int attachmentSize);
+    Notebook(const QString &uid, const QString &name,
+             const QString &description, const QString &color,
+             bool isShared, bool isMaster, bool isSynchronized,
+             bool isReadOnly, bool isVisible, const QString &pluginName,
+             const QString &account, int attachmentSize);
 
     /**
       Constructs an Notebook as a copy of another Notebook object.
       @param n is the Notebook to copy.
     */
-    explicit Notebook(const Notebook &n);
+    Notebook(const Notebook &n);
 
     /**
       Destructor.

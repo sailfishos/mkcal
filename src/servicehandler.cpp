@@ -100,12 +100,13 @@ bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence
         notebookUid = notebook->uid();
     } else {
         notebookUid = calendar->notebook(invitation);
-        if (storage->isValidNotebook(notebookUid)) {
-            accountNotebook = storage->notebook(notebookUid);
-        }
+        accountNotebook = storage->notebook(notebookUid);
     }
 
-    if (accountNotebook.isNull()) {
+    if (accountNotebook.isNull() ||
+        accountNotebook->isRunTimeOnly() ||
+        accountNotebook->isReadOnly() ||
+        !calendar->hasValidNotebook(notebookUid)) {
         qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
         return false;
     }

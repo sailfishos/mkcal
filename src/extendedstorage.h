@@ -568,16 +568,7 @@ public:
       @param uid notebook uid
       @return pointer to notebook
     */
-    Notebook::Ptr notebook(const QString &uid);
-
-    /**
-      Search for notebook in a list.
-
-      @param list notebook list
-      @param uid notebook uid
-      @return pointer to notebook
-    */
-    Notebook::Ptr notebook(Notebook::List &list, const QString &uid);
+    Notebook::Ptr notebook(const QString &uid) const;
 
     /**
       List all notebooks.
@@ -602,7 +593,7 @@ public:
 
       @return true to validate notebooks
     */
-    bool validateNotebooks();
+    bool validateNotebooks() const;
 
     /**
       Returns true if the given notebook is valid for the storage.
@@ -611,7 +602,7 @@ public:
       @param notebookUid notebook uid
       @return true or false
     */
-    bool isValidNotebook(const QString &notebookUid);
+    bool isValidNotebook(const QString &notebookUid) const;
 
     // Alarm Methods //
 
@@ -631,6 +622,9 @@ public:
     /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
+
+      Notice: deprecated since 0.6.10. Instead, create a notebook
+              and call setDefaultNotebook().
 
       @param name notebook's name, if empty default used
       @param color notebook's color in format "#FF0042", if empty default used

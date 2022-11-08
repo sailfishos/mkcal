@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(mkcal
-	VERSION 0.6.7
+	VERSION 0.6.10
 	DESCRIPTION "Mkcal calendar library")
 
 set(CMAKE_AUTOMOC ON)

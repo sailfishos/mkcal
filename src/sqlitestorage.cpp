@@ -215,7 +215,6 @@ bool SqliteStorage::open()
     int rv;
     char *errmsg = NULL;
     const char *query = NULL;
-    Notebook::List list;
 
     if (d->mDatabase) {
         return false;
@@ -269,10 +268,16 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    list = notebooks();
-    if (list.isEmpty()) {
+    if (notebooks().isEmpty()) {
         qCDebug(lcMkcal) << "Storage is empty, initializing";
-        createDefaultNotebook();
+        Notebook::Ptr defaultNb(new Notebook(QString::fromLatin1("Default"),
+                                             QString(),
+                                             QString::fromLatin1("#0000FF")));
+        if (!setDefaultNotebook(defaultNb)) {
+            qCWarning(lcMkcal) << "Unable to add a default notebook.";
+            close();
+            return false;
+        }
     }
 
     return true;
@@ -1316,13 +1321,19 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
 
     for (it = list.constBegin(); it != list.constEnd(); ++it) {
         QString notebookUid = mCalendar->notebook(*it);
-        if ((dbop == DBInsert || dbop == DBUpdate)
-            && !mStorage->isValidNotebook(notebookUid)) {
-            qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
-            continue;
-        } else {
-            (*savedIncidences) << *it;
-        }
+        if (dbop == DBInsert || dbop == DBUpdate) {
+            const Notebook::Ptr notebook = mStorage->notebook(notebookUid);
+            // Notice : we allow to save/delete incidences in a read-only
+            // notebook. The read-only flag is a hint only. This allows
+            // to update a marked as read-only notebook to reflect external
+            // changes.
+            if ((notebook && notebook->isRunTimeOnly()) ||
+                (!notebook && mStorage->validateNotebooks())) {
+                qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
+                continue;
+            }
+         }
+         (*savedIncidences) << *it;
 
         // lastModified is a public field of iCal RFC, so user should be
         // able to set its value to arbitrary date and time. This field is

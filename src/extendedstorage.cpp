@@ -38,8 +38,6 @@
 #include <KCalendarCore/Calendar>
 using namespace KCalendarCore;
 
-#include <QtCore/QUuid>
-
 #ifdef TIMED_SUPPORT
 # include <timed-qt5/interface.h>
 # include <timed-qt5/event-declarations.h>
@@ -421,17 +419,11 @@ void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
 {
-    if (nb->uid().length() < 7) {
-        // Cannot accept this id, create better one.
-        QString uid(QUuid::createUuid().toString());
-        nb->setUid(uid.mid(1, uid.length() - 2));
-    }
-
     if (!nb || d->mNotebooks.contains(nb->uid())) {
         return false;
     }
 
-    if (!modifyNotebook(nb, DBInsert)) {
+    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBInsert)) {
         return false;
     }
 
@@ -451,29 +443,32 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
+    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBUpdate)) {
+        return false;
+    }
+
     bool wasVisible = calendar()->isVisible(nb->uid());
     if (!calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
         qCWarning(lcMkcal) << "cannot update notebook" << nb->uid() << "in calendar";
         return false;
     }
-    if (!modifyNotebook(nb, DBUpdate)) {
-        return false;
-    }
 
 #if defined(TIMED_SUPPORT)
-    if (wasVisible && !nb->isVisible()) {
-        d->clearAlarms(nb->uid());
-    } else if (!wasVisible && nb->isVisible()) {
-        Incidence::List list;
-        if (allIncidences(&list, nb->uid())) {
-            MemoryCalendar::Ptr calendar(new MemoryCalendar(QTimeZone::utc()));
-            if (calendar->addNotebook(nb->uid(), true)) {
-                for (const Incidence::Ptr &incidence : const_cast<const Incidence::List&>(list)) {
-                    calendar->addIncidence(incidence);
-                    calendar->setNotebook(incidence, nb->uid());
+    if (!nb->isRunTimeOnly()) {
+        if (wasVisible && !nb->isVisible()) {
+            d->clearAlarms(nb->uid());
+        } else if (!wasVisible && nb->isVisible()) {
+            Incidence::List list;
+            if (allIncidences(&list, nb->uid())) {
+                MemoryCalendar::Ptr calendar(new MemoryCalendar(QTimeZone::utc()));
+                if (calendar->addNotebook(nb->uid(), true)) {
+                    for (const Incidence::Ptr &incidence : const_cast<const Incidence::List&>(list)) {
+                        calendar->addIncidence(incidence);
+                        calendar->setNotebook(incidence, nb->uid());
+                    }
                 }
+                d->setAlarms(calendar->incidences(), calendar);
             }
-            d->setAlarms(calendar->incidences(), calendar);
         }
     }
 #endif
@@ -487,37 +482,39 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!modifyNotebook(nb, DBDelete)) {
+    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBDelete)) {
         return false;
     }
 
     // purge all notebook incidences from storage
-    Incidence::List deleted;
-    deletedIncidences(&deleted, QDateTime(), nb->uid());
-    qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
-    if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
-        qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
-    }
-    if (loadNotebookIncidences(nb->uid())) {
-        const Incidence::List list = calendar()->incidences(nb->uid());
-        qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();
-        for (const Incidence::Ptr &toDelete : list) {
-            // Need to test the existence of toDelete inside the calendar here,
-            // because KCalendarCore::Calendar::incidences(nbuid) is returning
-            // all incidences associated to nbuid, even those that have been
-            // deleted already.
-            // In addition, Calendar::deleteIncidence() is also deleting all exceptions
-            // of a recurring event, so exceptions may have been already removed and
-            // their existence should be checked to avoid warnings.
-            if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
-                calendar()->deleteIncidence(toDelete);
+    if (!nb->isRunTimeOnly()) {
+        Incidence::List deleted;
+        deletedIncidences(&deleted, QDateTime(), nb->uid());
+        qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
+        if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
+            qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
         }
-        if (!list.isEmpty()) {
-            save(ExtendedStorage::PurgeDeleted);
+        if (loadNotebookIncidences(nb->uid())) {
+            const Incidence::List list = calendar()->incidences(nb->uid());
+            qCDebug(lcMkcal) << "deleting" << list.size() << "incidences of notebook" << nb->name();
+            for (const Incidence::Ptr &toDelete : list) {
+                // Need to test the existence of toDelete inside the calendar here,
+                // because KCalendarCore::Calendar::incidences(nbuid) is returning
+                // all incidences associated to nbuid, even those that have been
+                // deleted already.
+                // In addition, Calendar::deleteIncidence() is also deleting all exceptions
+                // of a recurring event, so exceptions may have been already removed and
+                // their existence should be checked to avoid warnings.
+                if (calendar()->incidence(toDelete->uid(), toDelete->recurrenceId()))
+                    calendar()->deleteIncidence(toDelete);
+            }
+            if (!list.isEmpty()) {
+                save(ExtendedStorage::PurgeDeleted);
+            }
+        } else {
+            qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();
+            return false;
         }
-    } else {
-        qCWarning(lcMkcal) << "error when loading incidences for notebook" << nb->uid();
-        return false;
     }
 
     if (!calendar()->deleteNotebook(nb->uid())) {
@@ -560,7 +557,7 @@ Notebook::List ExtendedStorage::notebooks()
     return d->mNotebooks.values();
 }
 
-Notebook::Ptr ExtendedStorage::notebook(const QString &uid)
+Notebook::Ptr ExtendedStorage::notebook(const QString &uid) const
 {
     return d->mNotebooks.value(uid);
 }
@@ -570,14 +567,14 @@ void ExtendedStorage::setValidateNotebooks(bool validateNotebooks)
     d->mValidateNotebooks = validateNotebooks;
 }
 
-bool ExtendedStorage::validateNotebooks()
+bool ExtendedStorage::validateNotebooks() const
 {
     return d->mValidateNotebooks;
 }
 
-bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
+bool ExtendedStorage::isValidNotebook(const QString &notebookUid) const
 {
-    Notebook::Ptr nb = notebook(notebookUid);
+    const Notebook::Ptr nb = notebook(notebookUid);
     if (!nb.isNull()) {
         if (nb->isRunTimeOnly() || nb->isReadOnly()) {
             qCDebug(lcMkcal) << "notebook" << notebookUid << "isRunTimeOnly or isReadOnly";
@@ -595,14 +592,13 @@ bool ExtendedStorage::isValidNotebook(const QString &notebookUid)
 
 Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color)
 {
-    // Could use QUuid::WithoutBraces when moving to Qt5.11.
-    const QString uid(QUuid::createUuid().toString());
+    qCWarning(lcMkcal) << "Deprecated call to createDefaultNotebook(),"
+                       << "create a notebook and make it default with setDefaultNotebook() instead";
     if (name.isEmpty())
         name = "Default";
     if (color.isEmpty())
         color = "#0000FF";
-    Notebook::Ptr nbDefault(new Notebook(uid.mid(1, uid.length() - 2), name, QString(), color,
-                                         false, true, false, false, true));
+    Notebook::Ptr nbDefault(new Notebook(name, QString(), color));
     return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
 }
 
