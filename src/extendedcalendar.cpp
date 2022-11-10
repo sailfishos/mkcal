@@ -251,8 +251,8 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
         return false;
     }
 
-    if (aEvent->uid().isEmpty()) {
-        qCWarning(lcMkcal) << "adding an event without uid, creating one.";
+    if (aEvent->uid().length() < 7) {
+        qCWarning(lcMkcal) << "adding an event with weak uid, creating a new one.";
         aEvent->setUid(CalFormat::createUniqueId());
     } else if (MemoryCalendar::event(aEvent->uid(), aEvent->recurrenceId())) {
         qCDebug(lcMkcal) << "Duplicate found, event was not added";
