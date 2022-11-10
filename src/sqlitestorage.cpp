@@ -834,14 +834,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
          }
          (*savedIncidences) << *it;
 
-        // lastModified is a public field of iCal RFC, so user should be
-        // able to set its value to arbitrary date and time. This field is
-        // updated automatically at each incidence modification already by
-        // ExtendedCalendar::incidenceUpdated(). We're just ensuring that
-        // the lastModified is valid and set it if not.
-        if (!(*it)->lastModified().isValid()) {
-            (*it)->setLastModified(QDateTime::currentDateTimeUtc());
-        }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
         if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
