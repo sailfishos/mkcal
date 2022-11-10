@@ -560,15 +560,26 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             SL3_bind_text(stmt1, index, "", 0, SQLITE_STATIC);
         }
 
-        if (dbop == DBInsert && incidence->created().isNull())
-            incidence->setCreated(QDateTime::currentDateTimeUtc());
-        secs = toOriginTime(incidence->created());
+        if (incidence->created().isValid() || dbop != DBInsert) {
+            secs = toOriginTime(incidence->created());
+        } else {
+            secs = toOriginTime(QDateTime::currentDateTimeUtc());
+        }
         SL3_bind_int64(stmt1, index, secs);
 
         secs = toOriginTime(QDateTime::currentDateTimeUtc());
         SL3_bind_int64(stmt1, index, secs);   // datestamp
 
-        secs = toOriginTime(incidence->lastModified());
+        // lastModified is a public field of iCal RFC, so user should be
+        // able to set its value to arbitrary date and time. This field is
+        // updated automatically at each incidence modification already by
+        // ExtendedCalendar::incidenceUpdated(). We're just ensuring that
+        // the lastModified is valid and set it if not.
+        if (incidence->lastModified().isValid()) {
+            secs = toOriginTime(incidence->lastModified());
+        } else {
+            secs = toOriginTime(QDateTime::currentDateTimeUtc());
+        }
         SL3_bind_int64(stmt1, index, secs);
 
         SL3_bind_int(stmt1, index, incidence->revision());
@@ -613,10 +624,11 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             if (todo->isCompleted()) {
                 if (!todo->hasCompletedDate()) {
                     // If the todo was created by KOrganizer<2.2 it does not have
-                    // a correct completion date. Set one now.
-                    todo->setCompleted(QDateTime::currentDateTimeUtc());
+                    // a correct completion date.
+                    effectiveDtCompleted = QDateTime::currentDateTimeUtc();
+                } else {
+                    effectiveDtCompleted = todo->completed();
                 }
-                effectiveDtCompleted = todo->completed();
             }
         }
         SL3_bind_int(stmt1, index, percentComplete);
