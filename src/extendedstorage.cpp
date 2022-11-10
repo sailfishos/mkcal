@@ -400,9 +400,31 @@ void ExtendedStorage::setFinished(bool error, const QString &info)
     }
 }
 
-void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
-                                 const KCalendarCore::Incidence::List &modified,
-                                 const KCalendarCore::Incidence::List &deleted)
+void ExtendedStorage::setLoaded(const QMultiHash<QString, Incidence::Ptr> &incidences)
+{
+    for (QMultiHash<QString, Incidence::Ptr>::ConstIterator it = incidences.constBegin();
+         it != incidences.constEnd(); it++) {
+        bool added = !validateNotebooks() || calendar()->hasValidNotebook(it.key());
+        Incidence::Ptr old(calendar()->incidence((*it)->uid(), (*it)->recurrenceId()));
+        if (added && old) {
+            if ((*it)->revision() > old->revision()) {
+                calendar()->deleteIncidence(old);   // move old to deleted
+                // and replace it with the new one.
+            } else {
+                added = false;
+            }
+        }
+        if (added && !calendar().staticCast<ExtendedCalendar>()->addIncidence(*it, it.key())) {
+            qCWarning(lcMkcal) << "cannot add incidence" << (*it)->uid() << "to notebook" << it.key();
+        } else if (!added && !old) {
+            qCWarning(lcMkcal) << "not loading" << (*it)->uid() << it.key() << "(invalid notebook)";
+        }
+    }
+}
+
+void ExtendedStorage::setUpdated(const Incidence::List &added,
+                                 const Incidence::List &modified,
+                                 const Incidence::List &deleted)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageUpdated(this, added, modified, deleted);

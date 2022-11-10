@@ -138,7 +138,6 @@ public:
     bool mIsLoading;
     bool mIsSaved;
 
-    bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
@@ -1098,49 +1097,15 @@ static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const 
     return false;
 }
 
-bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
-{
-    bool added = true;
-    bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
-    // Cannot use .contains(incidence->uid(), incidence) here, like
-    // in the rest of the file, since incidence here is a new one
-    // returned by the selectComponents() that cannot by design be already
-    // in the multihash tables.
-    if (isContaining(mIncidencesToInsert, incidence) ||
-        isContaining(mIncidencesToUpdate, incidence) ||
-        isContaining(mIncidencesToDelete, incidence) ||
-        (mStorage->validateNotebooks() && !hasNotebook)) {
-        qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
-                           << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
-        added = false;
-    } else {
-        Incidence::Ptr old(mCalendar->incidence(incidence->uid(), incidence->recurrenceId()));
-        if (old) {
-            if (incidence->revision() > old->revision()) {
-                mCalendar->deleteIncidence(old);   // move old to deleted
-                // and replace it with the new one.
-            } else {
-                added = false;
-            }
-        }
-    }
-    if (added && !mCalendar->addIncidence(incidence, notebookUid)) {
-        added = false;
-        qCWarning(lcMkcal) << "cannot add incidence" << incidence->uid() << "to notebook" << notebookUid;
-    }
-
-    return added;
-}
-
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                                            int limit, QDateTime *last,
                                            bool useDate,
                                            bool ignoreEnd)
 {
-    int count = 0;
     Incidence::Ptr incidence;
     QDateTime previous, date;
     QString notebookUid;
+    QMultiHash<QString, Incidence::Ptr> incidences;
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
@@ -1159,7 +1124,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
             date = incidence->created();
         }
         if (previous != date) {
-            if (!previous.isValid() || limit <= 0 || count <= limit) {
+            if (!previous.isValid() || limit <= 0 || incidences.count() <= limit) {
                 // If we don't have previous date, or we're within limits,
                 // we can just set the 'previous' and move onward
                 previous = date;
@@ -1169,11 +1134,16 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
                 break;
             }
         }
-        if (addIncidence(incidence, notebookUid)) {
+        if (isContaining(mIncidencesToInsert, incidence) ||
+            isContaining(mIncidencesToUpdate, incidence) ||
+            isContaining(mIncidencesToDelete, incidence)) {
+            qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
+                               << "(local changes)";
+        } else {
             // qCDebug(lcMkcal) << "updating incidence" << incidence->uid()
             //                  << incidence->dtStart() << endDateTime
             //                  << "in calendar";
-            count += 1;
+            incidences.insert(notebookUid, incidence);
         }
     }
     if (last) {
@@ -1185,9 +1155,10 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
+    mStorage->setLoaded(incidences);
     mStorage->setFinished(false, "load completed");
 
-    return count;
+    return incidences.count();
 }
 //@endcond
 

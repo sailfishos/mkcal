@@ -655,6 +655,7 @@ protected:
 
     void setModified(const QString &info);
     void setFinished(bool error, const QString &info);
+    void setLoaded(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &incidences);
     void setUpdated(const KCalendarCore::Incidence::List &added,
                     const KCalendarCore::Incidence::List &modified,
                     const KCalendarCore::Incidence::List &deleted);
