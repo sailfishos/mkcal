@@ -1107,15 +1107,9 @@ bool SqliteFormat::Private::insertAttendees(Incidence::Ptr incidence, int rowid)
 {
     bool success = true;
 
-    // FIXME: this doesn't fully save and restore attendees as they were set.
-    // e.g. has constraints that every attendee must have email and they need to be unique among the attendees.
-    // also this forces attendee list to include the organizer.
     QString organizerEmail;
     if (!incidence->organizer().isEmpty()) {
-        organizerEmail = incidence->organizer().email();
-        Attendee organizer = incidence->attendeeByMail(organizerEmail);
-        if (organizer.isNull())
-            organizer = Attendee(incidence->organizer().name(), organizerEmail);
+        Attendee organizer = Attendee(incidence->organizer().name(), incidence->organizer().email());
         if (!insertAttendee(rowid, organizer, true)) {
             qCWarning(lcMkcal) << "failed to modify organizer for incidence" << incidence->uid();
             success = false;
@@ -1124,11 +1118,9 @@ bool SqliteFormat::Private::insertAttendees(Incidence::Ptr incidence, int rowid)
     const Attendee::List &list = incidence->attendees();
     Attendee::List::ConstIterator it;
     for (it = list.begin(); it != list.end(); ++it) {
-        if (it->email().isEmpty()) {
-            qCWarning(lcMkcal) << "Attendee doesn't have an email address";
+        if (it->email().isEmpty() && it->name().isEmpty()) {
+            qCWarning(lcMkcal) << "Attendee doesn't have an email address or name";
             continue;
-        } else if (it->email() == organizerEmail) {
-            continue; // already added above
         }
         if (!insertAttendee(rowid, *it, false)) {
             qCWarning(lcMkcal) << "failed to modify attendee for incidence" << incidence->uid();
@@ -2073,19 +2065,22 @@ bool SqliteFormat::Private::selectAttendees(Incidence::Ptr &incidence, int rowid
         SL3_step(mSelectIncAttendees);
 
         if (rv == SQLITE_ROW) {
-            const QString &email = QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 1));
-            const QString &name = QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 2));
-            bool isOrganizer = (bool)sqlite3_column_int(mSelectIncAttendees, 3);
-            Attendee::Role role = (Attendee::Role)sqlite3_column_int(mSelectIncAttendees, 4);
-            Attendee::PartStat status = (Attendee::PartStat)sqlite3_column_int(mSelectIncAttendees, 5);
-            bool rsvp = (bool)sqlite3_column_int(mSelectIncAttendees, 6);
+            const QString &email = QString::fromUtf8((const char *) sqlite3_column_text(mSelectIncAttendees, 1));
+            const QString &name = QString::fromUtf8((const char *) sqlite3_column_text(mSelectIncAttendees, 2));
+            bool isOrganizer = (bool) sqlite3_column_int(mSelectIncAttendees, 3);
+
             if (isOrganizer) {
                 incidence->setOrganizer(Person(name, email));
+            } else {
+                Attendee::Role role = (Attendee::Role) sqlite3_column_int(mSelectIncAttendees, 4);
+                Attendee::PartStat status = (Attendee::PartStat) sqlite3_column_int(mSelectIncAttendees, 5);
+                bool rsvp = (bool) sqlite3_column_int(mSelectIncAttendees, 6);
+
+                Attendee attendee(name, email, rsvp, status, role);
+                attendee.setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 7)));
+                attendee.setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 8)));
+                incidence->addAttendee(attendee, false);
             }
-            Attendee attendee(name, email, rsvp, status, role);
-            attendee.setDelegate(QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 7)));
-            attendee.setDelegator(QString::fromUtf8((const char *)sqlite3_column_text(mSelectIncAttendees, 8)));
-            incidence->addAttendee(attendee, false);
         }
     } while (rv != SQLITE_DONE);
 

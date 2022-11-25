@@ -2013,11 +2013,12 @@ void tst_storage::tst_attendees()
     m_storage->save();
 
     reloadDb();
-    // Organizer is not in the attendee list but mKCal is adding him.
+
+    // ensure reloaded event doesn't have organizer added to attendees
     const KCalendarCore::Incidence::Ptr refetched = m_calendar->incidence(event->uid());
     QVERIFY(refetched);
     QCOMPARE(refetched->organizer(), fetched->organizer());
-    QCOMPARE(refetched->attendees(), fetched->attendees() << KCalendarCore::Attendee(fetched->organizer().name(), fetched->organizer().email()));
+    QCOMPARE(refetched->attendees(), fetched->attendees());
 }
 
 void tst_storage::openDb(bool clear)

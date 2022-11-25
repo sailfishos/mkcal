@@ -86,7 +86,8 @@ static const char *createStatements[] =
     INDEX_ATTENDEE,
     INDEX_ATTACHMENTS,
     INDEX_CALENDARPROPERTIES,
-    "PRAGMA foreign_keys = ON"
+    "PRAGMA foreign_keys = ON",
+    "PRAGMA user_version = 1"
 };
 
 /**
@@ -225,6 +226,7 @@ bool SqliteStorage::open()
         return false;
     }
 
+    bool fileExisted = QFile::exists(d->mDatabaseName);
     rv = sqlite3_open(d->mDatabaseName.toUtf8(), &d->mDatabase);
     if (rv) {
         qCWarning(lcMkcal) << "sqlite3_open error:" << rv << "on database" << d->mDatabaseName;
@@ -235,6 +237,28 @@ bool SqliteStorage::open()
 
     // Set one and half second busy timeout for waiting for internal sqlite locks
     sqlite3_busy_timeout(d->mDatabase, 1500);
+
+    {
+        sqlite3_stmt *dbVersion = nullptr;
+        SL3_prepare_v2(d->mDatabase, "PRAGMA user_version", -1, &dbVersion, nullptr);
+        SL3_step(dbVersion);
+        int version = 0;
+        if (rv == SQLITE_ROW) {
+            version = sqlite3_column_int(dbVersion, 0);
+        }
+        sqlite3_finalize(dbVersion);
+
+        if (version == 0 && fileExisted) {
+            qCWarning(lcMkcal) << "Migrating mkcal database to version 1";
+            query = "DROP INDEX IF EXISTS IDX_ATTENDEE"; // recreate on new format
+            SL3_exec(d->mDatabase);
+            // insert normal attendee for every organizer
+            query = "INSERT INTO ATTENDEE(ComponentId, Email, Name, IsOrganizer, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom) "
+                    "              SELECT ComponentId, Email, Name, 0, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom "
+                    "              FROM ATTENDEE WHERE isOrganizer=1";
+            SL3_exec(d->mDatabase);
+        }
+    }
 
     for (unsigned int i = 0; i < (sizeof(createStatements)/sizeof(createStatements[0])); i++) {
          query = createStatements[i];
