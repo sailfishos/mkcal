@@ -92,6 +92,11 @@ public:
     virtual ~SqliteFormat();
 
     /**
+      Ensure all tables exist.
+    */
+    bool init();
+
+    /**
       Update notebook data in Calendars table.
 
       @param notebook notebook to update
@@ -100,16 +105,16 @@ public:
       @param isDefault if the notebook is the default one in the DB
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
+    bool modifyCalendars(const Notebook &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
 
     /**
       Select notebooks from Calendars table.
 
       @param stmt prepared sqlite statement for calendars table
       @param isDefault true if the selected notebook is the DB default one
-      @return the queried notebook.
+      @return the queried notebook (caller take ownership).
     */
-    Notebook::Ptr selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
+    Notebook* selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
 
     /**
       Update incidence data in Components table.
@@ -119,19 +124,21 @@ public:
       @param dbop database operation
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
+    bool modifyComponents(const KCalendarCore::Incidence &incidence, const QString &notebook,
                           DBOperation dbop);
 
-    bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence);
+    bool purgeDeletedComponents(const QString &uid, const QDateTime &recurrenceId);
+
+    sqlite3_stmt* loadOperationToSQL(const DBLoadOperation &dbop) const;
 
     /**
       Select incidences from Components table.
 
       @param stmt1 prepared sqlite statement for components table
       @param notebook notebook of incidence
-      @return the queried incidence.
+      @return the queried incidence (the ownership is transfered to the caller).
     */
-    KCalendarCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, QString &notebook);
+    KCalendarCore::Incidence* selectComponents(sqlite3_stmt *stmt1, QString &notebook);
 
     /**
       Select contacts and order them by appearances.
@@ -151,7 +158,7 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toOriginTime(const QDateTime &dt);
+    sqlite3_int64 toOriginTime(const QDateTime &dt) const;
 
     /**
       Convert local datetime to seconds relative to the origin.
@@ -159,21 +166,21 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toLocalOriginTime(const QDateTime &dt);
+    sqlite3_int64 toLocalOriginTime(const QDateTime &dt) const;
 
     /**
       Convert seconds from the origin to clock time.
       @param seconds relative to origin.
       @return clocktime datetime.
     */
-    QDateTime fromLocalOriginTime(sqlite3_int64 seconds);
+    QDateTime fromLocalOriginTime(sqlite3_int64 seconds) const ;
 
     /**
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
     */
-    QDateTime fromOriginTime(sqlite3_int64 seconds);
+    QDateTime fromOriginTime(sqlite3_int64 seconds) const;
 
     /**
       Convert seconds from the origin to datetime in given timezone.
@@ -181,7 +188,7 @@ public:
       @param zonename timezone name.
       @return datetime in timezone.
     */
-    QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename);
+    QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename) const;
 
 private:
     //@cond PRIVATE
@@ -408,6 +415,8 @@ private:
 "select * from Timezones where TzId=1"
 #define SELECT_CALENDARS_ALL \
 "select * from Calendars order by Name"
+#define SELECT_CALENDARS_BY_UID \
+"select * from Calendars where calendarId=?"
 #define SELECT_COMPONENTS_ALL \
 "select * from Components where DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOK \

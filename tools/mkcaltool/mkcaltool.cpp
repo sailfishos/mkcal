@@ -27,6 +27,7 @@
 // mkcal
 #include <extendedcalendar.h>
 #include <extendedstorage.h>
+#include <timed.h>
 
 MkcalTool::MkcalTool()
 {
@@ -47,6 +48,7 @@ int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
         return 1;
     }
 
-    storage->setUpdated(KCalendarCore::Incidence::List(), KCalendarCore::Incidence::List() << event, KCalendarCore::Incidence::List());
+    mKCal::TimedPlugin alarms;
+    alarms.storageIncidenceModified(storage.data(), cal.data(), KCalendarCore::Incidence::List() << event);
     return 0;
 }

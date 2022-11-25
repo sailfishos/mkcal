@@ -32,11 +32,12 @@
 #define MKCAL_STORAGEOBSERVER_H
 
 #include <QString>
-#include <KCalendarCore/Incidence>
-
+#include <KCalendarCore/Calendar>
+#include "notebook.h"
 
 namespace mKCal {
 class ExtendedStorage;
+class DirectStorageInterface;
 
 /**
    @class ExtendedStorageObserver
@@ -93,6 +94,36 @@ public:
                                 const KCalendarCore::Incidence::List &added,
                                 const KCalendarCore::Incidence::List &modified,
                                 const KCalendarCore::Incidence::List &deleted);
+
+    /**
+       Notify the Observer that a Storage has been read and the given
+       incidences have been made available in-memory in the calendar.
+
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+       @param incidences is a list of newly loaded incidences from the storage
+    */
+    virtual void storageLoaded(ExtendedStorage *storage,
+                               const KCalendarCore::Incidence::List &incidences);
+
+    /**
+       Notify the Observer that a Storage has been opened and the notebook
+       list is available, see ExtendedStorage::notebooks().
+
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+    */
+    virtual void storageOpened(ExtendedStorage *storage);
+
+    /**
+       Notify the Observer that a Storage has been closed. The calendar
+       holding the incidences of this storage is still populated, but
+       the notebook list of the storage is now empty.
+
+       @param storage is a pointer to the ExtendedStorage object that
+       is being observed.
+    */
+    virtual void storageClosed(ExtendedStorage *storage);
 };
 
 };

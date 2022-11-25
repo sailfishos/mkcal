@@ -92,6 +92,9 @@ public:
             const QString uid(QUuid::createUuid().toString());
             mUid = uid.mid(1, uid.length() - 2);
         }
+        mCreationDate = QDateTime::currentDateTimeUtc();
+        const QTime &t = mCreationDate.time();
+        mCreationDate.setTime(QTime(t.hour(), t.minute(), t.second()));
     }
 
     Private(const Private &other)
@@ -249,7 +252,7 @@ QString Notebook::color() const
 
 void Notebook::setColor(const QString &color)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mColor = color;
 }
 
@@ -261,7 +264,7 @@ bool Notebook::isShared() const
 void Notebook::setIsShared(bool isShared)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SHARED, isShared);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::isMaster() const
@@ -272,7 +275,7 @@ bool Notebook::isMaster() const
 void Notebook::setIsMaster(bool isMaster)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_MASTER, isMaster);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::isSynchronized() const
@@ -283,7 +286,7 @@ bool Notebook::isSynchronized() const
 void Notebook::setIsSynchronized(bool isSynced)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SYNCED, isSynced);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::isReadOnly() const
@@ -294,7 +297,7 @@ bool Notebook::isReadOnly() const
 void Notebook::setIsReadOnly(bool isReadOnly)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_READONLY, isReadOnly);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::isVisible() const
@@ -305,7 +308,7 @@ bool Notebook::isVisible() const
 void Notebook::setIsVisible(bool isVisible)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_VISIBLE, isVisible);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::isRunTimeOnly() const
@@ -316,7 +319,7 @@ bool Notebook::isRunTimeOnly() const
 void Notebook::setRunTimeOnly(bool isRunTime)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_RUNTIMEONLY, isRunTime);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 QDateTime Notebook::syncDate() const
@@ -326,7 +329,7 @@ QDateTime Notebook::syncDate() const
 
 void Notebook::setSyncDate(const QDateTime &syncDate)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mSyncDate = syncDate;
 }
 
@@ -337,7 +340,7 @@ QString Notebook::pluginName() const
 
 void Notebook::setPluginName(const QString &pluginName)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mPluginName = pluginName;
 }
 
@@ -348,7 +351,7 @@ QString Notebook::account() const
 
 void Notebook::setAccount(const QString &account)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mAccount = account;
 }
 
@@ -359,7 +362,7 @@ int Notebook::attachmentSize() const
 
 void Notebook::setAttachmentSize(int size)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mAttachmentSize = size;
 }
 
@@ -370,7 +373,13 @@ QDateTime Notebook::modifiedDate() const
 
 void Notebook::setModifiedDate(const QDateTime &modifiedDate)
 {
-    d->mModifiedDate = modifiedDate;
+    if (modifiedDate.isValid()) {
+        d->mModifiedDate = modifiedDate;
+        const QTime &t = modifiedDate.time();
+        d->mModifiedDate.setTime(QTime(t.hour(), t.minute(), t.second()));
+    } else {
+        d->mModifiedDate = modifiedDate;
+    }
 }
 
 QDateTime Notebook::creationDate() const
@@ -391,7 +400,7 @@ bool Notebook::isShareable() const
 void Notebook::setIsShareable(bool isShareable)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_SHAREABLE, isShareable);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 QStringList Notebook::sharedWith() const
@@ -406,13 +415,13 @@ QString Notebook::sharedWithStr() const
 
 void Notebook::setSharedWith(const QStringList &sharedWith)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mSharedWith = sharedWith;
 }
 
 void Notebook::setSharedWithStr(const QString &sharedWithStr)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mSharedWith.clear();
 
     if (sharedWithStr.isEmpty()) {
@@ -434,14 +443,14 @@ QString Notebook::syncProfile() const
 
 void Notebook::setSyncProfile(const QString &syncProfile)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     d->mSyncProfile = syncProfile;
 }
 
 void Notebook::setEventsAllowed(bool eventsAllowed)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_EVENT, eventsAllowed);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::eventsAllowed() const
@@ -452,7 +461,7 @@ bool Notebook::eventsAllowed() const
 void Notebook::setJournalsAllowed(bool journalsAllowed)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_JOURNAL, journalsAllowed);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::journalsAllowed() const
@@ -463,7 +472,7 @@ bool Notebook::journalsAllowed() const
 void Notebook::setTodosAllowed(bool todosAllowed)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_ALLOW_TODO, todosAllowed);
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
 }
 
 bool Notebook::todosAllowed() const
@@ -504,7 +513,7 @@ bool Notebook::incidenceAllowed(Incidence::Ptr incidence) const
 
 void Notebook::setCustomProperty(const QByteArray &key, const QString &value)
 {
-    d->mModifiedDate = QDateTime::currentDateTimeUtc();
+    setModifiedDate(QDateTime::currentDateTimeUtc());
     if (value.isEmpty()) {
         d->mCustomProperties.remove(key);
     } else {

@@ -1,9 +1,7 @@
 /*
   This file is part of the mkcal library.
 
-  Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies). All rights reserved.
-  Copyright (c) 2014-2019 Jolla Ltd.
-  Copyright (c) 2019 Open Mobile Platform LLC.
+  Copyright (c) 2022 Damien Caliste <dcaliste@free.fr>
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
@@ -23,16 +21,14 @@
 */
 /**
   @file
-  This file is part of the API for handling calendar data and
-  defines the SqliteStorage class.
+  This file is part of the API for storing and accessing calendar data
+  in an asynchromous way from an SQlite database.
 
-  @author Tero Aho \<ext-tero.1.aho@nokia.com\>
-  @author Pertti Luukko \<ext-pertti.luukko@nokia.com\>
-  @author Alvaro Manera \<alvaro.manera@nokia.com \>
+  @author Damien Caliste \<dcaliste@free.fr \>
 */
 
-#ifndef MKCAL_SQLITESTORAGE_H
-#define MKCAL_SQLITESTORAGE_H
+#ifndef MKCAL_ASYNCSQLITESTORAGE_H
+#define MKCAL_ASYNCSQLITESTORAGE_H
 
 #include "mkcal_export.h"
 #include "extendedstorage.h"
@@ -45,19 +41,19 @@ namespace mKCal {
 
   @warning When saving Attendees, the CustomProperties are not saved.
 */
-class MKCAL_EXPORT SqliteStorage : public ExtendedStorage
+class MKCAL_EXPORT AsyncSqliteStorage : public ExtendedStorage
 {
     Q_OBJECT
 
 public:
 
     /**
-      A shared pointer to a SqliteStorage
+      A shared pointer to a AsyncSqliteStorage
     */
-    typedef QSharedPointer<SqliteStorage> Ptr;
+    typedef QSharedPointer<AsyncSqliteStorage> Ptr;
 
     /**
-      Constructs a new SqliteStorage object for Calendar @p calendar with
+      Constructs a new AsyncSqliteStorage object for Calendar @p calendar with
       storage to file @p databaseName.
 
       @param calendar is a pointer to a valid Calendar object.
@@ -65,26 +61,14 @@ public:
       @param validateNotebooks set to true for saving only those incidences
              that belong to an existing notebook of this storage
     */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
-                           const QString &databaseName,
-                           bool validateNotebooks = true);
-
-    /**
-      Constructs a new SqliteStorage object for Calendar @p calendar. Location
-      of the database is using default location, or is taken from SQLITESTORAGEDB
-      enivronment variable.
-
-      @param calendar is a pointer to a valid Calendar object.
-      @param validateNotebooks set to true for saving only those incidences
-             that belong to an existing notebook of this storage
-    */
-    explicit SqliteStorage(const ExtendedCalendar::Ptr &cal,
-                           bool validateNotebooks = true);
+    AsyncSqliteStorage(const ExtendedCalendar::Ptr &cal,
+                       const QString &databaseName = QString(),
+                       bool validateNotebooks = true);
 
     /**
       Destructor.
     */
-    virtual ~SqliteStorage();
+    virtual ~AsyncSqliteStorage();
 
     /**
       Returns a string containing the name of the calendar database.
@@ -201,7 +185,7 @@ public:
 protected:
     bool loadNotebooks() override;
     bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) override;
-    bool loadBatch(const QList<DBLoadOperationWrapper> &wrappers) override;
+    bool loadBatch(const QList<DBLoadOperationWrapper> &dbops) override;
     bool loadIncidences(const DBLoadOperation &dbop) override;
     int loadIncidences(const DBLoadDateLimited &dbop, QDateTime *last,
                        int limit = -1, bool useDate = false, bool ignoreEnd = false) override;
@@ -212,13 +196,14 @@ protected:
 
 private:
     //@cond PRIVATE
-    Q_DISABLE_COPY(SqliteStorage)
+    Q_DISABLE_COPY(AsyncSqliteStorage)
     class MKCAL_HIDE Private;
     Private *const d;
     //@endcond
 
-public Q_SLOTS:
-    void fileChanged(const QString &path);
+    void notebookSaved(const QString &notebookUid, DBOperation dbop);
+    void incidenceSaved(const KCalendarCore::MemoryCalendar *calendar,
+                        const QStringList &added, const QStringList &modified, const QStringList &deleted);
 };
 
 }

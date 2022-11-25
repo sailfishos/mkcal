@@ -2046,7 +2046,6 @@ void tst_storage::openDb(bool clear)
                                                             QLatin1String(""),
                                                             QLatin1String(""),
                                                             0));
-        m_storage->addNotebook(notebook);
         m_storage->setDefaultNotebook(notebook);
     }
 
@@ -2085,7 +2084,7 @@ public:
         mStorage->unregisterObserver(this);
     }
 
-    void storageModified(ExtendedStorage *storage, const QString &info)
+    void storageModified(ExtendedStorage *storage, const QString &info) override
     {
         emit modified();
     }
@@ -2093,7 +2092,7 @@ public:
     void storageUpdated(ExtendedStorage *storage,
                         const KCalendarCore::Incidence::List &added,
                         const KCalendarCore::Incidence::List &modified,
-                        const KCalendarCore::Incidence::List &deleted)
+                        const KCalendarCore::Incidence::List &deleted) override
     {
         emit updated(added, modified, deleted);
     }
