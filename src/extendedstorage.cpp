@@ -119,13 +119,11 @@ public:
     // These alarm methods are used to communicate with an external
     // daemon, like timed, to bind Incidence::Alarm with the system notification.
     void clearAlarms(const Incidence::Ptr &incidence);
-    void clearAlarms(const Incidence::List &incidences);
-    void clearAlarms(const QString &notebookUid);
+    void clearAlarmsByNotebook(const QString &notebookUid);
     QDateTime getNextOccurrence(const Incidence::Ptr &incidence,
                                 const QDateTime &start,
                                 const Incidence::List &exceptions);
     void setAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
-    void resetAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
 
     void addAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List *events, const QDateTime &now);
     void commitEvents(Timed::Event::List &events);
@@ -410,10 +408,34 @@ void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
 #if defined(TIMED_SUPPORT)
     if (!added.isEmpty())
         d->setAlarms(added, calendar());
-    if (!modified.isEmpty())
-        d->resetAlarms(modified, calendar());
-    if (!deleted.isEmpty())
-        d->clearAlarms(deleted);
+    // Store the recurring event uids, to avoid treating them twice in modified
+    // and deleted cases.
+    QSet<QString> recurringUids;
+    for (const Incidence::Ptr incidence : modified + deleted) {
+        d->clearAlarms(incidence);
+        if (incidence->recurs()) {
+            recurringUids.insert(incidence->uid());
+        }
+    }
+    if (!modified.isEmpty()) {
+        d->setAlarms(modified, calendar());
+    }
+    if (!deleted.isEmpty()) {
+        Incidence::List recurring; // List of recurring events to be updated because of exception deletion.
+        for (const Incidence::Ptr incidence : deleted) {
+            // If deleting an exception but not the recurring parent,
+            // the alarm of the parent need to be recomputed.
+            if (incidence->hasRecurrenceId() && !recurringUids.contains(incidence->uid())) {
+                Incidence::Ptr parent = calendar()->incidence(incidence->uid());
+                if (parent) {
+                    d->clearAlarms(parent);
+                    recurring << parent;
+                    recurringUids.insert(parent->uid());
+                }
+            }
+        }
+        d->setAlarms(recurring, calendar());
+    }
 #endif
 }
 
@@ -456,7 +478,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
 #if defined(TIMED_SUPPORT)
     if (!nb->isRunTimeOnly()) {
         if (wasVisible && !nb->isVisible()) {
-            d->clearAlarms(nb->uid());
+            d->clearAlarmsByNotebook(nb->uid());
         } else if (!wasVisible && nb->isVisible()) {
             Incidence::List list;
             if (allIncidences(&list, nb->uid())) {
@@ -624,13 +646,6 @@ Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &re
 
 #if defined(TIMED_SUPPORT)
 // Todo: move this into a service plugin that is a ExtendedStorageObserver.
-void ExtendedStorage::Private::resetAlarms(const Incidence::List &incidences,
-                                           const Calendar::Ptr &calendar)
-{
-    clearAlarms(incidences);
-    setAlarms(incidences, calendar);
-}
-
 QDateTime ExtendedStorage::Private::getNextOccurrence(const Incidence::Ptr &incidence,
                                                       const QDateTime &start,
                                                       const Incidence::List &exceptions)
@@ -679,6 +694,7 @@ void ExtendedStorage::Private::setAlarms(const Incidence::List &incidences,
                 clearAlarms(parent);
                 const QDateTime next = getNextOccurrence(parent, now, calendar->instances(parent));
                 addAlarms(parent, nbuid, &events, next);
+                recurringUids.insert(parent->uid());
             }
             addAlarms(incidence, nbuid, &events, now);
         } else {
@@ -738,14 +754,7 @@ void ExtendedStorage::Private::clearAlarms(const Incidence::Ptr &incidence)
     }
 }
 
-void ExtendedStorage::Private::clearAlarms(const KCalendarCore::Incidence::List &incidences)
-{
-    foreach (const Incidence::Ptr incidence, incidences) {
-        clearAlarms(incidence);
-    }
-}
-
-void ExtendedStorage::Private::clearAlarms(const QString &notebookUid)
+void ExtendedStorage::Private::clearAlarmsByNotebook(const QString &notebookUid)
 {
     QMap<QString, QVariant> map;
     map["APPLICATION"] = "libextendedkcal";

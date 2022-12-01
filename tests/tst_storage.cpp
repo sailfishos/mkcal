@@ -1778,16 +1778,26 @@ void tst_storage::tst_recurringAlarms()
     KCalendarCore::Incidence::Ptr exception = KCalendarCore::Calendar::createException(ev, ev->dtStart());
     exception->setDtStart(dt.addSecs(300));
     QVERIFY(m_calendar->addEvent(exception.staticCast<KCalendarCore::Event>(), uid));
+    KCalendarCore::Incidence::Ptr exception2 = KCalendarCore::Calendar::createException(ev, ev->dtStart().addDays(5));
+    exception2->setDtStart(dt.addDays(5).addSecs(300));
+    QVERIFY(m_calendar->addEvent(exception2.staticCast<KCalendarCore::Event>(), uid));
     QVERIFY(m_storage->save());
 
-    // Exception on the next occurrence
-    checkAlarms(QSet<QDateTime>() << exception->dtStart() << ev->dtStart().addDays(1), uid);
+    // Exception on the next occurrence, and second exception on the 5th occurence
+    checkAlarms(QSet<QDateTime>() << exception->dtStart()
+                << ev->dtStart().addDays(1) << exception2->dtStart(), uid);
 
     QVERIFY(m_calendar->deleteIncidence(exception));
+    QVERIFY(m_calendar->deleteIncidence(exception2));
+    QVERIFY(m_storage->save());
+
+    // Exception was deleted
+    checkAlarms(QSet<QDateTime>() << ev->dtStart(), uid);
+
     ev->recurrence()->addExDateTime(ev->dtStart());
     QVERIFY(m_storage->save());
 
-    // Exception deleted and exdate added on the next occurrence
+    // exdate added
     checkAlarms(QSet<QDateTime>() << ev->dtStart().addDays(1), uid);
 
     exception = KCalendarCore::Calendar::createException(ev, ev->dtStart().addDays(1));
