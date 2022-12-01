@@ -82,14 +82,14 @@ public:
     virtual  bool multiCalendar() const = 0;
 
     /** \brief returns the email address that is currently configured in the service,
-    it can be different per account.
-        @param notebook pointer to the notebook that we want to share
+        it can be different per account.
+        @param notebook that we want to get the email of
         @return email address of service
     */
     virtual QString emailAddress(const mKCal::Notebook::Ptr &notebook) = 0;
 
     /** \brief returns the display name of account of service.
-        @param notebook pointer to the notebook that we want to share
+        @param notebook that we want to get the display name of
         @return display name of account of service
     */
     virtual QString displayName(const mKCal::Notebook::Ptr &notebook) const = 0;
@@ -124,7 +124,7 @@ public:
                                   const QString &uri) = 0;
 
     /** \brief Share notebook.
-        @param notebook pointer to the notebook that we want to share
+        @param notebook that we want to share
         @param sharedWith email address or phone number of users
         @return True if OK, false otherwise.
     */
