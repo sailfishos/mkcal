@@ -34,6 +34,7 @@
 #include "mkcal_export.h"
 #include "extendedcalendar.h"
 #include "extendedstorageobserver.h"
+#include "directstorageinterface.h"
 #include "notebook.h"
 
 #include <KCalendarCore/CalStorage>
@@ -60,6 +61,295 @@ enum DBOperation {
     DBSelect
 };
 
+enum DBLoadType {
+    LOAD_NONE,
+    LOAD_ALL,
+    LOAD_BY_IDS,
+    LOAD_SERIES,
+    LOAD_BY_DATETIMES,
+    LOAD_BY_NOTEBOOK,
+    LOAD_JOURNALS,
+    LOAD_PLAINS,
+    LOAD_RECURSIVES,
+    LOAD_BY_GEO,
+    LOAD_BY_CREATED_GEO,
+    LOAD_BY_ATTENDEE,
+    LOAD_BY_UNCOMPLETED_TODOS,
+    LOAD_BY_COMPLETED_TODOS,
+    LOAD_BY_CREATED_COMPLETED_TODOS,
+    LOAD_BY_END,
+    LOAD_BY_CREATED,
+    LOAD_BY_FUTURE,
+    LOAD_BY_CONTACT
+};
+
+struct DBLoadOperation
+{
+    virtual ~DBLoadOperation() {}
+    DBLoadOperation(DBLoadType type): type(type) {}
+    DBLoadType type = LOAD_NONE;
+    bool operator==(const DBLoadOperation &other) const
+    {
+        return compare(other);
+    }
+protected:
+    DBLoadOperation(const DBLoadOperation &other): type(other.type) {}
+    virtual bool compare(const DBLoadOperation &other) const
+    {
+        return type == other.type;
+    }
+};
+
+struct DBLoadAll: public DBLoadOperation
+{
+    DBLoadAll(): DBLoadOperation(LOAD_ALL) {}
+};
+
+struct DBLoadByIds: public DBLoadOperation
+{
+    DBLoadByIds(const QString &uid, const QDateTime &recurrenceId)
+        : DBLoadOperation(LOAD_BY_IDS)
+        , uid(uid), recurrenceId(recurrenceId) {}
+    QString uid;
+    QDateTime recurrenceId;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadOperation::compare(other)
+            && uid == static_cast<const DBLoadByIds*>(&other)->uid
+            && recurrenceId == static_cast<const DBLoadByIds*>(&other)->recurrenceId;
+    }
+};
+
+struct DBLoadSeries: public DBLoadOperation
+{
+    DBLoadSeries(const QString &uid)
+        : DBLoadOperation(LOAD_SERIES), uid(uid) {}
+    QString uid;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadOperation::compare(other)
+            && uid == static_cast<const DBLoadSeries*>(&other)->uid;
+    }
+};
+
+struct DBLoadByDateTimes: public DBLoadOperation
+{
+    DBLoadByDateTimes(const QDateTime &start, const QDateTime &end)
+        : DBLoadOperation(LOAD_BY_DATETIMES), start(start), end(end) {}
+    QDateTime start, end;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadOperation::compare(other)
+            && start == static_cast<const DBLoadByDateTimes*>(&other)->start
+            && end == static_cast<const DBLoadByDateTimes*>(&other)->end;
+    }
+};
+
+struct DBLoadByNotebook: public DBLoadOperation
+{
+    DBLoadByNotebook(const QString &uid)
+        : DBLoadOperation(LOAD_BY_NOTEBOOK), notebookUid(uid) {}
+    QString notebookUid;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadOperation::compare(other)
+            && notebookUid == static_cast<const DBLoadByNotebook*>(&other)->notebookUid;
+    }
+};
+
+struct DBLoadPlainIncidences: public DBLoadOperation
+{
+    DBLoadPlainIncidences(): DBLoadOperation(LOAD_PLAINS) {}
+};
+
+struct DBLoadRecursiveIncidences: public DBLoadOperation
+{
+    DBLoadRecursiveIncidences(): DBLoadOperation(LOAD_RECURSIVES) {}
+};
+
+struct DBLoadAttendeeIncidences: public DBLoadOperation
+{
+    DBLoadAttendeeIncidences(): DBLoadOperation(LOAD_BY_ATTENDEE) {}
+};
+
+struct DBLoadUncompletedTodos: public DBLoadOperation
+{
+    DBLoadUncompletedTodos(): DBLoadOperation(LOAD_BY_UNCOMPLETED_TODOS) {}
+};
+
+struct DBLoadDateLimited: public DBLoadOperation
+{
+    DBLoadDateLimited(DBLoadType type, QDateTime *last)
+        : DBLoadOperation(type), last(last) {}
+    QDateTime *last = nullptr;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadOperation::compare(other)
+            && ((!last && !static_cast<const DBLoadDateLimited*>(&other)->last)
+                || (last && static_cast<const DBLoadDateLimited*>(&other)->last));
+    }
+};
+
+struct DBLoadJournals: public DBLoadDateLimited
+{
+    DBLoadJournals(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_JOURNALS, last) {}
+};
+
+struct DBLoadGeoIncidences: public DBLoadDateLimited
+{
+    DBLoadGeoIncidences(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_GEO, last) {}
+    DBLoadGeoIncidences(float latitude, float longitude, float diffLatitude, float diffLongitude)
+        : DBLoadDateLimited(LOAD_BY_GEO, nullptr)
+        , latitude(latitude), longitude(longitude)
+        , diffLatitude(diffLatitude), diffLongitude(diffLongitude) {}
+    float latitude, longitude;
+    float diffLatitude = -1.f, diffLongitude = -1.f;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadDateLimited::compare(other)
+            && latitude == static_cast<const DBLoadGeoIncidences*>(&other)->latitude
+            && longitude == static_cast<const DBLoadGeoIncidences*>(&other)->longitude
+            && diffLatitude == static_cast<const DBLoadGeoIncidences*>(&other)->diffLatitude
+            && diffLongitude == static_cast<const DBLoadGeoIncidences*>(&other)->diffLongitude;
+    }
+};
+
+struct DBLoadCreatedGeoIncidences: public DBLoadDateLimited
+{
+    DBLoadCreatedGeoIncidences(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_CREATED_GEO, last) {}
+};
+
+struct DBLoadCompletedTodos: public DBLoadDateLimited
+{
+    DBLoadCompletedTodos(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_COMPLETED_TODOS, last) {}
+};
+
+struct DBLoadCreatedAndCompletedTodos: public DBLoadDateLimited
+{
+    DBLoadCreatedAndCompletedTodos(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_CREATED_COMPLETED_TODOS, last) {}
+};
+
+struct DBLoadByEnd: public DBLoadDateLimited
+{
+    DBLoadByEnd(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_END, last) {}
+};
+
+struct DBLoadByCreated: public DBLoadDateLimited
+{
+    DBLoadByCreated(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_CREATED, last) {}
+};
+
+struct DBLoadFuture: public DBLoadDateLimited
+{
+    DBLoadFuture(QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_FUTURE, last) {};
+};
+
+struct DBLoadByContacts: public DBLoadDateLimited
+{
+    DBLoadByContacts(const KCalendarCore::Person &person, QDateTime *last = nullptr)
+        : DBLoadDateLimited(LOAD_BY_CONTACT, last), person(person) {}
+    const KCalendarCore::Person person;
+protected:
+    bool compare(const DBLoadOperation &other) const override
+    {
+        return DBLoadDateLimited::compare(other)
+            && person == static_cast<const DBLoadByContacts*>(&other)->person;
+    }
+};
+
+struct DBLoadOperationWrapper
+{
+    DBLoadOperationWrapper() {}
+    DBLoadOperationWrapper(const DBLoadOperation *op)
+    {
+        if (!op) {
+            return;
+        }
+        switch (op->type) {
+        case (LOAD_ALL):
+            dbop = new DBLoadAll(*static_cast<const DBLoadAll*>(op));
+            return;
+        case (LOAD_BY_IDS):
+            dbop = new DBLoadByIds(*static_cast<const DBLoadByIds*>(op));
+            return;
+        case (LOAD_SERIES):
+            dbop = new DBLoadSeries(*static_cast<const DBLoadSeries*>(op));
+            return;
+        case (LOAD_BY_DATETIMES):
+            dbop = new DBLoadByDateTimes(*static_cast<const DBLoadByDateTimes*>(op));
+            return;
+        case (LOAD_BY_NOTEBOOK):
+            dbop = new DBLoadByNotebook(*static_cast<const DBLoadByNotebook*>(op));
+            return;
+        case (LOAD_JOURNALS):
+            dbop = new DBLoadJournals(*static_cast<const DBLoadJournals*>(op));
+            return;
+        case (LOAD_PLAINS):
+            dbop = new DBLoadPlainIncidences(*static_cast<const DBLoadPlainIncidences*>(op));
+            return;
+        case (LOAD_RECURSIVES):
+            dbop = new DBLoadRecursiveIncidences(*static_cast<const DBLoadRecursiveIncidences*>(op));
+            return;
+        case (LOAD_BY_GEO):
+            dbop = new DBLoadGeoIncidences(*static_cast<const DBLoadGeoIncidences*>(op));
+            return;
+        case (LOAD_BY_CREATED_GEO):
+            dbop = new DBLoadCreatedGeoIncidences(*static_cast<const DBLoadCreatedGeoIncidences*>(op));
+            return;
+        case (LOAD_BY_ATTENDEE):
+            dbop = new DBLoadAttendeeIncidences(*static_cast<const DBLoadAttendeeIncidences*>(op));
+            return;
+        case (LOAD_BY_UNCOMPLETED_TODOS):
+            dbop = new DBLoadUncompletedTodos(*static_cast<const DBLoadUncompletedTodos*>(op));
+            return;
+        case (LOAD_BY_COMPLETED_TODOS):
+            dbop = new DBLoadCompletedTodos(*static_cast<const DBLoadCompletedTodos*>(op));
+            return;
+        case (LOAD_BY_CREATED_COMPLETED_TODOS):
+            dbop = new DBLoadCreatedAndCompletedTodos(*static_cast<const DBLoadCreatedAndCompletedTodos*>(op));
+            return;
+        case (LOAD_BY_END):
+            dbop = new DBLoadByEnd(*static_cast<const DBLoadByEnd*>(op));
+            return;
+        case (LOAD_BY_CREATED):
+            dbop = new DBLoadByCreated(*static_cast<const DBLoadByCreated*>(op));
+            return;
+        case (LOAD_BY_FUTURE):
+            dbop = new DBLoadFuture(*static_cast<const DBLoadFuture*>(op));
+            return;
+        case (LOAD_BY_CONTACT):
+            dbop = new DBLoadByContacts(*static_cast<const DBLoadByContacts*>(op));
+            return;
+        default:
+            dbop = new DBLoadOperation(op->type);
+            return;
+        }
+    }
+    DBLoadOperationWrapper(const DBLoadOperationWrapper &other)
+        : DBLoadOperationWrapper(other.dbop)
+    {
+    }
+    ~DBLoadOperationWrapper()
+    {
+        delete dbop;
+    }
+    const DBLoadOperation *dbop = nullptr;
+};
+
 /**
   @brief
   This class provides a calendar storage interface.
@@ -68,7 +358,8 @@ enum DBOperation {
   notified about the completion.
 */
 class MKCAL_EXPORT ExtendedStorage
-    : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
+    : public KCalendarCore::CalStorage
+    , public DirectStorageInterface
 {
     Q_OBJECT
 
@@ -113,13 +404,13 @@ public:
       @copydoc
       CalStorage::open()
     */
-    virtual bool open() = 0;
+    virtual bool open();
 
     /**
       @copydoc
       CalStorage::load()
     */
-    virtual bool load() = 0;
+    virtual bool load();
 
     /**
       Load incidence by uid into the memory.
@@ -128,7 +419,7 @@ public:
       @param recurrenceid is recurrenceid of incidence, default null
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime()) = 0;
+    virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime());
 
     /**
       Load incidences at given date into the memory. All incidences that
@@ -143,7 +434,7 @@ public:
       @param date date
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QDate &date) = 0;
+    virtual bool load(const QDate &date);
 
     /**
       Load incidences between given dates into the memory. start is inclusive,
@@ -154,7 +445,7 @@ public:
       @param end is the ending date, exclusive
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QDate &start, const QDate &end) = 0;
+    virtual bool load(const QDate &start, const QDate &end);
 
     /**
       Load all incidences sharing the same uid into the memory.
@@ -162,7 +453,7 @@ public:
       @param uid is uid of the series
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadSeries(const QString &uid) = 0;
+    virtual bool loadSeries(const QString &uid);
 
     /**
       Load the incidence matching the given identifier. This method may be
@@ -172,7 +463,7 @@ public:
       @param instanceIdentifier is an identifier returned by Incidence::instanceIdentifier()
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadIncidenceInstance(const QString &instanceIdentifier) = 0;
+    virtual bool loadIncidenceInstance(const QString &instanceIdentifier);
 
     /**
       Load incidences of one notebook into the memory.
@@ -180,33 +471,33 @@ public:
       @param notebookUid is uid of notebook
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadNotebookIncidences(const QString &notebookUid) = 0;
+    virtual bool loadNotebookIncidences(const QString &notebookUid);
 
     /**
       Load journal type entries
     */
-    virtual bool loadJournals() = 0;
+    virtual bool loadJournals();
 
     /**
       Load plain incidences (no startdate and no enddate).
 
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadPlainIncidences() = 0;
+    virtual bool loadPlainIncidences();
 
     /**
       Load recurring incidences.
 
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadRecurringIncidences() = 0;
+    virtual bool loadRecurringIncidences();
 
     /**
       Load incidences that have geo parameters.
 
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadGeoIncidences() = 0;
+    virtual bool loadGeoIncidences();
 
     /**
       Load incidences that have geo parameters inside given rectangle.
@@ -218,14 +509,24 @@ public:
       @return true if the load was successful; false otherwise.
     */
     virtual bool loadGeoIncidences(float geoLatitude, float geoLongitude,
-                                   float diffLatitude, float diffLongitude) = 0;
+                                   float diffLatitude, float diffLongitude);
 
     /**
       Load incidences that have attendee.
 
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadAttendeeIncidences() = 0;
+    virtual bool loadAttendeeIncidences();
+
+    /**
+      Will actually perform any load action when runBatchLoading() is called.
+    */
+    bool startBatchLoading();
+
+    /**
+      Run every load actions since the last call to startBatchLoading().
+    */
+    bool runBatchLoading();
 
     // Smart Loading Functions //
 
@@ -234,7 +535,7 @@ public:
 
       @return number of loaded todos, or -1 on error
     */
-    virtual int loadUncompletedTodos() = 0;
+    virtual int loadUncompletedTodos();
 
     /**
       Load completed todos based on parameters. Load direction is descending,
@@ -245,7 +546,7 @@ public:
       @param last last loaded todo due/creation date in return
       @return number of loaded todos, or -1 on error
     */
-    virtual int loadCompletedTodos(bool hasDate, int limit, QDateTime *last) = 0;
+    virtual int loadCompletedTodos(bool hasDate, int limit, QDateTime *last);
 
     /**
       Load incidences based on start/due date or creation date.
@@ -257,7 +558,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadIncidences(bool hasDate, int limit, QDateTime *last) = 0;
+    virtual int loadIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       Load future incidences based on start/due date.
@@ -270,7 +571,7 @@ public:
       @param last last loaded incidence start date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadFutureIncidences(int limit, QDateTime *last) = 0;
+    virtual int loadFutureIncidences(int limit, QDateTime *last);
 
     /**
       Load incidences that have location information based on parameters.
@@ -282,16 +583,7 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadGeoIncidences(bool hasDate, int limit, QDateTime *last) = 0;
-
-    /**
-      Load all contacts in the database. Doesn't put anything into calendar.
-      Resulting list of persons is ordered by the number of appearances.
-      Use Person::count to get the number of appearances.
-
-      @return ordered list of persons
-    */
-    virtual KCalendarCore::Person::List loadContacts() = 0;
+    virtual int loadGeoIncidences(bool hasDate, int limit, QDateTime *last);
 
     /**
       Load all incidences that have the specified attendee.
@@ -303,7 +595,7 @@ public:
       @return number of loaded incidences, or -1 on error
     */
     virtual int loadContactIncidences(const KCalendarCore::Person &person,
-                                      int limit, QDateTime *last) = 0;
+                                      int limit, QDateTime *last);
 
     /**
       Load journal entries based on parameters. Load direction is
@@ -314,22 +606,13 @@ public:
       @param last last loaded incidence due/creation date in return
       @return number of loaded incidences, or -1 on error
     */
-    virtual int loadJournals(int limit, QDateTime *last) = 0;
-
-    /**
-      Remove from storage all incidences that have been previously
-      marked as deleted and that matches the UID / RecID of the incidences
-      in list. The action is performed immediately on database.
-
-      @return True on success, false otherwise.
-     */
-    virtual bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list) = 0;
+    virtual int loadJournals(int limit, QDateTime *last);
 
     /**
       @copydoc
       CalStorage::save()
     */
-    virtual bool save() = 0;
+    virtual bool save();
 
     /**
       This is an overload of save() method. When @deleteAction is
@@ -340,7 +623,7 @@ public:
       @param deleteAction the action to apply to deleted incidences
       @return True if successful; false otherwise
     */
-    virtual bool save(DeleteAction deleteAction) = 0;
+    virtual bool save(DeleteAction deleteAction);
 
     /**
       Mark if supported by the storage that an incidence has been opened.
@@ -364,133 +647,6 @@ public:
       CalStorage::close()
     */
     virtual bool close();
-
-    // Internal Calendar Listener Methods //
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarModified()
-    */
-    virtual void calendarModified(bool modified, KCalendarCore::Calendar *calendar) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdded()
-    */
-    virtual void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceChanged()
-    */
-    virtual void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceDeleted()
-    */
-    virtual void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &incidence, const KCalendarCore::Calendar *calendar) = 0;
-
-    /**
-      @copydoc
-      Calendar::CalendarObserver::calendarIncidenceAdditionCanceled()
-    */
-    virtual void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    // Synchronization Specific Methods //
-
-    /**
-      Get inserted incidences from storage.
-
-      NOTE: time stamps assigned by KCalExtended are created during save().
-      To obtain a time stamp that is guaranteed to not included recent changes,
-      sleep for a second or increment the current time by a second.
-
-      @param list inserted incidences
-      @param after list only incidences inserted after or at given datetime
-      @param notebookUid list only incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool insertedIncidences(KCalendarCore::Incidence::List *list,
-                                    const QDateTime &after = QDateTime(),
-                                    const QString &notebookUid = QString()) = 0;
-
-    /**
-      Get modified incidences from storage.
-      NOTE: if an incidence is both created and modified after the
-      given time, it will be returned in insertedIncidences only, not here!
-
-      @param list modified incidences
-      @param after list only incidences modified after or at given datetime
-      @param notebookUid list only incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool modifiedIncidences(KCalendarCore::Incidence::List *list,
-                                    const QDateTime &after = QDateTime(),
-                                    const QString &notebookUid = QString()) = 0;
-
-    /**
-      Get deleted incidences from storage.
-
-      @param list deleted incidences
-      @param after list only incidences deleted after or at given datetime
-      @param notebookUid list only incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool deletedIncidences(KCalendarCore::Incidence::List *list,
-                                   const QDateTime &after = QDateTime(),
-                                   const QString &notebookUid = QString()) = 0;
-
-    /**
-      Get all incidences from storage.
-
-      @param list notebook's incidences
-      @param notebookUid list incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool allIncidences(KCalendarCore::Incidence::List *list,
-                               const QString &notebookUid = QString()) = 0;
-
-    /**
-      Get possible duplicates for given incidence.
-
-      @param list duplicate incidences
-      @param incidence incidence to check
-      @param notebookUid list incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool duplicateIncidences(KCalendarCore::Incidence::List *list,
-                                     const KCalendarCore::Incidence::Ptr &incidence,
-                                     const QString &notebookUid = QString()) = 0;
-
-    /**
-      Get deletion time of incidence
-
-      @param incidence incidence to check
-      @return valid deletion time of incidence in UTC if incidence has been deleted otherwise QDateTime()
-    */
-    virtual QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      Get count of events
-
-      @return count of events
-    */
-    virtual int eventCount() = 0;
-
-    /**
-      Get count of todos
-
-      @return count of todos
-    */
-    virtual int todoCount() = 0;
-
-    /**
-      Get count of journals
-
-      @return count of journals
-    */
-    virtual int journalCount() = 0;
 
     // Observer Specific Methods //
 
@@ -642,9 +798,20 @@ public:
     */
     virtual void virtual_hook(int id, void *data) = 0;
 
+    virtual void registerDirectObserver(DirectStorageInterface::Observer *observer) = 0;
+    virtual void unregisterDirectObserver(DirectStorageInterface::Observer *observer) = 0;
+
 protected:
     virtual bool loadNotebooks() = 0;
     virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) = 0;
+    virtual bool loadBatch(const QList<DBLoadOperationWrapper> &dbops) = 0;
+    virtual bool loadIncidences(const DBLoadOperation &dbop) = 0;
+    virtual int loadIncidences(const DBLoadDateLimited &dbop, QDateTime *last,
+                               int limit = -1, bool useDate = false, bool ignoreEnd = false) = 0;
+    virtual bool storeIncidences(const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &additions,
+                                 const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &modifications,
+                                 const QMultiHash<QString, KCalendarCore::Incidence::Ptr> &deletions,
+                                 ExtendedStorage::DeleteAction deleteAction) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;
@@ -653,6 +820,18 @@ protected:
     bool isRecurrenceLoaded() const;
     void setIsRecurrenceLoaded(bool loaded);
 
+    bool runLoadOperation(const DBLoadOperation &dbop);
+    void incidenceLoaded(const DBLoadOperationWrapper &wrapper, int count, int limit,
+                         const QMultiHash<QString, KCalendarCore::Incidence*> &incidences);
+    void incidenceLoadedByBatch(const QList<DBLoadOperationWrapper> &wrappers,
+                                const QList<bool> &results,
+                                const QMultiHash<QString, KCalendarCore::Incidence*> &incidences);
+    
+    void setLoadOperationDone(const DBLoadOperation &dbop, int count, int limit = -1);
+    void setLoaded(const QMultiHash<QString, KCalendarCore::Incidence*> &incidences);
+
+    void setOpened(const QList<Notebook*> notebooks, Notebook* defaultNb);
+    void setClosed();
     void setModified(const QString &info);
     void setFinished(bool error, const QString &info);
     void setUpdated(const KCalendarCore::Incidence::List &added,
@@ -681,8 +860,6 @@ protected:
     void setIsGeoDateLoaded(bool loaded);
     bool isGeoCreatedLoaded();
     void setIsGeoCreatedLoaded(bool loaded);
-
-    void clearLoaded();
 
 private:
     //@cond PRIVATE

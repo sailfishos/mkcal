@@ -45,12 +45,30 @@ target_link_libraries(tst_load
 
 add_test(tst_load tst_load)
 
+set(SRC_ASYNC
+	tst_async.cpp)
+set(HEADERS_ASYNC
+	tst_async.h)
+
+add_executable(tst_async ${SRC_ASYNC} ${HEADERS_ASYNC})
+
+target_include_directories(tst_async PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(tst_async
+	Qt5::Test
+	KF5::CalendarCore
+	mkcal-qt5)
+
+add_test(tst_async tst_async)
+
 if(INSTALL_TESTS)
 	install(TARGETS tst_storage
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_load
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_perf
+		DESTINATION /opt/tests/mkcal)
+	install(TARGETS tst_async
 		DESTINATION /opt/tests/mkcal)
 	install(FILES tests.xml
 		DESTINATION /opt/tests/mkcal)

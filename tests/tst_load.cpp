@@ -364,7 +364,7 @@ void tst_load::testRange()
     QFETCH(QDateTime, loadStart);
     QFETCH(QDateTime, loadEnd);
 
-    mStorage->clearLoaded();
+    mStorage->calendar()->close();
 
     // Random ordering, to test that addLoadedRange() is doing
     // it correctly.

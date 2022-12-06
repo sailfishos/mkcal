@@ -4,6 +4,9 @@ set(SRC
 	notebook.cpp
 	sqliteformat.cpp
 	sqlitestorage.cpp
+	sqlitestorage_p.cpp
+	asyncsqlitestorage.cpp
+	timed.cpp
 	servicehandler.cpp
 	logging.cpp
 	semaphore_p.cpp)
@@ -11,9 +14,13 @@ set(HEADERS
 	extendedcalendar.h
 	extendedstorage.h
 	extendedstorageobserver.h
+	directstorageinterface.h
 	notebook.h
 	sqliteformat.h
 	sqlitestorage.h
+	sqlitestorage_p.h
+	asyncsqlitestorage.h
+	timed.h
 	servicehandlerif.h
 	servicehandler.h
 	dummystorage.h
