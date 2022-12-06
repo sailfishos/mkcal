@@ -120,7 +120,7 @@ public:
       @return true if the operation was successful; false otherwise.
     */
     bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
-                          DBOperation dbop);
+                          DBOperation dbop, KCalendarCore::Incidence::List *modifiedIncidences);
 
     bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence);
 
@@ -444,6 +444,10 @@ private:
 "select * from Components where Notebook=? and DateDeleted=0"
 #define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
 "select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
+#define SELECT_ROWID_FROM_COMPONENTS_BY_UID \
+"select ComponentId from Components where UID=? and RecurId<>0 and DateDeleted=0"
+#define SELECT_COMPONENTS_BY_ROWID \
+"select * from Components where ComponentId = ?"
 #define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
 "select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_DATE \

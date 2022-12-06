@@ -58,6 +58,8 @@ public:
         sqlite3_finalize(mUpdateMetadata);
         sqlite3_finalize(mSelectCalProps);
         sqlite3_finalize(mInsertCalProps);
+        sqlite3_finalize(mSelectIncRowids);
+        sqlite3_finalize(mSelectIncByRowid);
         sqlite3_finalize(mSelectIncProperties);
         sqlite3_finalize(mSelectIncAttendees);
         sqlite3_finalize(mSelectIncAlarms);
@@ -93,6 +95,8 @@ public:
     sqlite3_stmt *mSelectCalProps = nullptr;
     sqlite3_stmt *mInsertCalProps = nullptr;
 
+    sqlite3_stmt *mSelectIncRowids = nullptr;
+    sqlite3_stmt *mSelectIncByRowid = nullptr;
     sqlite3_stmt *mSelectIncProperties = nullptr;
     sqlite3_stmt *mSelectIncAttendees = nullptr;
     sqlite3_stmt *mSelectIncAlarms = nullptr;
@@ -382,7 +386,7 @@ static bool setDateTime(SqliteFormat *format, sqlite3_stmt *stmt, int &index, co
     }
 
 bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QString &nbook,
-                                    DBOperation dbop)
+                                    DBOperation dbop, Incidence::List *modifiedIncidences)
 {
     int rv = 0;
     int index = 1;
@@ -406,7 +410,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
     if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
         rowid = d->selectRowId(incidence);
-        if (!rowid && dbop == DBDelete) {
+        if (!rowid && (dbop == DBDelete || dbop == DBMarkDeleted)) {
             // Already deleted.
             return true;
         } else if (!rowid) {
@@ -459,6 +463,23 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     default:
         qCWarning(lcMkcal) << "unknown DB operation" << dbop;
         goto error;
+    }
+
+    if ((dbop == DBDelete || dbop == DBMarkDeleted) && incidence->recurs()) {
+        if (!d->mSelectIncRowids) {
+            const char *query = SELECT_ROWID_FROM_COMPONENTS_BY_UID;
+            int qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_UID);
+            SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectIncRowids, nullptr);
+        }
+        SL3_reset(d->mSelectIncRowids);
+        uid = incidence->uid().toUtf8();
+        index = 1;
+        SL3_bind_text(d->mSelectIncRowids, index, uid.constData(), uid.length(), SQLITE_STATIC);
+        if (!d->mSelectIncByRowid) {
+            const char *query = SELECT_COMPONENTS_BY_ROWID;
+            int qsize = sizeof(SELECT_COMPONENTS_BY_ROWID);
+            SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectIncByRowid, nullptr);
+        }
     }
 
     if (dbop == DBInsert || dbop == DBUpdate) {
@@ -654,6 +675,68 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
 
         if (!d->insertAttachments(incidence, rowid))
             qCWarning(lcMkcal) << "failed to modify attachments for incidence" << incidence->uid();
+    }
+
+    (*modifiedIncidences) << incidence;
+
+    // Don't leave deleted events with the same UID/recID.
+    if (dbop == DBInsert && !purgeDeletedComponents(incidence)) {
+        qCWarning(lcMkcal) << "cannot purge deleted components on insertion." << incidence->uid();
+    }
+
+    // Don't leave orphaned exceptions when deleting or marking a recurring event.
+    if (dbop == DBDelete && incidence->recurs()) {
+        SL3_step(d->mSelectIncRowids);
+        while (rv == SQLITE_ROW) {
+            rowid = sqlite3_column_int(d->mSelectIncRowids, 0);
+
+            QString nb;
+            index = 1;
+            SL3_reset(d->mSelectIncByRowid);
+            SL3_bind_int(d->mSelectIncByRowid, index, rowid);
+            Incidence::Ptr deleted = selectComponents(d->mSelectIncByRowid, nb);
+
+            index = 1;
+            SL3_reset(d->mDeleteIncComponents);
+            SL3_bind_int(d->mDeleteIncComponents, index, rowid);
+            SL3_step(d->mDeleteIncComponents);
+            d->deleteListsForIncidence(rowid);
+
+            if (deleted) {
+                qCDebug(lcMkcal) << "purge" << deleted->uid() << deleted->recurrenceId();
+                (*modifiedIncidences) << deleted;
+                SL3_step(d->mSelectIncByRowid);
+            }
+
+            SL3_step(d->mSelectIncRowids);
+        }
+    }
+    if (dbop == DBMarkDeleted && incidence->recurs()) {
+        secs = toOriginTime(QDateTime::currentDateTimeUtc());
+        SL3_step(d->mSelectIncRowids);
+        while (rv == SQLITE_ROW) {
+            rowid = sqlite3_column_int(d->mSelectIncRowids, 0);
+
+            QString nb;
+            index = 1;
+            SL3_reset(d->mSelectIncByRowid);
+            SL3_bind_int(d->mSelectIncByRowid, index, rowid);
+            Incidence::Ptr deleted = selectComponents(d->mSelectIncByRowid, nb);
+
+            index = 1;
+            SL3_reset(d->mMarkDeletedIncidences);
+            SL3_bind_int64(d->mMarkDeletedIncidences, index, secs);
+            SL3_bind_int(d->mMarkDeletedIncidences, index, rowid);
+            SL3_step(d->mMarkDeletedIncidences);
+
+            if (deleted) {
+                qCDebug(lcMkcal) << "marking" << deleted->uid() << deleted->recurrenceId() << "as deleted";
+                (*modifiedIncidences) << deleted;
+                SL3_step(d->mSelectIncByRowid);
+            }
+
+            SL3_step(d->mSelectIncRowids);
+        }
     }
 
     return true;

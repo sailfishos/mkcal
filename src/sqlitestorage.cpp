@@ -1357,7 +1357,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
                 continue;
             }
          }
-         (*savedIncidences) << *it;
 
         // lastModified is a public field of iCal RFC, so user should be
         // able to set its value to arbitrary date and time. This field is
@@ -1368,15 +1367,9 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
             (*it)->setLastModified(QDateTime::currentDateTimeUtc());
         }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
-        if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
+        if (!mFormat->modifyComponents(*it, notebookUid, dbop, savedIncidences)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
-        } else  if (dbop == DBInsert) {
-            // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it)) {
-                qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
-                errors += 1;
-            }
         }
     }
 

@@ -1296,6 +1296,20 @@ void tst_storage::tst_deleted()
     event3->setSummary("Re-created event");
     event3->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
 
+    KCalendarCore::Event::Ptr event4(new KCalendarCore::Event);
+    event4->setDtStart(QDateTime(QDate(2022, 12, 6), QTime(13, 42)));
+    event4->setSummary("Recurring event wth exceptions");
+    event4->setCreated(QDateTime::currentDateTimeUtc().addSecs(-3));
+    event4->recurrence()->setDaily(1);
+    KCalendarCore::Event::Ptr event41(event4->clone());
+    event41->clearRecurrence();
+    event41->setRecurrenceId(event4->dtStart().addDays(2));
+    event41->setSummary("Exception 1");
+    KCalendarCore::Event::Ptr event42(event4->clone());
+    event42->clearRecurrence();
+    event42->setRecurrenceId(event4->dtStart().addDays(3));
+    event42->setSummary("Exception 2");
+
     QVERIFY(m_calendar->addEvent(event, notebook->uid()));
     QVERIFY(m_calendar->addEvent(event2, notebook->uid()));
     QVERIFY(m_calendar->addEvent(event3, notebook->uid()));
@@ -1360,6 +1374,46 @@ void tst_storage::tst_deleted()
     QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
     fetchEvent3 = m_calendar->event(event3->uid());
     QVERIFY(fetchEvent3);
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QCOMPARE(deleted.length(), 0);
+
+    // Marking as deleted a recurring event marks the exceptions also, even if they are not loaded
+    QVERIFY(m_calendar->addEvent(event4, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event41, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event42, notebook->uid()));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    QVERIFY(m_storage->load(event4->uid()));
+    KCalendarCore::Event::Ptr fetchEvent4 = m_calendar->event(event4->uid());
+    QVERIFY(fetchEvent4);
+    QVERIFY(!m_calendar->event(event41->uid(), event41->recurrenceId()));
+    QVERIFY(!m_calendar->event(event42->uid(), event42->recurrenceId()));
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent4));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QCOMPARE(deleted.length(), 3);
+
+    // Deleting a recurring event also wipes out the exceptions, even if they are not loaded
+    QVERIFY(m_calendar->addEvent(event4, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event41, notebook->uid()));
+    QVERIFY(m_calendar->addEvent(event42, notebook->uid()));
+    QVERIFY(m_storage->save());
+    reloadDb();
+    QVERIFY(m_storage->load(event4->uid()));
+    fetchEvent4 = m_calendar->event(event4->uid());
+    QVERIFY(fetchEvent4);
+    QVERIFY(!m_calendar->event(event41->uid(), event41->recurrenceId()));
+    QVERIFY(!m_calendar->event(event42->uid(), event42->recurrenceId()));
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent4));
+    QVERIFY(m_storage->save(ExtendedStorage::PurgeDeleted));
+    reloadDb();
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    QVERIFY(!m_calendar->event(event4->uid()));
+    QVERIFY(!m_calendar->event(event41->uid(), event41->recurrenceId()));
+    QVERIFY(!m_calendar->event(event42->uid(), event42->recurrenceId()));
     deleted.clear();
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
     QCOMPARE(deleted.length(), 0);
@@ -2136,20 +2190,31 @@ void tst_storage::tst_storageObserver()
     QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
 
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2023, 1, 13), QTime(16, 35)));
+    event->recurrence()->setDaily(2);
     QVERIFY(m_calendar->addIncidence(event));
+    KCalendarCore::Incidence::Ptr exception = m_calendar->createException(event, event->dtStart().addDays(4));
+    QVERIFY(m_calendar->addIncidence(exception));
     QVERIFY(updated.isEmpty());
     m_storage->save();
     QCOMPARE(updated.count(), 1);
     args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
-    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>().count(), 1);
-    QCOMPARE(args[0].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    KCalendarCore::Incidence::List added = args[0].value<KCalendarCore::Incidence::List>();
+    QCOMPARE(added.count(), 2);
+    if (added[0]->recurs()) {
+        QCOMPARE(added[0].staticCast<KCalendarCore::Event>(), event);
+        QCOMPARE(added[1].staticCast<KCalendarCore::Event>(), exception.staticCast<KCalendarCore::Event>());
+    } else {
+        QCOMPARE(added[1].staticCast<KCalendarCore::Event>(), event);
+        QCOMPARE(added[0].staticCast<KCalendarCore::Event>(), exception.staticCast<KCalendarCore::Event>());
+    }
     QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
     QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 
-    event->setDtStart(QDateTime::currentDateTime());
+    event->setDtEnd(event->dtStart().addSecs(3600));
     QVERIFY(updated.isEmpty());
     m_storage->save();
     QCOMPARE(updated.count(), 1);
@@ -2170,8 +2235,13 @@ void tst_storage::tst_storageObserver()
     QCOMPARE(args.count(), 3);
     QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
     QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
-    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>().count(), 1);
-    QCOMPARE(args[2].value<KCalendarCore::Incidence::List>()[0].staticCast<KCalendarCore::Event>(), event);
+    KCalendarCore::Incidence::List deleted = args[2].value<KCalendarCore::Incidence::List>();
+    QCOMPARE(deleted.count(), 2);
+    QCOMPARE(deleted[0].staticCast<KCalendarCore::Event>(), event);
+    // Cannot compare deleted[1] and exception since the former is coming from
+    // a reread of the exception in the DB.
+    QCOMPARE(deleted[1]->uid(), exception->uid());
+    QCOMPARE(deleted[1]->recurrenceId(), exception->recurrenceId());
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 
