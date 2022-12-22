@@ -81,9 +81,6 @@ do {                                              \
 class mKCal::Notebook::Private
 {
 public:
-    Private()
-    {}
-
     Private(const QString &uid)
         : mUid(uid)
     {
@@ -129,7 +126,7 @@ public:
 //@endcond
 
 Notebook::Notebook()
-    : d(new Notebook::Private())
+    : d(new Notebook::Private(QString()))
 {
 }
 
