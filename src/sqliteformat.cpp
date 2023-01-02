@@ -1519,9 +1519,6 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, QString &note
 
         incidence->setGeoLatitude(sqlite3_column_double(stmt1, index++));
         incidence->setGeoLongitude(sqlite3_column_double(stmt1, index++));
-        if (incidence->geoLatitude() != INVALID_LATLON) {
-            incidence->setHasGeo(true);
-        }
 
         incidence->setPriority(sqlite3_column_int(stmt1, index++));
 

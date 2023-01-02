@@ -1567,7 +1567,6 @@ void tst_storage::tst_deleteAllEvents()
 
     KCalendarCore::Event::Ptr ev = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
     ev->setLastModified(QDateTime::currentDateTimeUtc().addSecs(-42));
-    ev->setHasGeo(true);
     ev->setGeoLatitude(42.);
     ev->setGeoLongitude(42.);
     ev->setDtStart(QDateTime(QDate(2019, 10, 10)));
