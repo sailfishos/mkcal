@@ -87,7 +87,7 @@ static const char *createStatements[] =
     INDEX_ATTACHMENTS,
     INDEX_CALENDARPROPERTIES,
     "PRAGMA foreign_keys = ON",
-    "PRAGMA user_version = 1"
+    "PRAGMA user_version = 2"
 };
 
 /**
@@ -257,6 +257,15 @@ bool SqliteStorage::open()
                     "              SELECT ComponentId, Email, Name, 0, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom "
                     "              FROM ATTENDEE WHERE isOrganizer=1";
             SL3_exec(d->mDatabase);
+
+            version = 1;
+        }
+        if (version == 1) {
+            qCWarning(lcMkcal) << "Migrating mkcal database to version 2";
+            query = "ALTER TABLE Components ADD COLUMN thisAndFuture INTEGER";
+            SL3_exec(d->mDatabase);
+
+            version = 2;
         }
     }
 

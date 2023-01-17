@@ -307,7 +307,7 @@ private:
 //extra1: used to store the color of a single component.
 
 #define CREATE_COMPONENTS \
-  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER, extra1 STRING, extra2 STRING, extra3 INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER, thisAndFuture INTEGER, extra1 STRING, extra2 STRING, extra3 INTEGER)"
 
 //Extra fields added for future use in case they are needed. They will be documented here
 //So we can add something without breaking the schema and not adding tables
@@ -355,7 +355,7 @@ private:
 #define INSERT_CALENDARS \
 "insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, '', 0)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_CALENDARPROPERTIES \
@@ -378,7 +378,7 @@ private:
 #define UPDATE_CALENDARS \
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, extra1=? where ComponentId=?"
+"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, thisAndFuture=?, extra1=? where ComponentId=?"
 #define UPDATE_COMPONENTS_AS_DELETED \
 "update Components set DateDeleted=? where ComponentId=?"
 //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
