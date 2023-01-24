@@ -621,6 +621,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         }
         SL3_bind_int(stmt1, index, percentComplete);
         SL3_bind_date_time(this, stmt1, index, effectiveDtCompleted, incidence->allDay());
+        SL3_bind_int(stmt1, index, incidence->thisAndFuture());
 
         colorstr = incidence->color().toUtf8();
         SL3_bind_text(stmt1, index, colorstr.constData(), colorstr.length(), SQLITE_STATIC);
@@ -1593,6 +1594,8 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, QString &note
         }
 
         index++; //DateDeleted
+
+        incidence->setThisAndFuture(sqlite3_column_int(stmt1, index++));
 
         QString colorstr = QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++));
         if (!colorstr.isEmpty()) {

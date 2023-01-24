@@ -72,6 +72,7 @@ private slots:
     void tst_recurringAlarms();
     void tst_url_data();
     void tst_url();
+    void tst_thisAndFuture();
     void tst_color();
     void tst_addIncidence();
     void tst_attachments();

@@ -1866,6 +1866,28 @@ void tst_storage::tst_url()
     QCOMPARE(fetchEvent->url(), url);
 }
 
+void tst_storage::tst_thisAndFuture()
+{
+    auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2022, 1, 17), QTime(10, 0)));
+    event->recurrence()->setDaily(1);
+    QVERIFY(m_calendar->addEvent(event, NotebookId));
+    auto exception = m_calendar->createException(event, event->dtStart().addDays(3), true);
+    exception->setDtStart(QDateTime(QDate(2022, 1, 20), QTime(9, 0)));
+    QVERIFY(m_calendar->addIncidence(exception, NotebookId));
+
+    m_storage->save();
+    reloadDb();
+
+    auto fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QVERIFY(!fetchEvent->thisAndFuture());
+    auto fetchException = m_calendar->event(exception->uid(),
+                                            exception->recurrenceId());
+    QVERIFY(fetchException);
+    QVERIFY(fetchException->thisAndFuture());
+}
+
 void tst_storage::tst_color()
 {
     const QString &red = QString::fromLatin1("red");
