@@ -668,18 +668,18 @@ Incidence::List ExtendedCalendar::sortIncidences(Incidence::List *incidenceList,
     case IncidenceSortDate:
         incidenceListSorted = *incidenceList;
         if (sortDirection == SortDirectionAscending) {
-            qSort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::dateLessThan);
+            std::sort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::dateLessThan);
         } else {
-            qSort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::dateMoreThan);
+            std::sort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::dateMoreThan);
         }
         break;
 
     case IncidenceSortCreated:
         incidenceListSorted = *incidenceList;
         if (sortDirection == SortDirectionAscending) {
-            qSort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::createdLessThan);
+            std::sort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::createdLessThan);
         } else {
-            qSort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::createdMoreThan);
+            std::sort(incidenceListSorted.begin(), incidenceListSorted.end(), Incidences::createdMoreThan);
         }
         break;
 
@@ -961,7 +961,7 @@ ExtendedCalendar::ExpandedIncidenceList ExtendedCalendar::expandRecurrences(
             }
         }
     }
-    qSort(returnList.begin(), returnList.end(), expandedIncidenceSortLessThan);
+    std::sort(returnList.begin(), returnList.end(), expandedIncidenceSortLessThan);
     return returnList;
 }
 
@@ -1033,7 +1033,7 @@ ExtendedCalendar::expandMultiDay(const ExtendedCalendar::ExpandedIncidenceList &
             dte = dts.addDays(1);
         }
     }
-    qSort(returnList.begin(), returnList.end(), expandedIncidenceSortLessThan);
+    std::sort(returnList.begin(), returnList.end(), expandedIncidenceSortLessThan);
     return returnList;
 }
 
