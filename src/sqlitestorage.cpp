@@ -311,8 +311,8 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    if (notebooks().isEmpty()) {
-        qCDebug(lcMkcal) << "Storage is empty, initializing";
+    if (notebooks().isEmpty() || !defaultNotebook()) {
+        qCDebug(lcMkcal) << "Storage has no default notebook, adding one";
         Notebook::Ptr defaultNb(new Notebook(QString::fromLatin1("Default"),
                                              QString(),
                                              QString::fromLatin1("#0000FF")));
