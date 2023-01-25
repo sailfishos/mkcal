@@ -63,8 +63,6 @@ static const char *createStatements[] =
 {
     CREATE_METADATA,
     CREATE_TIMEZONES,
-    // Create a global empty entry.
-    INSERT_TIMEZONES,
     CREATE_CALENDARS,
     CREATE_COMPONENTS,
     CREATE_RDATES,
@@ -250,6 +248,8 @@ bool SqliteStorage::open()
 
         if (version == 0 && fileExisted) {
             qCWarning(lcMkcal) << "Migrating mkcal database to version 1";
+            query = BEGIN_TRANSACTION;
+            SL3_exec(d->mDatabase);
             query = "DROP INDEX IF EXISTS IDX_ATTENDEE"; // recreate on new format
             SL3_exec(d->mDatabase);
             // insert normal attendee for every organizer
@@ -257,12 +257,22 @@ bool SqliteStorage::open()
                     "              SELECT ComponentId, Email, Name, 0, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom "
                     "              FROM ATTENDEE WHERE isOrganizer=1";
             SL3_exec(d->mDatabase);
+            query = "PRAGMA user_version = 1";
+            SL3_exec(d->mDatabase);
+            query = COMMIT_TRANSACTION;
+            SL3_exec(d->mDatabase);
 
             version = 1;
         }
         if (version == 1) {
             qCWarning(lcMkcal) << "Migrating mkcal database to version 2";
+            query = BEGIN_TRANSACTION;
+            SL3_exec(d->mDatabase);
             query = "ALTER TABLE Components ADD COLUMN thisAndFuture INTEGER";
+            SL3_try_exec(d->mDatabase); // Ignore error if any, consider that column already exists.
+            query = "PRAGMA user_version = 2";
+            SL3_exec(d->mDatabase);
+            query = COMMIT_TRANSACTION;
             SL3_exec(d->mDatabase);
 
             version = 2;
@@ -301,8 +311,8 @@ bool SqliteStorage::open()
         goto error;
     }
 
-    if (notebooks().isEmpty()) {
-        qCDebug(lcMkcal) << "Storage is empty, initializing";
+    if (notebooks().isEmpty() || !defaultNotebook()) {
+        qCDebug(lcMkcal) << "Storage has no default notebook, adding one";
         Notebook::Ptr defaultNb(new Notebook(QString::fromLatin1("Default"),
                                              QString(),
                                              QString::fromLatin1("#0000FF")));
