@@ -198,19 +198,13 @@ private:
  /* kDebug() << "SQL query:" << query;    */                  \
   rv = sqlite3_exec( (db), query, NULL, 0, &errmsg );         \
   if ( rv ) {                                                 \
-    if ( rv != SQLITE_CONSTRAINT ) {                          \
-      qCWarning(lcMkcal) << "sqlite3_exec error code:" << rv;           \
-    }                                                         \
-    if ( errmsg ) {                                           \
-      if ( rv != SQLITE_CONSTRAINT ) {                        \
-        qCWarning(lcMkcal) << errmsg;                                   \
+      qCWarning(lcMkcal) << "sqlite3_exec error code:" << rv; \
+      if ( errmsg ) {                                         \
+          qCWarning(lcMkcal) << errmsg;                       \
+          sqlite3_free( errmsg );                             \
+          errmsg = NULL;                                      \
       }                                                       \
-      sqlite3_free( errmsg );                                 \
-      errmsg = NULL;                                          \
-    }                                                         \
-    if ( rv != SQLITE_CONSTRAINT ) {                          \
       goto error;                                             \
-    }                                                         \
   }                                                           \
 }
 
@@ -350,8 +344,6 @@ private:
 #define INDEX_CALENDARPROPERTIES \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDARPROPERTIES on Calendarproperties(CalendarId)"
 
-#define INSERT_TIMEZONES \
-"insert into Timezones values (1, '')"
 #define INSERT_CALENDARS \
 "insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
 #define INSERT_COMPONENTS \

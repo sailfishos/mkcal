@@ -63,8 +63,6 @@ static const char *createStatements[] =
 {
     CREATE_METADATA,
     CREATE_TIMEZONES,
-    // Create a global empty entry.
-    INSERT_TIMEZONES,
     CREATE_CALENDARS,
     CREATE_COMPONENTS,
     CREATE_RDATES,
