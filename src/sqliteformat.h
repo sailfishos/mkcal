@@ -193,7 +193,7 @@ private:
 
 }
 
-#define SL3_exec( db )                                        \
+#define SL3_try_exec( db )                                    \
 {                                                             \
  /* kDebug() << "SQL query:" << query;    */                  \
   rv = sqlite3_exec( (db), query, NULL, 0, &errmsg );         \
@@ -204,6 +204,13 @@ private:
           sqlite3_free( errmsg );                             \
           errmsg = NULL;                                      \
       }                                                       \
+  }                                                           \
+}
+
+#define SL3_exec( db )                                        \
+{                                                             \
+  SL3_try_exec( (db) );                                       \
+  if ( rv && rv != SQLITE_CONSTRAINT ) {                      \
       goto error;                                             \
   }                                                           \
 }
