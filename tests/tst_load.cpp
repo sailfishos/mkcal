@@ -129,15 +129,17 @@ void tst_load::testById()
 
     QVERIFY(calendar->events().isEmpty());
 
-    QVERIFY(storage->load(occurrence->uid(), occurrence->recurrenceId()));
-    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(storage->load(occurrence->uid()));
+    QCOMPARE(calendar->events().length(), 2);
     occurrence = calendar->event(occurrence->uid(),
                                  occurrence->recurrenceId());
     QVERIFY(occurrence);
     QVERIFY(calendar->deleteIncidence(occurrence));
-    QVERIFY(calendar->events().isEmpty());
-    QVERIFY(storage->load(occurrence->uid(), occurrence->recurrenceId()));
-    QVERIFY(calendar->events().isEmpty());
+    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(!calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
+    QVERIFY(storage->load(occurrence->uid()));
+    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(!calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
 
     QVERIFY(storage->load(event->uid()));
     QCOMPARE(calendar->events().length(), 1);
@@ -178,12 +180,12 @@ void tst_load::testSeries()
 
     QVERIFY(calendar->events().isEmpty());
 
-    QVERIFY(storage->loadSeries(event->uid()));
+    QVERIFY(storage->load(event->uid()));
     QCOMPARE(calendar->events().length(), 2);
     QVERIFY(calendar->incidence(event->uid()));
     QVERIFY(calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
 
-    QVERIFY(storage->loadSeries(single->uid()));
+    QVERIFY(storage->load(single->uid()));
     QCOMPARE(calendar->events().length(), 3);
     QVERIFY(calendar->incidence(single->uid()));
 

@@ -366,55 +366,7 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
-{
-    if (!d->mDatabase) {
-        return false;
-    }
-
-    int rv = 0;
-    int count = -1;
-    d->mIsLoading = true;
-
-    const char *query1 = NULL;
-    int qsize1 = 0;
-
-    sqlite3_stmt *stmt1 = NULL;
-    int index = 1;
-    QByteArray u;
-    qint64 secsRecurId;
-
-    if (!uid.isEmpty()) {
-        query1 = SELECT_COMPONENTS_BY_UID_AND_RECURID;
-        qsize1 = sizeof(SELECT_COMPONENTS_BY_UID_AND_RECURID);
-
-        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-        u = uid.toUtf8();
-        SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
-        if (recurrenceId.isValid()) {
-            if (recurrenceId.timeSpec() == Qt::LocalTime) {
-                secsRecurId = d->mFormat->toLocalOriginTime(recurrenceId);
-            } else {
-                secsRecurId = d->mFormat->toOriginTime(recurrenceId);
-            }
-            SL3_bind_int64(stmt1, index, secsRecurId);
-        } else {
-            // no recurrenceId, bind NULL
-            // note that sqlite3_bind_null doesn't seem to work here
-            // also note that sqlite should bind NULL automatically if nothing
-            // is bound, but that doesn't work either
-            SL3_bind_int64(stmt1, index, 0);
-        }
-
-        count = d->loadIncidences(stmt1);
-    }
-error:
-    d->mIsLoading = false;
-
-    return count >= 0;
-}
-
-bool SqliteStorage::loadSeries(const QString &uid)
+bool SqliteStorage::load(const QString &uid)
 {
     if (!d->mDatabase) {
         return false;
@@ -570,28 +522,26 @@ error:
 bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
 {
     QString uid;
-    QDateTime recId;
     // At the moment, from KCalendarCore, if the instance is an exception,
     // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
     // This is tested in tst_loadIncidenceInstance() to ensure that any
     // future breakage would be properly detected.
     if (instanceIdentifier.endsWith('Z')) {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
-        recId = QDateTime::fromString(instanceIdentifier.right(20), Qt::ISODate);
     } else if (instanceIdentifier.length() > 19
                && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
-        recId = QDateTime::fromString(instanceIdentifier.right(19), Qt::ISODate);
     } else if (instanceIdentifier.length() > 25
                && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
-        recId = QDateTime::fromString(instanceIdentifier.right(25), Qt::ISODate);
-    }
-    if (!recId.isValid()) {
+    } else {
         uid = instanceIdentifier;
     }
 
-    return load(uid, recId);
+    // Even if we're looking for a specific incidence instance, we load all
+    // the series for recurring event, to avoid orphaned exceptions in the
+    // calendar or recurring events without their exceptions.
+    return load(uid);
 }
 
 bool SqliteStorage::loadJournals()

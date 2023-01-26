@@ -105,9 +105,9 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::load(const QString &, const QDateTime &)
+      ExtendedStorage::load(const QString &)
     */
-    bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime());
+    bool load(const QString &uid);
 
     /**
       @copydoc
@@ -120,12 +120,6 @@ public:
       ExtendedStorage::load(const QDate &, const QDate &)
     */
     bool load(const QDate &start, const QDate &end);
-
-    /**
-      @copydoc
-      ExtendedStorage::loadSeries(const QString &)
-    */
-    bool loadSeries(const QString &uid);
 
     /**
       @copydoc

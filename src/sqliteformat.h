@@ -435,8 +435,6 @@ private:
 "select * from Components where (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_END \
 "select * from Components where DateStart<? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_UID_AND_RECURID \
-"select * from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_UID \
 "select * from Components where UID=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
