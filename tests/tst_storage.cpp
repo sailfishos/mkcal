@@ -1487,6 +1487,105 @@ void tst_storage::tst_inserted()
     QCOMPARE(modified[0]->recurrenceId(), QDateTime());
 }
 
+void tst_storage::tst_changeNotebook()
+{
+    mKCal::Notebook::Ptr notebook(new mKCal::Notebook("123456789-change",
+                                                      "test notebook change",
+                                                      QLatin1String(""),
+                                                      "#001122",
+                                                      false, // Not shared.
+                                                      false, // Is master.
+                                                      false, // Not synced to Ovi.
+                                                      false, // Writable.
+                                                      true, // Visible.
+                                                      QLatin1String(""),
+                                                      QLatin1String(""),
+                                                      0));
+    QVERIFY(m_storage->addNotebook(notebook));
+
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2022, 3, 23), QTime(10, 12), Qt::UTC));
+
+    KCalendarCore::Recurrence *recurrence = event->recurrence();
+    recurrence->setDaily(1);
+    recurrence->setStartDateTime(event->dtStart(), false);
+    QVERIFY(event->recurs());
+
+    KCalendarCore::Incidence::Ptr exception = KCalendarCore::Calendar::createException(event, event->dtStart().addDays(3));
+    QVERIFY(exception);
+    exception->setDtStart(exception->dtStart().addSecs(3600));
+
+    QVERIFY(m_calendar->addEvent(event, m_calendar->defaultNotebook()));
+    QVERIFY(m_calendar->addEvent(exception.staticCast<KCalendarCore::Event>(), m_calendar->defaultNotebook()));
+    QVERIFY(m_storage->save());
+    reloadDb();
+
+    KCalendarCore::Incidence::Ptr fetched = m_calendar->incidence(event->uid());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), m_calendar->defaultNotebook());
+    QVERIFY(m_calendar->setNotebook(fetched, notebook->uid()));
+    QCOMPARE(m_calendar->notebook(fetched), notebook->uid());
+    fetched = m_calendar->incidence(event->uid(), exception->recurrenceId());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), notebook->uid());
+
+    QVERIFY(m_storage->save());
+    reloadDb();
+
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    fetched = m_calendar->incidence(event->uid());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), notebook->uid());
+    fetched = m_calendar->incidence(event->uid(), exception->recurrenceId());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), notebook->uid());
+
+    KCalendarCore::Incidence::List deleted;
+    QVERIFY(m_storage->deletedIncidences(&deleted, {}, m_calendar->defaultNotebook()));
+    QVERIFY(std::find_if(deleted.constBegin(), deleted.constEnd(),
+                         [event] (const KCalendarCore::Incidence::Ptr &it) {
+                             return (it->uid() == event->uid() && !it->hasRecurrenceId());
+                         }) != deleted.constEnd());
+    QVERIFY(std::find_if(deleted.constBegin(), deleted.constEnd(),
+                         [exception] (const KCalendarCore::Incidence::Ptr &it) {
+                             return (it->uid() == exception->uid() && it->recurrenceId() == exception->recurrenceId());
+                         }) != deleted.constEnd());
+
+    // Switch it back.
+    fetched = m_calendar->incidence(event->uid());
+    QVERIFY(m_calendar->setNotebook(fetched, m_calendar->defaultNotebook()));
+    QCOMPARE(m_calendar->notebook(fetched), m_calendar->defaultNotebook());
+    fetched = m_calendar->incidence(event->uid(), exception->recurrenceId());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), m_calendar->defaultNotebook());
+
+    QVERIFY(m_storage->save());
+    reloadDb();
+
+    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
+    fetched = m_calendar->incidence(event->uid());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), m_calendar->defaultNotebook());
+    fetched = m_calendar->incidence(event->uid(), exception->recurrenceId());
+    QVERIFY(fetched);
+    QCOMPARE(m_calendar->notebook(fetched), m_calendar->defaultNotebook());
+
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, {}, m_calendar->defaultNotebook()));
+    QVERIFY(deleted.isEmpty());
+    QVERIFY(m_storage->deletedIncidences(&deleted, {}, notebook->uid()));
+    QVERIFY(std::find_if(deleted.constBegin(), deleted.constEnd(),
+                         [event] (const KCalendarCore::Incidence::Ptr &it) {
+                             return (it->uid() == event->uid() && !it->hasRecurrenceId());
+                         }) != deleted.constEnd());
+    QVERIFY(std::find_if(deleted.constBegin(), deleted.constEnd(),
+                         [exception] (const KCalendarCore::Incidence::Ptr &it) {
+                             return (it->uid() == exception->uid() && it->recurrenceId() == exception->recurrenceId());
+                         }) != deleted.constEnd());
+
+    QVERIFY(m_storage->deleteNotebook(m_storage->notebook(notebook->uid())));
+}
+
 // Test various way of describing all day events in iCal format.
 void tst_storage::tst_icalAllDay_data()
 {

@@ -1390,12 +1390,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
-        } else  if (dbop == DBInsert) {
-            // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it)) {
-                qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
-                errors += 1;
-            }
         }
     }
 

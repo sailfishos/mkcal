@@ -124,7 +124,7 @@ public:
 
     bool updateMetadata(int transactionId);
     bool selectCustomproperties(Incidence::Ptr &incidence, int rowid);
-    int selectRowId(Incidence::Ptr incidence);
+    int selectRowId(Incidence::Ptr incidence, QString *notebookUid);
     bool selectRecursives(Incidence::Ptr &incidence, int rowid);
     bool selectAlarms(Incidence::Ptr &incidence, int rowid);
     bool selectAttendees(Incidence::Ptr &incidence, int rowid);
@@ -403,15 +403,38 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     sqlite3_int64 secs;
     int rowid = 0;
     sqlite3_stmt *stmt1;
+    QString oldNotebook;
 
     if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
-        rowid = d->selectRowId(incidence);
+        rowid = d->selectRowId(incidence, &oldNotebook);
         if (!rowid && dbop == DBDelete) {
             // Already deleted.
             return true;
         } else if (!rowid) {
             qCWarning(lcMkcal) << "failed to select rowid of incidence" << incidence->uid() << incidence->recurrenceId();
-            goto error;
+            return false;
+        }
+    }
+
+    if (dbop == DBInsert || (oldNotebook != nbook && dbop == DBUpdate)) {
+        qCDebug(lcMkcal) << "purge all previously deleted components before"
+            "inserting or changing notebook for" << incidence->uid();
+        if (!purgeDeletedComponents(incidence)) {
+            qCWarning(lcMkcal) << "cannot purge deleted components on insert or notebook change.";
+            return false;
+        }
+    }
+
+    if (oldNotebook != nbook && dbop == DBUpdate) {
+        qCDebug(lcMkcal) << "changing notebook from" << oldNotebook << "to" << nbook;
+        if (!modifyComponents(incidence, oldNotebook, DBMarkDeleted)) {
+            qCWarning(lcMkcal) << "failed to mark incidence" << incidence->uid()
+                               << incidence->recurrenceId() << "as deleted for notebook change";
+            return false;
+        } else {
+            // Incidence belonging to the old notebook has been marked
+            // as deleted. Now insert incidence as new within the new notebook.
+            dbop = DBInsert;
         }
     }
 
@@ -458,7 +481,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
         break;
     default:
         qCWarning(lcMkcal) << "unknown DB operation" << dbop;
-        goto error;
+        return false;
     }
 
     if (dbop == DBInsert || dbop == DBUpdate) {
@@ -479,7 +502,8 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
             type = "FreeBusy";
             break;
         case Incidence::TypeUnknown:
-            goto error;
+            qCWarning(lcMkcal) << "unknown incidence type" << incidence->type();
+            return false;
         }
         SL3_bind_text(stmt1, index, type.constData(), type.length(), SQLITE_STATIC);   // NOTE
 
@@ -661,6 +685,7 @@ bool SqliteFormat::modifyComponents(const Incidence::Ptr &incidence, const QStri
     return true;
 
 error:
+    qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(d->mDatabase);
     return false;
 }
 
@@ -1639,7 +1664,7 @@ error:
 }
 
 //@cond PRIVATE
-int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
+int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence, QString *notebookUid)
 {
     int rv = 0;
     int index = 1;
@@ -1651,8 +1676,8 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
     qint64 secsRecurId;
     int rowid = 0;
 
-    query = SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID;
-    qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID);
+    query = SELECT_ROWID_NOTEBOOKID_FROM_COMPONENTS_BY_UID_AND_RECURID;
+    qsize = sizeof(SELECT_ROWID_NOTEBOOKID_FROM_COMPONENTS_BY_UID_AND_RECURID);
 
     SL3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
     u = incidence->uid().toUtf8();
@@ -1672,10 +1697,12 @@ int SqliteFormat::Private::selectRowId(Incidence::Ptr incidence)
 
     if (rv == SQLITE_ROW) {
         rowid = sqlite3_column_int(stmt, 0);
+        if (notebookUid) {
+            *notebookUid = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
+        }
     }
 
 error:
-    sqlite3_reset(stmt);
     sqlite3_finalize(stmt);
 
     return rowid;

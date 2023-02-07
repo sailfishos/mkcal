@@ -441,8 +441,8 @@ private:
 "select * from Components where UID=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
-#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
-"select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
+#define SELECT_ROWID_NOTEBOOKID_FROM_COMPONENTS_BY_UID_AND_RECURID \
+"select ComponentId, notebook from Components where UID=? and RecurId=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
 "select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_DATE \
