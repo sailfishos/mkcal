@@ -211,6 +211,12 @@ public:
 
     /**
       @copydoc
+      ExtendedStorage::search()
+    */
+    bool search(const QString &key, QStringList *identifiers, int limit = 0);
+
+    /**
+      @copydoc
       ExtendedStorage::incidenceDeletedDate()
     */
     QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence);

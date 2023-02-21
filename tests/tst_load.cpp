@@ -41,6 +41,7 @@ private slots:
     void testByDate();
     void testRange();
     void testRange_data();
+    void testSearch();
 
 private:
     ExtendedStorage::Ptr mStorage;
@@ -383,6 +384,56 @@ void tst_load::testRange()
         QCOMPARE(lStart, loadStart);
         QCOMPARE(lEnd, loadEnd);
     }
+}
+
+void tst_load::testSearch()
+{
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    event->setSummary(QString::fromLatin1("Test summary with string 'azerty_'\\ %plop"));
+    QVERIFY(mStorage->calendar()->addEvent(event));
+    KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
+    event2->setDtStart(QDateTime(QDate(2023,2,27), QTime(8, 41), Qt::UTC));
+    event2->setSummary(QString::fromLatin1("Test summary with string 'azertyu'\\ fooplop"));
+    event2->recurrence()->setDaily(1);
+    QVERIFY(mStorage->calendar()->addEvent(event2));
+    KCalendarCore::Incidence::Ptr exception =
+        KCalendarCore::Calendar::createException(event2, event2->dtStart().addDays(2));
+    exception->setSummary(QString::fromLatin1("Test exception with string 'azerty_'\\ %plop"));
+    QVERIFY(mStorage->calendar()->addIncidence(exception));
+    KCalendarCore::Event::Ptr event3(new KCalendarCore::Event);
+    event3->setDescription(QString::fromLatin1("Test description with string 'azerty_'\\ %plop"));
+    QVERIFY(mStorage->calendar()->addEvent(event3));
+    KCalendarCore::Event::Ptr event4(new KCalendarCore::Event);
+    event4->setLocation(QString::fromLatin1("Test location with string 'azerty_'\\ %plop"));
+    QVERIFY(mStorage->calendar()->addEvent(event4));
+    QVERIFY(mStorage->save());
+
+    ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::utc()));
+    ExtendedStorage::Ptr storage = ExtendedCalendar::defaultStorage(calendar);
+    QVERIFY(storage->open());
+
+    QVERIFY(calendar->events().isEmpty());
+
+    QStringList identifiers;
+    QVERIFY(storage->search(QString::fromLatin1("AzErTy_'\\ %p"), &identifiers));
+    // Return exact matching occurrences.
+    QVERIFY(identifiers.contains(event->instanceIdentifier()));
+    QVERIFY(!identifiers.contains(event2->instanceIdentifier()));
+    QVERIFY(identifiers.contains(exception->instanceIdentifier()));
+    QVERIFY(identifiers.contains(event3->instanceIdentifier()));
+    QVERIFY(identifiers.contains(event4->instanceIdentifier()));
+    // Load all matching incidences, including non matching parents.
+    QVERIFY(calendar->incidence(event->uid()));
+    QVERIFY(calendar->incidence(event2->uid()));
+    QVERIFY(calendar->incidence(exception->uid(), exception->recurrenceId()));
+    QVERIFY(calendar->incidence(event3->uid()));
+    QVERIFY(calendar->incidence(event4->uid()));
+
+    QVERIFY(mStorage->calendar()->deleteIncidence(event));
+    QVERIFY(mStorage->calendar()->deleteIncidence(event2));
+    QVERIFY(mStorage->calendar()->deleteIncidence(event3));
+    QVERIFY(mStorage->calendar()->deleteIncidence(event4));
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
 
 #include "tst_load.moc"

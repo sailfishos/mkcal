@@ -452,6 +452,9 @@ private:
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
 "select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
 
+#define SEARCH_COMPONENTS \
+"select * from Components where summary like ? escape '\\' or description like ? escape '\\' or location like ? escape '\\' order by datestart desc"
+
 #define UNSET_FLAG_FROM_CALENDAR \
 "update Calendars set Flags=(Flags & (~?))"
 
