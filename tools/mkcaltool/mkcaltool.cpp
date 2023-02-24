@@ -37,7 +37,7 @@ int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
     mKCal::ExtendedCalendar::Ptr cal(new mKCal::ExtendedCalendar(QTimeZone::systemTimeZone()));
     mKCal::ExtendedStorage::Ptr storage = cal->defaultStorage(cal);
     storage->open();
-    if (!storage->loadSeries(eventUid)) {
+    if (!storage->load(eventUid)) {
         qWarning() << "Unable to load event" << eventUid << "from notebook" << notebookUid;
         return 1;
     }
