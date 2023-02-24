@@ -332,6 +332,20 @@ void ExtendedStorage::setIsGeoCreatedLoaded(bool loaded)
     d->mIsGeoCreatedLoaded = loaded;
 }
 
+bool ExtendedStorage::loadSeries(const QString &uid)
+{
+    qCWarning(lcMkcal) << "deprecated call to loadSeries(), use load() instead.";
+    return load(uid);
+}
+
+bool ExtendedStorage::load(const QString &uid, const QDateTime &recurrenceId)
+{
+    Q_UNUSED(recurrenceId);
+
+    qCWarning(lcMkcal) << "deprecated call to load(uid, recid), use load(uid) instead.";
+    return load(uid);
+}
+
 void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
                                               const QString &info)
 {

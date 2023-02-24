@@ -139,6 +139,7 @@ public:
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     int loadIncidences(sqlite3_stmt *stmt1,
+                       bool loadRecurringIncidences = false,
                        int limit = -1, QDateTime *last = NULL, bool useDate = false,
                        bool ignoreEnd = false);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
@@ -366,55 +367,7 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::load(const QString &uid, const QDateTime &recurrenceId)
-{
-    if (!d->mDatabase) {
-        return false;
-    }
-
-    int rv = 0;
-    int count = -1;
-    d->mIsLoading = true;
-
-    const char *query1 = NULL;
-    int qsize1 = 0;
-
-    sqlite3_stmt *stmt1 = NULL;
-    int index = 1;
-    QByteArray u;
-    qint64 secsRecurId;
-
-    if (!uid.isEmpty()) {
-        query1 = SELECT_COMPONENTS_BY_UID_AND_RECURID;
-        qsize1 = sizeof(SELECT_COMPONENTS_BY_UID_AND_RECURID);
-
-        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
-        u = uid.toUtf8();
-        SL3_bind_text(stmt1, index, u.constData(), u.length(), SQLITE_STATIC);
-        if (recurrenceId.isValid()) {
-            if (recurrenceId.timeSpec() == Qt::LocalTime) {
-                secsRecurId = d->mFormat->toLocalOriginTime(recurrenceId);
-            } else {
-                secsRecurId = d->mFormat->toOriginTime(recurrenceId);
-            }
-            SL3_bind_int64(stmt1, index, secsRecurId);
-        } else {
-            // no recurrenceId, bind NULL
-            // note that sqlite3_bind_null doesn't seem to work here
-            // also note that sqlite should bind NULL automatically if nothing
-            // is bound, but that doesn't work either
-            SL3_bind_int64(stmt1, index, 0);
-        }
-
-        count = d->loadIncidences(stmt1);
-    }
-error:
-    d->mIsLoading = false;
-
-    return count >= 0;
-}
-
-bool SqliteStorage::loadSeries(const QString &uid)
+bool SqliteStorage::load(const QString &uid)
 {
     if (!d->mDatabase) {
         return false;
@@ -570,28 +523,26 @@ error:
 bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
 {
     QString uid;
-    QDateTime recId;
     // At the moment, from KCalendarCore, if the instance is an exception,
     // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
     // This is tested in tst_loadIncidenceInstance() to ensure that any
     // future breakage would be properly detected.
     if (instanceIdentifier.endsWith('Z')) {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
-        recId = QDateTime::fromString(instanceIdentifier.right(20), Qt::ISODate);
     } else if (instanceIdentifier.length() > 19
                && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
-        recId = QDateTime::fromString(instanceIdentifier.right(19), Qt::ISODate);
     } else if (instanceIdentifier.length() > 25
                && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
         uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
-        recId = QDateTime::fromString(instanceIdentifier.right(25), Qt::ISODate);
-    }
-    if (!recId.isValid()) {
+    } else {
         uid = instanceIdentifier;
     }
 
-    return load(uid, recId);
+    // Even if we're looking for a specific incidence instance, we load all
+    // the series for recurring event, to avoid orphaned exceptions in the
+    // calendar or recurring events without their exceptions.
+    return load(uid);
 }
 
 bool SqliteStorage::loadJournals()
@@ -705,7 +656,7 @@ bool SqliteStorage::loadGeoIncidences()
 
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
-    count = d->loadIncidences(stmt1);
+    count = d->loadIncidences(stmt1, true);
 
 error:
     d->mIsLoading = false;
@@ -739,7 +690,7 @@ bool SqliteStorage::loadGeoIncidences(float geoLatitude, float geoLongitude,
     SL3_bind_int64(stmt1, index, geoLatitude + diffLatitude);
     SL3_bind_int64(stmt1, index, geoLongitude + diffLongitude);
 
-    count = d->loadIncidences(stmt1);
+    count = d->loadIncidences(stmt1, true);
 
 error:
     d->mIsLoading = false;
@@ -767,7 +718,7 @@ bool SqliteStorage::loadAttendeeIncidences()
 
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
-    count = d->loadIncidences(stmt1);
+    count = d->loadIncidences(stmt1, true);
 
 error:
     d->mIsLoading = false;
@@ -799,7 +750,7 @@ int SqliteStorage::loadUncompletedTodos()
 
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
 
-    count = d->loadIncidences(stmt1);
+    count = d->loadIncidences(stmt1, true);
 
     setIsUncompletedTodosLoaded(count >= 0);
 
@@ -851,7 +802,7 @@ int SqliteStorage::loadCompletedTodos(bool hasDate, int limit, QDateTime *last)
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, hasDate);
+    count = d->loadIncidences(stmt1, true, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -896,7 +847,7 @@ int SqliteStorage::loadJournals(int limit, QDateTime *last)
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, true);
+    count = d->loadIncidences(stmt1, true, limit, last, true);
 
     if (count >= 0 && count < limit) {
         setIsJournalsLoaded(true);
@@ -948,7 +899,7 @@ int SqliteStorage::loadIncidences(bool hasDate, int limit, QDateTime *last)
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, hasDate);
+    count = d->loadIncidences(stmt1, true, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -996,7 +947,7 @@ int SqliteStorage::loadFutureIncidences(int limit, QDateTime *last)
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, true, true);
+    count = d->loadIncidences(stmt1, true, limit, last, true, true);
 
     if (count >= 0 && count < limit) {
         setIsFutureDateLoaded(true);
@@ -1049,7 +1000,7 @@ int SqliteStorage::loadGeoIncidences(bool hasDate, int limit, QDateTime *last)
     SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, hasDate);
+    count = d->loadIncidences(stmt1, true, limit, last, hasDate);
 
     if (count >= 0 && count < limit) {
         if (hasDate) {
@@ -1116,7 +1067,7 @@ int SqliteStorage::loadContactIncidences(const Person &person, int limit, QDateT
     }
     SL3_bind_int64(stmt1, index, secsStart);
 
-    count = d->loadIncidences(stmt1, limit, last, false);
+    count = d->loadIncidences(stmt1, true, limit, last, false);
 
 error:
     d->mIsLoading = false;
@@ -1176,6 +1127,7 @@ bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const
 }
 
 int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
+                                           bool loadRecurringIncidences,
                                            int limit, QDateTime *last,
                                            bool useDate,
                                            bool ignoreEnd)
@@ -1184,6 +1136,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     Incidence::Ptr incidence;
     QDateTime previous, date;
     QString notebookUid;
+    QSet<QString> recurringUids;
 
     if (!mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
@@ -1216,6 +1169,10 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
             // qCDebug(lcMkcal) << "updating incidence" << incidence->uid()
             //                  << incidence->dtStart() << endDateTime
             //                  << "in calendar";
+            if (loadRecurringIncidences
+                && (incidence->recurs() || incidence->hasRecurrenceId())) {
+                recurringUids.insert(incidence->uid());
+            }
             count += 1;
         }
     }
@@ -1224,6 +1181,31 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1,
     }
 
     sqlite3_finalize(stmt1);
+
+    if (recurringUids.count() > 0) {
+        // Additionally load any exception or parent to ensure calendar
+        // consistency.
+        int rv = 0;
+        sqlite3_stmt *loadByUid = NULL;
+        const char *query1 = NULL;
+        int qsize1 = 0;
+        query1 = SELECT_COMPONENTS_BY_UID;
+        qsize1 = sizeof(SELECT_COMPONENTS_BY_UID);
+        SL3_prepare_v2(mDatabase, query1, qsize1, &loadByUid, NULL);
+
+        for (const QString &uid : const_cast<const QSet<QString>&>(recurringUids)) {
+            int index = 1;
+            QByteArray u = uid.toUtf8();
+            SL3_reset(loadByUid);
+            SL3_bind_text(loadByUid, index, u.constData(), u.length(), SQLITE_STATIC);
+            while ((incidence = mFormat->selectComponents(stmt1, notebookUid))) {
+                addIncidence(incidence, notebookUid);
+            }
+        }
+
+    error:
+        sqlite3_finalize(loadByUid);
+    }
 
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();

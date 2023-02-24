@@ -122,13 +122,38 @@ public:
     virtual bool load() = 0;
 
     /**
-      Load incidence by uid into the memory.
+      Load all incidences sharing the same uid into the memory.
 
-      @param uid is uid of incidence
-      @param recurrenceid is recurrenceid of incidence, default null
+      @param uid is uid of the series
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QString &uid, const QDateTime &recurrenceId = QDateTime()) = 0;
+    virtual bool load(const QString &uid) = 0;
+
+    /**
+      Load all incidences sharing the same uid into the memory.
+
+      Deprecated call, equivalent to calling load(const QString &uid).
+
+      @param uid is uid of the series
+      @return true if the load was successful; false otherwise.
+    */
+    bool loadSeries(const QString &uid);
+
+    /**
+      Load incidence by uid/recid into the memory.
+
+      This method is deprecated since it may populate calendars
+      with orphaned exceptions, or recurring event without
+      their exceptions.
+
+      Use load(const QString &uid) which ensures for
+      recurring incidences to also get their exceptions.
+
+      @param uid is uid of incidence
+      @param recurrenceid is recurrenceid of incidence
+      @return true if the load was successful; false otherwise.
+    */
+    bool load(const QString &uid, const QDateTime &recurrenceId);
 
     /**
       Load incidences at given date into the memory. All incidences that
@@ -155,14 +180,6 @@ public:
       @return true if the load was successful; false otherwise.
     */
     virtual bool load(const QDate &start, const QDate &end) = 0;
-
-    /**
-      Load all incidences sharing the same uid into the memory.
-
-      @param uid is uid of the series
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadSeries(const QString &uid) = 0;
 
     /**
       Load the incidence matching the given identifier. This method may be

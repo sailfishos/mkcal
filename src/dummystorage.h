@@ -100,7 +100,7 @@ public:
     {
         return true;
     }
-    bool load(const QString &, const QDateTime &)
+    bool load(const QString &)
     {
         return true;
     }
@@ -109,10 +109,6 @@ public:
         return true;
     }
     bool load(const QDate &, const QDate &)
-    {
-        return true;
-    }
-    bool loadSeries(const QString &)
     {
         return true;
     }

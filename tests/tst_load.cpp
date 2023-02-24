@@ -39,6 +39,7 @@ private slots:
     void testSeries();
     void testByInstanceIdentifier();
     void testByDate();
+    void testByAttendee();
     void testRange();
     void testRange_data();
 
@@ -129,15 +130,17 @@ void tst_load::testById()
 
     QVERIFY(calendar->events().isEmpty());
 
-    QVERIFY(storage->load(occurrence->uid(), occurrence->recurrenceId()));
-    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(storage->load(occurrence->uid()));
+    QCOMPARE(calendar->events().length(), 2);
     occurrence = calendar->event(occurrence->uid(),
                                  occurrence->recurrenceId());
     QVERIFY(occurrence);
     QVERIFY(calendar->deleteIncidence(occurrence));
-    QVERIFY(calendar->events().isEmpty());
-    QVERIFY(storage->load(occurrence->uid(), occurrence->recurrenceId()));
-    QVERIFY(calendar->events().isEmpty());
+    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(!calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
+    QVERIFY(storage->load(occurrence->uid()));
+    QCOMPARE(calendar->events().length(), 1);
+    QVERIFY(!calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
 
     QVERIFY(storage->load(event->uid()));
     QCOMPARE(calendar->events().length(), 1);
@@ -178,12 +181,12 @@ void tst_load::testSeries()
 
     QVERIFY(calendar->events().isEmpty());
 
-    QVERIFY(storage->loadSeries(event->uid()));
+    QVERIFY(storage->load(event->uid()));
     QCOMPARE(calendar->events().length(), 2);
     QVERIFY(calendar->incidence(event->uid()));
     QVERIFY(calendar->incidence(occurrence->uid(), occurrence->recurrenceId()));
 
-    QVERIFY(storage->loadSeries(single->uid()));
+    QVERIFY(storage->load(single->uid()));
     QCOMPARE(calendar->events().length(), 3);
     QVERIFY(calendar->incidence(single->uid()));
 
@@ -302,6 +305,33 @@ void tst_load::testByDate()
     QVERIFY(mStorage->calendar()->deleteIncidence(event4));
     QVERIFY(mStorage->calendar()->deleteIncidence(event3));
     QVERIFY(mStorage->calendar()->deleteIncidence(event2));
+    QVERIFY(mStorage->calendar()->deleteIncidence(event));
+    QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
+}
+
+void tst_load::testByAttendee()
+{
+    KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
+    event->setDtStart(QDateTime(QDate(2023,2,2), QTime(15, 35), Qt::UTC));
+    event->addAttendee(KCalendarCore::Attendee(QString::fromLatin1("Alice"),
+                                               QString::fromLatin1("alice@example.org")));
+    event->recurrence()->setDaily(1);
+    QVERIFY(mStorage->calendar()->addEvent(event));
+    KCalendarCore::Incidence::Ptr exception = KCalendarCore::Calendar::createException(event, event->dtStart().addDays(2));
+    exception->clearAttendees();
+    QVERIFY(mStorage->calendar()->addIncidence(exception));
+    QVERIFY(mStorage->save());
+
+    ExtendedCalendar::Ptr calendar(new ExtendedCalendar(QTimeZone::utc()));
+    ExtendedStorage::Ptr storage = ExtendedCalendar::defaultStorage(calendar);
+    QVERIFY(storage->open());
+
+    QVERIFY(calendar->events().isEmpty());
+
+    QVERIFY(storage->loadAttendeeIncidences());
+    QVERIFY(calendar->incidence(event->uid()));
+    QVERIFY(calendar->incidence(exception->uid(), exception->recurrenceId()));
+
     QVERIFY(mStorage->calendar()->deleteIncidence(event));
     QVERIFY(mStorage->save(ExtendedStorage::PurgeDeleted));
 }
