@@ -289,9 +289,15 @@ void tst_storage::tst_recurrence()
     QCOMPARE(match, event->dtStart().addDays(1));
 }
 
-static ExtendedCalendar::ExpandedIncidenceList rawExpandedIncidences(const KCalendarCore::Calendar &calendar, const QDateTime &start, const QDateTime &end)
+typedef struct ExpandedIncidenceValidity {
+        QDateTime dtStart;
+        QDateTime dtEnd;
+} ExpandedIncidenceValidity;
+typedef QPair<ExpandedIncidenceValidity, KCalendarCore::Incidence::Ptr> ExpandedIncidence;
+typedef QVector<ExpandedIncidence> ExpandedIncidenceList;
+static ExpandedIncidenceList rawExpandedIncidences(const KCalendarCore::Calendar &calendar, const QDateTime &start, const QDateTime &end)
 {
-    ExtendedCalendar::ExpandedIncidenceList eventList;
+    ExpandedIncidenceList eventList;
 
     KCalendarCore::OccurrenceIterator it(calendar, start, end);
     while (it.hasNext()) {
@@ -302,7 +308,7 @@ static ExtendedCalendar::ExpandedIncidenceList rawExpandedIncidences(const KCale
                 enlapsed(it.incidence()->dateTime(KCalendarCore::Incidence::RoleDisplayStart),
                          it.incidence()->dateTime(KCalendarCore::Incidence::RoleDisplayEnd),
                          KCalendarCore::Duration::Seconds);
-            const ExtendedCalendar::ExpandedIncidenceValidity eiv = {sdt, enlapsed.end(sdt)};
+            const ExpandedIncidenceValidity eiv = {sdt, enlapsed.end(sdt)};
             eventList.append(qMakePair(eiv, it.incidence()));
         }
     }
@@ -463,7 +469,7 @@ void tst_storage::tst_recurrenceExpansion()
     QDateTime match = fetchEvent->recurrence()->getNextDateTime(event->dtStart());
     QCOMPARE(match, event->dtStart().addDays(3)); // skip the weekend
 
-    mKCal::ExtendedCalendar::ExpandedIncidenceList expandedEvents
+    ExpandedIncidenceList expandedEvents
         = rawExpandedIncidences(*m_calendar, QDateTime(QDate(2019, 11, 05)),
                                 QDateTime(QDate(2019, 11, 18), QTime(23, 59, 59)));
 
@@ -779,7 +785,7 @@ void tst_storage::tst_rawEvents()
     QCOMPARE(fetchRecurrence->allDay(), recurrence->allDay());
 
     // should return occurrence for expected days and omit exceptions
-    mKCal::ExtendedCalendar::ExpandedIncidenceList events
+    ExpandedIncidenceList events
         = rawExpandedIncidences(*m_calendar, QDateTime(date),
                                 QDateTime(date.addDays(3), QTime(23, 59, 59)));
 
@@ -1092,7 +1098,7 @@ void tst_storage::tst_rawEvents_nonRecur()
         QCOMPARE(fetchEvent->dtEnd(), QDateTime(endDate, endTime, Qt::LocalTime));
     }
 
-    mKCal::ExtendedCalendar::ExpandedIncidenceList events
+    ExpandedIncidenceList events
         = rawExpandedIncidences(*m_calendar, QDateTime(rangeStartDate),
                                 QDateTime(rangeEndDate, QTime(23, 59, 59)));
 
@@ -1627,14 +1633,10 @@ void tst_storage::tst_deleteAllEvents()
 
     QVERIFY(cal->addIncidence(ev));
     QCOMPARE(cal->incidences().count(), 1);
-    QCOMPARE(cal->geoIncidences().count(), 1);
-    QCOMPARE(cal->attendees().count(), 1);
     QCOMPARE(cal->rawEventsForDate(ev->dtStart().date()).count(), 1);
 
     cal->deleteAllIncidences();
     QVERIFY(cal->incidences().isEmpty());
-    QVERIFY(cal->geoIncidences().isEmpty());
-    QVERIFY(cal->attendees().isEmpty());
     QVERIFY(cal->rawEventsForDate(ev->dtStart().date()).isEmpty());
 }
 

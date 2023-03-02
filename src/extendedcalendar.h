@@ -209,19 +209,6 @@ class MKCAL_EXPORT ExtendedCalendar : public KCalendarCore::MemoryCalendar
 {
 public:
     /**
-      Incidence sort keys.
-      See calendar.h for Event, Todo or Journal specific sorts.
-    */
-    enum IncidenceSortField {
-        IncidenceSortUnsorted,   /**< Do not sort Incidences */
-        IncidenceSortDate,       /**< Sort Incidence chronologically,
-                                  Events by start date,
-                                  Todos by due date,
-                                  Journals by date */
-        IncidenceSortCreated     /* < Sort Incidences based on creation time */
-    };
-
-    /**
       A shared pointer to a ExtendedCalendar
     */
     typedef QSharedPointer<ExtendedCalendar> Ptr;
@@ -255,22 +242,6 @@ public:
       Calendar::save()
     */
     bool save();
-
-    /**
-      @copydoc
-      Calendar::close()
-    */
-    void close();
-
-     /**
-      Creates an ICalTimeZone instance and adds it to calendar's ICalTimeZones
-      collection or returns an existing instance for the MSTimeZone component.
-
-      @param tz the MSTimeZone structure to parse
-
-      @see ICalTimeZoneSource::parse( MSTimeZone *, ICalTimeZones & )
-    */
-    /* KCalendarCore::ICalTimeZone parseZone(KCalendarCore::MSTimeZone *tz); */
 
     /**
       Dissociate only one single Incidence from a recurring Incidence.
@@ -336,19 +307,6 @@ public:
       both. The deleting in the second one will fail.
     */
     bool deleteEvent(const KCalendarCore::Event::Ptr &event);
-
-    /**
-      Returns the earliest date after @a date on which an event occurs, or an invalid date if
-      there is no next date.
-     */
-    QDate nextEventsDate(const QDate &, const QTimeZone &timespec = QTimeZone());
-
-    /**
-      Returns the latest date before @a date on which an event occurs, or an invalid date if
-      there is no previous date.
-     */
-    QDate previousEventsDate(const QDate &, const QTimeZone &timespec = QTimeZone());
-
 
     // To-do Specific Methods //
 
@@ -426,57 +384,6 @@ public:
         bool inclusive = false) const;
 
     /**
-      Notify the IncidenceBase::Observer that the incidence will be updated.
-
-      @param uid to the Incidence to be updated.
-    */
-    void incidenceUpdate(const QString &uid, const QDateTime &recurrenceId);
-
-    /**
-      Notify the IncidenceBase::Observer that the incidence has been updated.
-
-      @param uid to the Incidence just updated.
-    */
-    void incidenceUpdated(const QString &uid, const QDateTime &recurrenceId);
-
-    // Incidence Specific Methods, also see Calendar.h for more //
-
-    /**
-      List all attendees currently in the memory.
-      Attendees are persons that are associated to calendar incidences.
-
-      @return list of attendees
-    */
-    QStringList attendees();
-
-    /**
-      List all attendee related incidences.
-
-      @param email attendee email address
-      @return list of incidences for the attendee
-    */
-    KCalendarCore::Incidence::List attendeeIncidences(const QString &email);
-
-    /**
-      List all incidences with geographic information in the memory.
-
-      @return list of incidences
-    */
-    KCalendarCore::Incidence::List geoIncidences();
-
-    /**
-      List incidences with geographic information in the memory.
-
-      @param geoLatitude latitude center
-      @param geoLongitude longitude center
-      @param diffLatitude maximum latitudinal difference
-      @param diffLongitude maximum longitudinal difference
-      @return list of incidences
-    */
-    KCalendarCore::Incidence::List geoIncidences(float geoLatitude, float geoLongitude,
-                                            float diffLatitude, float diffLongitude);
-
-    /**
       Returns a filtered list of all Incidences which occur on the given date.
 
       @param date request filtered Incidence list for this QDate only.
@@ -492,98 +399,6 @@ public:
       database when save is called.
     */
     void deleteAllIncidences();
-
-    /**
-      Sort a list of Incidences.
-
-      @param list is a pointer to a list of Incidences.
-      @param sortField specifies the IncidenceSortField (see this header).
-      @param sortDirection specifies the KCalendarCore::SortDirection (see calendar.h).
-
-      @return a list of Incidences sorted as specified.
-    */
-    static KCalendarCore::Incidence::List sortIncidences(
-        KCalendarCore::Incidence::List *list,
-        IncidenceSortField sortField = IncidenceSortDate,
-        KCalendarCore::SortDirection sortDirection = KCalendarCore::SortDirectionAscending);
-
-    /**
-       Single expanded incidence validity struct.  The first field contains the
-       time in local timezone when the (recurrent) incidence starts.
-       The second field contains time in local timezone when the (recurrent) incidence ends.
-    */
-    typedef struct ExpandedIncidenceValidity {
-        QDateTime dtStart;
-        QDateTime dtEnd;
-    } ExpandedIncidenceValidity;
-
-    /**
-       Single expanded incidence tuple.  The first field contains the
-       time in local timezone when the (recurrent) incidence starts.
-       The second field contains a pointer to the actual Incidence
-       instance.
-    */
-    typedef QPair<ExpandedIncidenceValidity, KCalendarCore::Incidence::Ptr> ExpandedIncidence;
-
-    /**
-       List of ExpandedIncidences.
-    */
-    typedef QVector<ExpandedIncidence> ExpandedIncidenceList;
-    typedef QVectorIterator<ExpandedIncidence> ExpandedIncidenceIterator;
-
-    /**
-      Expand recurring incidences in a list.
-
-      The returned list contains ExpandedIncidence QPairs which
-      contain both the time of the incidence, as well as pointer to
-      the incidence itself.
-
-      @param list is a pointer to a list of Incidences.
-      @param start start time for expansion+filtering
-      @param end end time for expansion+filtering
-      @param maxExpand maximum expanded entries per incidence
-      @param expandLimitHit (if available) is set to true if and only
-      if we hit maxExpand when expanding some incidence
-
-      @return a list of ExpandedIncidences sorted by start time (the
-      first item in the ExpandedIncidence tuple) in ascending order.
-    */
-    ExpandedIncidenceList expandRecurrences(KCalendarCore::Incidence::List *list,
-                                            const QDateTime &start,
-                                            const QDateTime &end,
-                                            int maxExpand = 1000,
-                                            bool *expandLimitHit = 0);
-
-    /**
-      Expand multiday incidences in a list.
-
-      This call expands the multiday events within the given list so
-      that there's an event for each day. The start and end parameters
-      are used for filtering for the expansion filtering range, and
-      days falling outside the [startDate, endDate] range won't be
-      expanded.
-
-      Note that both startDate and endDate are optional, and if so,
-      'as much as contained within the individual incidences' will be
-      expanded.
-
-      @param list is a pointer to a list of Incidences.
-      @param startDate start date for expansion+filtering
-      @param endDate end date for expansion+filtering
-      @param maxExpand maximum number of days single multiday event
-      instance can be expanded into
-      @param merge whether the results should be merged to the list or not.
-      @return a list of ExpandedIncidences sorted by start time in
-      ascending order. The list may contain the initial parameter list
-      if merge is true, or only the bonus multiday incidences if merge
-      is false.
-     */
-    ExpandedIncidenceList expandMultiDay(const ExpandedIncidenceList &list,
-                                         const QDate &startDate,
-                                         const QDate &endDate,
-                                         int maxExpand = 1000,
-                                         bool merge = true,
-                                         bool *expandLimitHit = 0);
 
     using KCalendarCore::Calendar::incidences;
 
@@ -610,85 +425,6 @@ public:
     static QSharedPointer<ExtendedStorage> defaultStorage(const ExtendedCalendar::Ptr
                                                           &calendar);   //No typedef to avoid cyclic includes
 
-    // Smart Loading Methods, see ExtendedStorage.h for more //
-
-    /**
-      Get all uncompleted todos. Todos may or may not have due date and
-      they may or may not have geo location.
-
-      @param hasDate true to get todos that have due date
-      @param hasGeo value -1 = don't care, 0 = no geo, 1 = geo defined
-      @return list of uncompleted todos
-    */
-    KCalendarCore::Todo::List uncompletedTodos(bool hasDate, int hasGeo);
-
-    /**
-      Get completed todos between given time.
-
-      @param hasDate true to get todos that have due date
-      @param hasGeo value -1 = don't care, 0 = no geo, 1 = geo defined
-      @param start start datetime
-      @param end end datetime
-      @return list of completed todos
-    */
-    KCalendarCore::Todo::List completedTodos(bool hasDate, int hasGeo,
-                                        const QDateTime &start, const QDateTime &end);
-
-    /**
-      Get incidences based on start/due dates or creation dates.
-
-      @param hasDate true to get incidences that have due/start date
-      @param start start datetime
-      @param end end datetime
-      @return list of incidences
-    */
-    KCalendarCore::Incidence::List incidences(bool hasDate, const QDateTime &start,
-                                         const QDateTime &end);
-
-    /**
-      Get incidences that have geo location defined.
-
-      @param hasDate true to get incidences that have due/start date
-      @param start start datetime
-      @param end end datetime
-      @return list of geo incidences
-    */
-    KCalendarCore::Incidence::List geoIncidences(bool hasDate, const QDateTime &start,
-                                            const QDateTime &end);
-
-    /**
-      Get all incidences that have unread invitation status.
-
-      @param person if given only for this person
-      @return list of unread incidences
-      @see IncidenceBase::setInvitationStatus()
-    */
-    KCalendarCore::Incidence::List unreadInvitationIncidences(
-        const KCalendarCore::Person &person = KCalendarCore::Person());
-
-    /**
-      Get incidences that have read/sent invitation status.
-
-      @param start start datetime
-      @param end end datetime
-      @return list of old incidences
-      @see IncidenceBase::setInvitationStatus()
-    */
-    KCalendarCore::Incidence::List oldInvitationIncidences(const QDateTime &start,
-                                                      const QDateTime &end);
-
-    /**
-      Get incidences related to given contact. Relation is determined
-      by the email address of the person, name doesn't matter.
-
-      @param person for this person
-      @param start start datetime
-      @param end end datetime
-      @return list of related incidences
-    */
-    KCalendarCore::Incidence::List contactIncidences(const KCalendarCore::Person &person,
-                                                const QDateTime &start, const QDateTime &end);
-
     using KCalendarCore::Calendar::journals;
 
     /**
@@ -699,21 +435,6 @@ public:
       @return list of journals
     */
     KCalendarCore::Journal::List journals(const QDate &start, const QDate &end);
-
-    /**
-      Add incidences into calendar from a list of Incidences.
-
-      @param list is a pointer to a list of Incidences.
-      @param notebookUid is uid of notebook of all incidences in list
-      @param duplicateRemovalEnabled default value true
-      if true and duplicates are found duplicates are deleted and new incidence is added
-      if false and duplicates are found new incidence is ignored
-
-      @return a list of Incidences added into calendar memory.
-    */
-    KCalendarCore::Incidence::List addIncidences(KCalendarCore::Incidence::List *list,
-                                            const QString &notebookUid,
-                                            bool duplicateRemovalEnabled = true);
 
     /**
           Return the count of event incidences.
