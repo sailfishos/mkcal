@@ -274,10 +274,10 @@ public:
     bool addIncidence(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebookUid);
 
     /**
-      @copydoc
-      Calendar::deleteIncidence()
+      Delete all incidences from the memory cache. They will be deleted from
+      database when save is called.
     */
-    bool deleteIncidence(const KCalendarCore::Incidence::Ptr &incidence);
+    void deleteAllIncidences();
 
     // Event Specific Methods //
 
@@ -298,16 +298,6 @@ public:
     */
     bool addEvent(const KCalendarCore::Event::Ptr &event, const QString &notebookUid);
 
-    /**
-      @copydoc
-      Calendar::deleteEvent()
-
-      @warning This call deletes based on the pointer given, and it is using QSharedPointer
-      so if you have to Calendars with the same event, the pointer isn't the same for
-      both. The deleting in the second one will fail.
-    */
-    bool deleteEvent(const KCalendarCore::Event::Ptr &event);
-
     // To-do Specific Methods //
 
     /**
@@ -326,15 +316,6 @@ public:
       valid you can corrupt the DB. Check before with storage::isValidNotebook()
     */
     bool addTodo(const KCalendarCore::Todo::Ptr &todo, const QString &notebookUid);
-
-    /**
-      @copydoc
-      Calendar::deleteTodo()
-      @warning This call deletes based on the pointer given, and it is using QSharedPointer
-      so if you have to Calendars with the same event, the pointer isn't the same for
-      both. The deleting in the second one will fail.
-    */
-    bool deleteTodo(const KCalendarCore::Todo::Ptr &todo);
 
     // Journal Specific Methods //
 
@@ -355,16 +336,8 @@ public:
     */
     bool addJournal(const KCalendarCore::Journal::Ptr &journal, const QString &notebookUid);
 
-    /**
-      @copydoc
-      Calendar::deleteJournal()
-      @warning This call deletes based on the pointer given, and it is using QSharedPointer
-      so if you have to Calendars with the same event, the pointer isn't the same for
-      both. The deleting in the second one will fail.
-    */
-    bool deleteJournal(const KCalendarCore::Journal::Ptr &journal);
-
     using KCalendarCore::Calendar::rawJournals;
+
     /**
       Returns an unfiltered list of all Journals occurring within a date range.
 
@@ -383,22 +356,16 @@ public:
         const QTimeZone &timespec = QTimeZone(),
         bool inclusive = false) const;
 
-    /**
-      Returns a filtered list of all Incidences which occur on the given date.
-
-      @param date request filtered Incidence list for this QDate only.
-      @param types request filtered Incidence list for these types only.
-
-      @return the list of filtered Incidences occurring on the specified date.
-    */
-    virtual KCalendarCore::Incidence::List incidences(const QDate &date,
-                                                 const QList<KCalendarCore::Incidence::IncidenceType> &types);
+    using KCalendarCore::Calendar::journals;
 
     /**
-      Delete all incidences from the memory cache. They will be deleted from
-      database when save is called.
+      Get journals between given times.
+
+      @param start start datetime
+      @param end end datetime
+      @return list of journals
     */
-    void deleteAllIncidences();
+    KCalendarCore::Journal::List journals(const QDate &start, const QDate &end);
 
     using KCalendarCore::Calendar::incidences;
 
@@ -424,41 +391,6 @@ public:
     */
     static QSharedPointer<ExtendedStorage> defaultStorage(const ExtendedCalendar::Ptr
                                                           &calendar);   //No typedef to avoid cyclic includes
-
-    using KCalendarCore::Calendar::journals;
-
-    /**
-      Get journals between given times.
-
-      @param start start datetime
-      @param end end datetime
-      @return list of journals
-    */
-    KCalendarCore::Journal::List journals(const QDate &start, const QDate &end);
-
-    /**
-          Return the count of event incidences.
-
-          @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
-          @return count of incidences
-        */
-    int eventCount(const QString &notebookUid = QString());
-
-    /**
-      Return the count of todo incidences.
-
-      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
-      @return count of incidences
-    */
-    int todoCount(const QString &notebookUid = QString());
-
-    /**
-      Return the count of journal incidences.
-
-      @param notebookUid is uid of a notebook for which to return the count (all notebooks if empty)
-      @return count of incidences
-    */
-    int journalCount(const QString &notebookUid = QString());
 
 private:
     //@cond PRIVATE

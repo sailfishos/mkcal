@@ -151,13 +151,6 @@ bool ExtendedCalendar::addIncidence(const Incidence::Ptr &incidence, const QStri
     return false;
 }
 
-bool ExtendedCalendar::deleteIncidence(const Incidence::Ptr &incidence)
-{
-    // Need to by-pass the override done in MemoryCalendar to get back
-    // the genericity of the call implemented in the Calendar class.
-    return Calendar::deleteIncidence(incidence);
-}
-
 bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent)
 {
     return addEvent(aEvent, defaultNotebook());
@@ -184,16 +177,6 @@ bool ExtendedCalendar::addEvent(const Event::Ptr &aEvent, const QString &noteboo
 
     if (MemoryCalendar::addIncidence(aEvent)) {
         return setNotebook(aEvent, notebookUid);
-    } else {
-        return false;
-    }
-}
-
-bool ExtendedCalendar::deleteEvent(const Event::Ptr &event)
-{
-    if (MemoryCalendar::deleteIncidence(event)) {
-        event->unRegisterObserver(this);
-        return true;
     } else {
         return false;
     }
@@ -237,16 +220,6 @@ bool ExtendedCalendar::addTodo(const Todo::Ptr &aTodo, const QString &notebookUi
     }
 }
 
-bool ExtendedCalendar::deleteTodo(const Todo::Ptr &todo)
-{
-    if (MemoryCalendar::deleteIncidence(todo)) {
-        todo->unRegisterObserver(this);
-        return true;
-    } else {
-        return false;
-    }
-}
-
 bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal)
 {
     return addJournal(aJournal, defaultNotebook());
@@ -283,11 +256,6 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
     } else {
         return false;
     }
-}
-
-bool ExtendedCalendar::deleteJournal(const Journal::Ptr &journal)
-{
-    return MemoryCalendar::deleteIncidence(journal);
 }
 
 Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end,
@@ -351,28 +319,6 @@ Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end
     return journalList;
 }
 
-Incidence::List ExtendedCalendar::incidences(const QDate &date,
-                                             const QList<KCalendarCore::Incidence::IncidenceType> &types)
-{
-    Event::List elist;
-    Todo::List tlist;
-    Journal::List jlist;
-
-    if (types.contains(Incidence::TypeEvent)) {
-        elist = events(date);
-    }
-
-    if (types.contains(Incidence::TypeTodo)) {
-        tlist = todos(date);
-    }
-
-    if (types.contains(Incidence::TypeJournal)) {
-        jlist = journals(date);
-    }
-
-    return mergeIncidenceList(elist, tlist, jlist);
-}
-
 void ExtendedCalendar::deleteAllIncidences()
 {
     const Event::List events = rawEvents();
@@ -427,40 +373,3 @@ Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
     }
     return journalList;
 }
-
-int ExtendedCalendar::eventCount(const QString &notebookUid)
-{
-    Event::List events = rawEvents();
-
-    if (notebookUid.isEmpty())
-        return events.size();
-
-    return std::count_if(events.constBegin(), events.constEnd(),
-                         [this, notebookUid] (const Event::Ptr &event)
-                         {return notebook(event) == notebookUid;});
-}
-
-int ExtendedCalendar::todoCount(const QString &notebookUid)
-{
-    Todo::List todos = rawTodos();
-
-    if (notebookUid.isEmpty())
-        return todos.size();
-
-    return std::count_if(todos.constBegin(), todos.constEnd(),
-                         [this, notebookUid] (const Todo::Ptr &todo)
-                         {return notebook(todo) == notebookUid;});
-}
-
-int ExtendedCalendar::journalCount(const QString &notebookUid)
-{
-    Journal::List journals = rawJournals();
-
-    if (notebookUid.isEmpty())
-        return journals.size();
-
-    return std::count_if(journals.constBegin(), journals.constEnd(),
-                         [this, notebookUid] (const Journal::Ptr &journal)
-                         {return notebook(journal) == notebookUid;});
-}
-
