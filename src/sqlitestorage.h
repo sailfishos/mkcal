@@ -159,12 +159,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::cancel()
-    */
-    bool cancel();
-
-    /**
-      @copydoc
       CalStorage::close()
     */
     bool close();

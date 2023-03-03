@@ -833,11 +833,6 @@ error:
 }
 //@endcond
 
-bool SqliteStorage::cancel()
-{
-    return true;
-}
-
 bool SqliteStorage::close()
 {
     if (d->mDatabase) {

@@ -63,9 +63,12 @@ enum DBOperation {
 /**
   @brief
   This class provides a calendar storage interface.
-  Every action on the storage can be asynchronous, which means that actions
-  are only scheduled for execution. Caller must use ExtendedStorageObserver to get
-  notified about the completion.
+  Every action on the storage can be synchronous or asynchronous,
+  depending on the storage implementation. SqliteStorage is a
+  synchronous implementation. 
+
+  In any case, caller can use ExtendedStorageObserver to get
+  notified about the action done.
 */
 class MKCAL_EXPORT ExtendedStorage
     : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
@@ -231,13 +234,6 @@ public:
       @return True if successful; false otherwise
     */
     virtual bool save(DeleteAction deleteAction) = 0;
-
-    /**
-      Cancel any ongoing action (load etc.).
-
-      @return true cancel was successful; false otherwise
-    */
-    virtual bool cancel() = 0;
 
     /**
       @copydoc
