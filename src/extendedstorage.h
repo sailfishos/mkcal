@@ -63,9 +63,12 @@ enum DBOperation {
 /**
   @brief
   This class provides a calendar storage interface.
-  Every action on the storage can be asynchronous, which means that actions
-  are only scheduled for execution. Caller must use ExtendedStorageObserver to get
-  notified about the completion.
+  Every action on the storage can be synchronous or asynchronous,
+  depending on the storage implementation. SqliteStorage is a
+  synchronous implementation. 
+
+  In any case, caller can use ExtendedStorageObserver to get
+  notified about the action done.
 */
 class MKCAL_EXPORT ExtendedStorage
     : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
@@ -200,138 +203,11 @@ public:
     virtual bool loadNotebookIncidences(const QString &notebookUid) = 0;
 
     /**
-      Load journal type entries
-    */
-    virtual bool loadJournals() = 0;
-
-    /**
-      Load plain incidences (no startdate and no enddate).
-
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadPlainIncidences() = 0;
-
-    /**
       Load recurring incidences.
 
       @return true if the load was successful; false otherwise.
     */
     virtual bool loadRecurringIncidences() = 0;
-
-    /**
-      Load incidences that have geo parameters.
-
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadGeoIncidences() = 0;
-
-    /**
-      Load incidences that have geo parameters inside given rectangle.
-
-      @param geoLatitude latitude
-      @param geoLongitude longitude
-      @param diffLatitude maximum latitudinal difference
-      @param diffLongitude maximum longitudinal difference
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadGeoIncidences(float geoLatitude, float geoLongitude,
-                                   float diffLatitude, float diffLongitude) = 0;
-
-    /**
-      Load incidences that have attendee.
-
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadAttendeeIncidences() = 0;
-
-    // Smart Loading Functions //
-
-    /**
-      Load all uncompleted todos.
-
-      @return number of loaded todos, or -1 on error
-    */
-    virtual int loadUncompletedTodos() = 0;
-
-    /**
-      Load completed todos based on parameters. Load direction is descending,
-      i.e., starting from most distant upcoming todo.
-
-      @param hasDate set true to load todos that have due date
-      @param limit load only that many todos
-      @param last last loaded todo due/creation date in return
-      @return number of loaded todos, or -1 on error
-    */
-    virtual int loadCompletedTodos(bool hasDate, int limit, QDateTime *last) = 0;
-
-    /**
-      Load incidences based on start/due date or creation date.
-      Load direction is descending, i.e., starting from most distant
-      upcoming incidence.
-
-      @param hasDate set true to load incidences that have start/due date
-      @param limit load only that many incidences
-      @param last last loaded incidence due/creation date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadIncidences(bool hasDate, int limit, QDateTime *last) = 0;
-
-    /**
-      Load future incidences based on start/due date.
-
-      Load direction is ascending, i.e., starting from the oldest
-      event that is still valid at the day of the loadIncidences
-      call. (=end time > 00:00:00 on that day).
-
-      @param limit load only that many incidences
-      @param last last loaded incidence start date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadFutureIncidences(int limit, QDateTime *last) = 0;
-
-    /**
-      Load incidences that have location information based on parameters.
-      Load direction is descending, i.e., starting from most distant
-      upcoming incidence.
-
-      @param hasDate set true to load incidences that have start/due date
-      @param limit load only that many incidences
-      @param last last loaded incidence due/creation date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadGeoIncidences(bool hasDate, int limit, QDateTime *last) = 0;
-
-    /**
-      Load all contacts in the database. Doesn't put anything into calendar.
-      Resulting list of persons is ordered by the number of appearances.
-      Use Person::count to get the number of appearances.
-
-      @return ordered list of persons
-    */
-    virtual KCalendarCore::Person::List loadContacts() = 0;
-
-    /**
-      Load all incidences that have the specified attendee.
-      Also includes all shared notes (in a shared notebook).
-
-      @param person person in question
-      @param limit load only that many incidences
-      @param last last loaded incidence due/creation date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadContactIncidences(const KCalendarCore::Person &person,
-                                      int limit, QDateTime *last) = 0;
-
-    /**
-      Load journal entries based on parameters. Load direction is
-      descending, i.e. starting from the most recently modified
-      journal.
-
-      @param limit load only that many incidences
-      @param last last loaded incidence due/creation date in return
-      @return number of loaded incidences, or -1 on error
-    */
-    virtual int loadJournals(int limit, QDateTime *last) = 0;
 
     /**
       Remove from storage all incidences that have been previously
@@ -358,23 +234,6 @@ public:
       @return True if successful; false otherwise
     */
     virtual bool save(DeleteAction deleteAction) = 0;
-
-    /**
-      Mark if supported by the storage that an incidence has been opened.
-      This should be called only if the Incidence has been opened by the user
-      and displayed all the contents. Being in a list doesn't qualify for it.
-
-      @param incidence The incidence that has been opened
-      @return True if sucessful; false otherwise
-    */
-    virtual bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      Cancel any ongoing action (load etc.).
-
-      @return true cancel was successful; false otherwise
-    */
-    virtual bool cancel() = 0;
 
     /**
       @copydoc

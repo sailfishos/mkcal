@@ -120,72 +120,7 @@ public:
     {
         return true;
     }
-    bool loadJournals()
-    {
-        return true;
-    }
-    bool loadPlainIncidences()
-    {
-        return true;
-    }
     bool loadRecurringIncidences()
-    {
-        return true;
-    }
-    bool loadGeoIncidences()
-    {
-        return true;
-    }
-    bool loadGeoIncidences(float, float, float, float)
-    {
-        return true;
-    }
-    bool loadAttendeeIncidences()
-    {
-        return true;
-    }
-    int loadUncompletedTodos()
-    {
-        return 0;
-    }
-    int loadCompletedTodos(bool, int, QDateTime *)
-    {
-        return 0;
-    }
-    int loadIncidences(bool, int, QDateTime *)
-    {
-        return 0;
-    }
-    int loadFutureIncidences(int, QDateTime *)
-    {
-        return 0;
-    }
-    int loadGeoIncidences(bool, int, QDateTime *)
-    {
-        return 0;
-    }
-    int loadUnreadInvitationIncidences()
-    {
-        return 0;
-    }
-    int loadOldInvitationIncidences(int, QDateTime *)
-    {
-        return 0;
-    }
-    KCalendarCore::Person::List loadContacts()
-    {
-        KCalendarCore::Person::List l;
-        return l;
-    }
-    int loadContactIncidences(const KCalendarCore::Person &, int, QDateTime *)
-    {
-        return 0;
-    }
-    int loadJournals(int, QDateTime *)
-    {
-        return 0;
-    }
-    bool notifyOpened(const KCalendarCore::Incidence::Ptr &)
     {
         return true;
     }

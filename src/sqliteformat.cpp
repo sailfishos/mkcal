@@ -2140,38 +2140,6 @@ error:
     return false;
 }
 
-Person::List SqliteFormat::selectContacts()
-{
-    int rv = 0;
-    Person::List list;
-    QHash<QString, Person> hash;
-
-    const char *query1 = SELECT_ATTENDEE_AND_COUNT;
-    int qsize1 = sizeof(SELECT_ATTENDEE_AND_COUNT);
-
-    sqlite3_stmt *stmt = NULL;
-
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt, NULL);
-
-    do {
-        SL3_step(stmt);
-
-        if (rv == SQLITE_ROW) {
-            QString name = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
-            QString email = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 0));
-
-            hash.insert(email, Person(name, email));
-        }
-    } while (rv != SQLITE_DONE);
-
-    sqlite3_finalize(stmt);
-
-    list = hash.values().toVector();
-
-error:
-    return list;
-}
-
 bool SqliteFormat::Private::selectCalendarProperties(Notebook::Ptr notebook)
 {
     int rv = 0;

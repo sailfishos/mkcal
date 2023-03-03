@@ -133,13 +133,6 @@ public:
     */
     KCalendarCore::Incidence::Ptr selectComponents(sqlite3_stmt *stmt1, QString &notebook);
 
-    /**
-      Select contacts and order them by appearances.
-
-      @return ordered list of contacts.
-    */
-    KCalendarCore::Person::List selectContacts();
-
     bool selectMetadata(int *id);
     bool incrementTransactionId(int *id);
 
@@ -415,20 +408,8 @@ private:
 "select * from Components where DateDeleted<>0"
 #define SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK \
 "select * from Components where Notebook=? and DateDeleted<>0"
-#define SELECT_COMPONENTS_BY_GEO \
-"select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_GEO_AREA \
-"select * from Components where GeoLatitude>=? and GeoLongitude>=? and GeoLatitude<=? and GeoLongitude<=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_JOURNAL \
-"select * from Components where Type='Journal' and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_JOURNAL_DATE \
-"select * from Components where Type='Journal' and DateDeleted=0 and datestart<=? order by DateStart desc, DateCreated desc"
-#define SELECT_COMPONENTS_BY_PLAIN \
-"select * from Components where DateStart=0 and DateEndDue=0 and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_RECURSIVE \
 "select * from Components where ((ComponentId in (select DISTINCT ComponentId from Recursive)) or (ComponentId in (select DISTINCT ComponentId from Rdates)) or (RecurId!=0)) and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_ATTENDEE \
-"select * from Components where ComponentId in (select DISTINCT ComponentId from Attendee) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_BOTH \
 "select * from Components where DateStart<? and (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_START \
@@ -441,32 +422,7 @@ private:
 "select * from Components where Notebook=? and DateDeleted=0"
 #define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
 "select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_UNCOMPLETED_TODOS \
-"select * from Components where Type='Todo' and DateCompleted=0 and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_DATE \
-"select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc, DateCreated desc"
-#define SELECT_COMPONENTS_BY_COMPLETED_TODOS_AND_CREATED \
-"select * from Components where Type='Todo' and DateCompleted<>0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
-#define SELECT_COMPONENTS_BY_DATE_SMART \
-"select * from Components where DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc, DateCreated desc"
 
-#define FUTURE_DATE_SMART_FIELD                                 \
-" (case type when 'Todo' then DateEndDue else DateStart end) "
-#define SELECT_COMPONENTS_BY_FUTURE_DATE_SMART                  \
-    "select * from Components where "                           \
-    FUTURE_DATE_SMART_FIELD ">=? and DateDeleted=0 order by "   \
-    FUTURE_DATE_SMART_FIELD " asc, DateCreated asc"
-
-#define SELECT_COMPONENTS_BY_CREATED_SMART                              \
-"select * from Components where DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
-#define SELECT_COMPONENTS_BY_GEO_AND_DATE \
-"select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue<>0 and DateEndDue<=? and DateDeleted=0 order by DateEndDue desc, DateCreated desc"
-#define SELECT_COMPONENTS_BY_GEO_AND_CREATED \
-"select * from Components where GeoLatitude!=255.0 and GeoLongitude!=255.0 and DateEndDue=0 and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
-#define SELECT_COMPONENTS_BY_ATTENDEE_EMAIL_AND_CREATED \
-"select * from Components where ComponentId in (select distinct ComponentId from Attendee where email=?) and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
-#define SELECT_COMPONENTS_BY_ATTENDEE_AND_CREATED \
-"select * from Components where ComponentId in (select distinct ComponentId from Attendee) and DateCreated<=? and DateDeleted=0 order by DateCreated desc"
 #define SELECT_RDATES_BY_ID \
 "select * from Rdates where ComponentId=?"
 #define SELECT_CUSTOMPROPERTIES_BY_ID \
@@ -499,8 +455,6 @@ private:
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
 "select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
-#define SELECT_ATTENDEE_AND_COUNT \
-"select Email, Name, count(Email) from Attendee where Email<>0 group by Email"
 #define SELECT_EVENT_COUNT \
 "select count(*) from Components where Type='Event' and DateDeleted=0"
 #define SELECT_TODO_COUNT \
