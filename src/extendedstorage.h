@@ -535,29 +535,6 @@ protected:
                     const KCalendarCore::Incidence::List &modified,
                     const KCalendarCore::Incidence::List &deleted);
 
-    bool isUncompletedTodosLoaded();
-    void setIsUncompletedTodosLoaded(bool loaded);
-
-    bool isCompletedTodosDateLoaded();
-    void setIsCompletedTodosDateLoaded(bool loaded);
-    bool isCompletedTodosCreatedLoaded();
-    void setIsCompletedTodosCreatedLoaded(bool loaded);
-
-    bool isJournalsLoaded();
-    void setIsJournalsLoaded(bool loaded);
-
-    bool isDateLoaded();
-    void setIsDateLoaded(bool loaded);
-    bool isCreatedLoaded();
-    void setIsCreatedLoaded(bool loaded);
-    bool isFutureDateLoaded();
-    void setIsFutureDateLoaded(bool loaded);
-
-    bool isGeoDateLoaded();
-    void setIsGeoDateLoaded(bool loaded);
-    bool isGeoCreatedLoaded();
-    void setIsGeoCreatedLoaded(bool loaded);
-
     void clearLoaded();
 
 private:

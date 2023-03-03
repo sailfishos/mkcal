@@ -87,30 +87,12 @@ public:
     Private(bool validateNotebooks)
         : mValidateNotebooks(validateNotebooks),
           mIsRecurrenceLoaded(false),
-          mIsUncompletedTodosLoaded(false),
-          mIsCompletedTodosDateLoaded(false),
-          mIsCompletedTodosCreatedLoaded(false),
-          mIsDateLoaded(false),
-          mIsCreatedLoaded(false),
-          mIsFutureDateLoaded(false),
-          mIsGeoDateLoaded(false),
-          mIsGeoCreatedLoaded(false),
-          mIsJournalsLoaded(false),
           mDefaultNotebook(0)
     {}
 
     bool mValidateNotebooks;
     QList<Range> mRanges;
     bool mIsRecurrenceLoaded;
-    bool mIsUncompletedTodosLoaded;
-    bool mIsCompletedTodosDateLoaded;
-    bool mIsCompletedTodosCreatedLoaded;
-    bool mIsDateLoaded;
-    bool mIsCreatedLoaded;
-    bool mIsFutureDateLoaded;
-    bool mIsGeoDateLoaded;
-    bool mIsGeoCreatedLoaded;
-    bool mIsJournalsLoaded;
     QList<ExtendedStorageObserver *> mObservers;
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
@@ -158,15 +140,6 @@ void ExtendedStorage::clearLoaded()
 {
     d->mRanges.clear();
     d->mIsRecurrenceLoaded = false;
-    d->mIsUncompletedTodosLoaded = false;
-    d->mIsCompletedTodosDateLoaded = false;
-    d->mIsCompletedTodosCreatedLoaded = false;
-    d->mIsDateLoaded = false;
-    d->mIsCreatedLoaded = false;
-    d->mIsFutureDateLoaded = false;
-    d->mIsGeoDateLoaded = false;
-    d->mIsGeoCreatedLoaded = false;
-    d->mIsJournalsLoaded = false;
 }
 
 bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
@@ -240,96 +213,6 @@ bool ExtendedStorage::isRecurrenceLoaded() const
 void ExtendedStorage::setIsRecurrenceLoaded(bool loaded)
 {
     d->mIsRecurrenceLoaded = loaded;
-}
-
-bool ExtendedStorage::isUncompletedTodosLoaded()
-{
-    return d->mIsUncompletedTodosLoaded;
-}
-
-void ExtendedStorage::setIsUncompletedTodosLoaded(bool loaded)
-{
-    d->mIsUncompletedTodosLoaded = loaded;
-}
-
-bool ExtendedStorage::isCompletedTodosDateLoaded()
-{
-    return d->mIsCompletedTodosDateLoaded;
-}
-
-void ExtendedStorage::setIsCompletedTodosDateLoaded(bool loaded)
-{
-    d->mIsCompletedTodosDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isCompletedTodosCreatedLoaded()
-{
-    return d->mIsCompletedTodosCreatedLoaded;
-}
-
-void ExtendedStorage::setIsCompletedTodosCreatedLoaded(bool loaded)
-{
-    d->mIsCompletedTodosCreatedLoaded = loaded;
-}
-
-bool ExtendedStorage::isDateLoaded()
-{
-    return d->mIsDateLoaded;
-}
-
-void ExtendedStorage::setIsDateLoaded(bool loaded)
-{
-    d->mIsDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isFutureDateLoaded()
-{
-    return d->mIsFutureDateLoaded;
-}
-
-void ExtendedStorage::setIsFutureDateLoaded(bool loaded)
-{
-    d->mIsFutureDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isJournalsLoaded()
-{
-    return d->mIsJournalsLoaded;
-}
-
-void ExtendedStorage::setIsJournalsLoaded(bool loaded)
-{
-    d->mIsJournalsLoaded = loaded;
-}
-
-bool ExtendedStorage::isCreatedLoaded()
-{
-    return d->mIsCreatedLoaded;
-}
-
-void ExtendedStorage::setIsCreatedLoaded(bool loaded)
-{
-    d->mIsCreatedLoaded = loaded;
-}
-
-bool ExtendedStorage::isGeoDateLoaded()
-{
-    return d->mIsGeoDateLoaded;
-}
-
-void ExtendedStorage::setIsGeoDateLoaded(bool loaded)
-{
-    d->mIsGeoDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isGeoCreatedLoaded()
-{
-    return d->mIsGeoCreatedLoaded;
-}
-
-void ExtendedStorage::setIsGeoCreatedLoaded(bool loaded)
-{
-    d->mIsGeoCreatedLoaded = loaded;
 }
 
 bool ExtendedStorage::loadSeries(const QString &uid)
