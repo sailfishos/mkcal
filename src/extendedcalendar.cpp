@@ -258,67 +258,6 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
     }
 }
 
-Journal::List ExtendedCalendar::rawJournals(const QDate &start, const QDate &end,
-                                            const QTimeZone &timeZone, bool inclusive) const
-{
-    Q_UNUSED(inclusive);
-    Journal::List journalList;
-    const QTimeZone &tz = timeZone.isValid() ? timeZone : this->timeZone();
-    QDateTime st(start, QTime(0, 0, 0), tz);
-    QDateTime nd(end, QTime(23, 59, 999), tz);
-
-    // Get journals
-    const Journal::List journals(rawJournals());
-    for (const Journal::Ptr &journal: journals) {
-        if (!isVisible(journal)) {
-            continue;
-        }
-        QDateTime rStart = journal->dtStart();
-        if (nd.isValid() && nd < rStart) {
-            continue;
-        }
-        if (inclusive && st.isValid() && rStart < st) {
-            continue;
-        }
-
-        if (!journal->recurs()) {   // non-recurring journals
-            // TODO_ALVARO: journals don't have endDt, bug?
-            QDateTime rEnd = journal->dateTime(Incidence::RoleEnd);
-            if (st.isValid() && rEnd < st) {
-                continue;
-            }
-            if (inclusive && nd.isValid() && nd < rEnd) {
-                continue;
-            }
-        } else { // recurring journals
-            switch (journal->recurrence()->duration()) {
-            case -1: // infinite
-                if (inclusive) {
-                    continue;
-                }
-                break;
-            case 0: // end date given
-            default: // count given
-                QDateTime rEnd(journal->recurrence()->endDate(), QTime(23, 59, 999), tz);
-                if (!rEnd.isValid()) {
-                    continue;
-                }
-                if (st.isValid() && rEnd < st) {
-                    continue;
-                }
-                if (inclusive && nd.isValid() && nd < rEnd) {
-                    continue;
-                }
-                break;
-            } // switch(duration)
-        } //if(recurs)
-
-        journalList.append(journal);
-    }
-
-    return journalList;
-}
-
 void ExtendedCalendar::deleteAllIncidences()
 {
     const Event::List events = rawEvents();

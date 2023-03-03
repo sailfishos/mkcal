@@ -336,26 +336,6 @@ public:
     */
     bool addJournal(const KCalendarCore::Journal::Ptr &journal, const QString &notebookUid);
 
-    using KCalendarCore::Calendar::rawJournals;
-
-    /**
-      Returns an unfiltered list of all Journals occurring within a date range.
-
-      @param start is the starting date
-      @param end is the ending date
-      @param timespec time zone etc. to interpret @p start and @p end,
-                      or the calendar's default time spec if none is specified
-      @param inclusive if true only Journals which are completely included
-      within the date range are returned.
-
-      @return the list of unfiltered Journals occurring within the specified
-      date range.
-    */
-    KCalendarCore::Journal::List rawJournals(
-        const QDate &start, const QDate &end,
-        const QTimeZone &timespec = QTimeZone(),
-        bool inclusive = false) const;
-
     using KCalendarCore::Calendar::journals;
 
     /**
