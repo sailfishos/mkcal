@@ -39,8 +39,6 @@
 
 #include <sqlite3.h>
 
-#include <QTimeZone>
-
 namespace mKCal {
 
 /**
@@ -94,7 +92,7 @@ public:
     /**
       Constructor a new Sqlite Format object.
     */
-    SqliteFormat(sqlite3 *database, const QTimeZone &timeZone = {});
+    SqliteFormat(sqlite3 *database);
 
     /**
       Destructor.
@@ -154,7 +152,7 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toOriginTime(const QDateTime &dt);
+    static sqlite3_int64 toOriginTime(const QDateTime &dt);
 
     /**
       Convert local datetime to seconds relative to the origin.
@@ -162,21 +160,21 @@ public:
       @param dt datetime
       @return seconds relative to origin
     */
-    sqlite3_int64 toLocalOriginTime(const QDateTime &dt);
+    static sqlite3_int64 toLocalOriginTime(const QDateTime &dt);
 
     /**
       Convert seconds from the origin to clock time.
       @param seconds relative to origin.
       @return clocktime datetime.
     */
-    QDateTime fromLocalOriginTime(sqlite3_int64 seconds);
+    static QDateTime fromLocalOriginTime(sqlite3_int64 seconds);
 
     /**
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
     */
-    QDateTime fromOriginTime(sqlite3_int64 seconds);
+    static QDateTime fromOriginTime(sqlite3_int64 seconds);
 
     /**
       Convert seconds from the origin to datetime in given timezone.
@@ -184,7 +182,7 @@ public:
       @param zonename timezone name.
       @return datetime in timezone.
     */
-    QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename);
+    static QDateTime fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename);
 
 private:
     //@cond PRIVATE
@@ -301,8 +299,6 @@ private:
 
 #define CREATE_METADATA \
   "CREATE TABLE IF NOT EXISTS Metadata(transactionId INTEGER)"
-#define CREATE_TIMEZONES \
-  "CREATE TABLE IF NOT EXISTS Timezones(TzId INTEGER PRIMARY KEY, ICalData TEXT)"
 #define CREATE_CALENDARS \
   "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT, createdDate INTEGER, extra1 STRING, extra2 STRING)"
 
@@ -375,8 +371,6 @@ private:
 
 #define UPDATE_METADATA \
 "replace into Metadata (rowid, transactionId) values (1, ?)"
-#define UPDATE_TIMEZONES \
-"update Timezones set ICalData=? where TzId=1"
 #define UPDATE_CALENDARS \
 "update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
@@ -406,8 +400,6 @@ private:
 
 #define SELECT_METADATA \
 "select * from Metadata where rowid=1"
-#define SELECT_TIMEZONES \
-"select * from Timezones where TzId=1"
 #define SELECT_CALENDARS_ALL \
 "select * from Calendars order by Name"
 #define SELECT_COMPONENTS_ALL \

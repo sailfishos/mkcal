@@ -516,16 +516,14 @@ void tst_storage::tst_recurrenceExpansion()
 
 void tst_storage::tst_origintimes()
 {
-    SqliteFormat format(nullptr, m_storage->calendar()->timeZone());
-
     QDateTime utcTime(QDate(2014, 1, 15), QTime(), Qt::UTC);
     QDateTime localTime(QDate(2014, 1, 15), QTime(), Qt::LocalTime);
 
     // local origin time is the same as specific time set to utc
     // note: currently origin time of clock time is saved as time in current time zone.
     // that does not necessarily make sense, but better be careful when changing behavior there.
-    QCOMPARE(format.toOriginTime(utcTime), format.toLocalOriginTime(utcTime));
-    QCOMPARE(format.toLocalOriginTime(localTime), format.toLocalOriginTime(utcTime));
+    QCOMPARE(SqliteFormat::toOriginTime(utcTime), SqliteFormat::toLocalOriginTime(utcTime));
+    QCOMPARE(SqliteFormat::toLocalOriginTime(localTime), SqliteFormat::toLocalOriginTime(utcTime));
 }
 
 void tst_storage::tst_rawEvents_data()
@@ -2201,16 +2199,6 @@ void tst_storage::tst_storageObserver()
     TestStorageObserver observer(m_storage);
     QSignalSpy updated(&observer, &TestStorageObserver::updated);
     QSignalSpy modified(&observer, &TestStorageObserver::modified);
-    QVERIFY(updated.isEmpty());
-    m_storage->save();
-    QCOMPARE(updated.count(), 1);
-    QList<QVariant> args = updated.takeFirst();
-    QCOMPARE(args.count(), 3);
-    QVERIFY(args[0].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
-    QVERIFY(modified.isEmpty());
-    QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
 
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
     event->setDtStart(QDateTime(QDate(2023, 1, 13), QTime(16, 35)));
@@ -2221,7 +2209,7 @@ void tst_storage::tst_storageObserver()
     QVERIFY(updated.isEmpty());
     m_storage->save();
     QCOMPARE(updated.count(), 1);
-    args = updated.takeFirst();
+    QList<QVariant> args = updated.takeFirst();
     QCOMPARE(args.count(), 3);
     KCalendarCore::Incidence::List added = args[0].value<KCalendarCore::Incidence::List>();
     QCOMPARE(added.count(), 2);
@@ -2235,7 +2223,7 @@ void tst_storage::tst_storageObserver()
     QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
     QVERIFY(args[2].value<KCalendarCore::Incidence::List>().isEmpty());
     QVERIFY(modified.isEmpty());
-    QVERIFY(!modified.wait(200));
+    QVERIFY(!modified.wait(200)); // Even after 200ms the modified signal is not emitted.
 
     event->setDtEnd(event->dtStart().addSecs(3600));
     QVERIFY(updated.isEmpty());
