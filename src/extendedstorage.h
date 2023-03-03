@@ -233,16 +233,6 @@ public:
     virtual bool save(DeleteAction deleteAction) = 0;
 
     /**
-      Mark if supported by the storage that an incidence has been opened.
-      This should be called only if the Incidence has been opened by the user
-      and displayed all the contents. Being in a list doesn't qualify for it.
-
-      @param incidence The incidence that has been opened
-      @return True if sucessful; false otherwise
-    */
-    virtual bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
       Cancel any ongoing action (load etc.).
 
       @return true cancel was successful; false otherwise

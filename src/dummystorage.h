@@ -124,10 +124,6 @@ public:
     {
         return true;
     }
-    bool notifyOpened(const KCalendarCore::Incidence::Ptr &)
-    {
-        return true;
-    }
     bool cancel()
     {
         return true;

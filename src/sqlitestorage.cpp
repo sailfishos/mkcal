@@ -576,12 +576,6 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::notifyOpened(const Incidence::Ptr &incidence)
-{
-    Q_UNUSED(incidence);
-    return false;
-}
-
 static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
 {
     QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());

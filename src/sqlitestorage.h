@@ -141,12 +141,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::notifyOpened( const KCalendarCore::Incidence::Ptr & )
-    */
-    bool notifyOpened(const KCalendarCore::Incidence::Ptr &incidence);
-
-    /**
-      @copydoc
       ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
