@@ -223,7 +223,9 @@ public:
 
 protected:
     bool loadNotebooks();
-    bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop);
+    bool insertNotebook(const Notebook::Ptr &nb);
+    bool modifyNotebook(const Notebook::Ptr &nb);
+    bool eraseNotebook(const Notebook::Ptr &nb);
 
 private:
     //@cond PRIVATE

@@ -151,7 +151,15 @@ public:
     {
         return true;
     }
-    bool modifyNotebook(const mKCal::Notebook::Ptr &, mKCal::DBOperation)
+    bool insertNotebook(const Notebook::Ptr &)
+    {
+        return true;
+    }
+    bool modifyNotebook(const Notebook::Ptr &)
+    {
+        return true;
+    }
+    bool eraseNotebook(const Notebook::Ptr &)
     {
         return true;
     }

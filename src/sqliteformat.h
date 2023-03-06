@@ -44,6 +44,16 @@
 namespace mKCal {
 
 /**
+  Database operation type.
+*/
+enum DBOperation {
+    DBInsert,
+    DBUpdate,
+    DBMarkDeleted,
+    DBDelete
+};
+
+/**
   @brief
   Sqlite format implementation.
 

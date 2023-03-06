@@ -371,7 +371,7 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBInsert)) {
+    if (!nb->isRunTimeOnly() && !insertNotebook(nb)) {
         return false;
     }
 
@@ -391,7 +391,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBUpdate)) {
+    if (!nb->isRunTimeOnly() && !modifyNotebook(nb)) {
         return false;
     }
 
@@ -430,7 +430,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBDelete)) {
+    if (!nb->isRunTimeOnly() && !eraseNotebook(nb)) {
         return false;
     }
 

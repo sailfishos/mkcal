@@ -49,18 +49,6 @@ class tst_load;
 namespace mKCal {
 
 /**
-  Database operation type.
-*/
-enum DBOperation {
-    DBNone,
-    DBInsert,
-    DBUpdate,
-    DBMarkDeleted,
-    DBDelete,
-    DBSelect
-};
-
-/**
   @brief
   This class provides a calendar storage interface.
   Every action on the storage can be synchronous or asynchronous,
@@ -465,7 +453,9 @@ public:
 
 protected:
     virtual bool loadNotebooks() = 0;
-    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) = 0;
+    virtual bool insertNotebook(const Notebook::Ptr &nb) = 0;
+    virtual bool modifyNotebook(const Notebook::Ptr &nb) = 0;
+    virtual bool eraseNotebook(const Notebook::Ptr &nb) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;

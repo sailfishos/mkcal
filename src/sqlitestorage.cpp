@@ -139,6 +139,7 @@ public:
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
     bool loadRecurringIncidences();
+    bool saveNotebook(const Notebook::Ptr &nb, DBOperation dbop);
     int loadIncidences(sqlite3_stmt *stmt1);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
@@ -689,16 +690,7 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     // Incidences to delete
     Incidence::List deleted;
     if (!d->mIncidencesToDelete.isEmpty()) {
-        DBOperation dbop = DBNone;
-        switch (deleteAction) {
-        case ExtendedStorage::PurgeDeleted:
-            dbop = DBDelete;
-            break;
-        case ExtendedStorage::MarkDeleted:
-            dbop = DBMarkDeleted;
-            break;
-        }
-
+        DBOperation dbop = deleteAction == ExtendedStorage::PurgeDeleted ? DBDelete : DBMarkDeleted;
         if (!d->saveIncidences(d->mIncidencesToDelete, dbop, &deleted)) {
             errors++;
         }
@@ -1195,10 +1187,26 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
+bool SqliteStorage::insertNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBInsert);
+}
+
+bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBUpdate);
+}
+
+bool SqliteStorage::eraseNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBDelete);
+}
+
+//@cond PRIVATE
+bool SqliteStorage::Private::saveNotebook(const Notebook::Ptr &nb, DBOperation dbop)
 {
     int rv = 0;
-    bool success = d->mIsLoading; // true if we are currently loading
+    bool success = mIsLoading; // true if we are currently loading
     const char *query = NULL;
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
@@ -1206,11 +1214,11 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
 
-    if (!d->mDatabase) {
+    if (!mDatabase) {
         return false;
     }
 
-    if (!d->mIsLoading) {
+    if (!mIsLoading) {
         // Execute database operation.
         if (dbop == DBInsert) {
             query = INSERT_CALENDARS;
@@ -1226,44 +1234,44 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
             return false;
         }
 
-        if (!d->mSem.acquire()) {
-            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        if (!mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
             return false;
         }
 
-        SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+        SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
+        if ((success = mFormat->modifyCalendars(nb, dbop, stmt, nb == mStorage->defaultNotebook()))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
-        sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
 
         if (success) {
             // Don't save the incremented transactionId at the moment,
             // let it be seen as an external modification.
             // Todo: add a method for observers on notebook changes.
-            if (!d->mFormat->incrementTransactionId(nullptr))
-                d->mSavedTransactionId = -1;
+            if (!mFormat->incrementTransactionId(nullptr))
+                mSavedTransactionId = -1;
         }
 
-        if (!d->mSem.release()) {
-            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        if (!mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
         }
 
         if (success) {
-            d->mChanged.resize(0);   // make a change to create signal
+            mChanged.resize(0);   // make a change to create signal
         }
     }
     return success;
 
 error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+    if (!mSem.release()) {
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     return false;
 }
+//@endcond
 
 bool SqliteStorage::Private::saveTimezones()
 {
