@@ -61,33 +61,14 @@ public:
     void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
-    {
-        return true;
-    }
-
-    /**
-      @copydoc
-      ExtendedStorage::open()
-    */
     bool open()
     {
         return true;
     }
-
-    /**
-      @copydoc
-      ExtendedStorage::load()
-    */
     bool load()
     {
         return true;
     }
-
-    /**
-      @copydoc
-      ExtendedStorage::save()
-    */
     bool save()
     {
         return true;
@@ -112,24 +93,9 @@ public:
     {
         return true;
     }
-    bool cancel()
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
     {
         return true;
-    }
-    void calendarModified(bool, const KCalendarCore::Calendar *) const
-    {
-    }
-    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &) const
-    {
     }
     bool insertedIncidences(KCalendarCore::Incidence::List *, const QDateTime &, const QString &)
     {
