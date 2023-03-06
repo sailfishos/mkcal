@@ -97,6 +97,8 @@ public:
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
 
+    bool clear();
+
 #if defined(TIMED_SUPPORT)
     // These alarm methods are used to communicate with an external
     // daemon, like timed, to bind Incidence::Alarm with the system notification.
@@ -111,6 +113,16 @@ public:
     void commitEvents(Timed::Event::List &events);
 #endif
 };
+
+bool ExtendedStorage::Private::clear()
+{
+    mRanges.clear();
+    mIsRecurrenceLoaded = false;
+    mNotebooks.clear();
+    mDefaultNotebook = Notebook::Ptr();
+
+    return true;
+}
 //@endcond
 
 ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
@@ -128,18 +140,7 @@ ExtendedStorage::~ExtendedStorage()
 
 bool ExtendedStorage::close()
 {
-    clearLoaded();
-
-    d->mNotebooks.clear();
-    d->mDefaultNotebook = Notebook::Ptr();
-
-    return true;
-}
-
-void ExtendedStorage::clearLoaded()
-{
-    d->mRanges.clear();
-    d->mIsRecurrenceLoaded = false;
+    return d->clear();
 }
 
 bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
@@ -276,9 +277,7 @@ void ExtendedStorage::setModified(const QString &info)
         }
     }
     calendar()->close();
-    clearLoaded();
-    d->mNotebooks.clear();
-    d->mDefaultNotebook.clear();
+    d->clear();
     if (!loadNotebooks()) {
         qCWarning(lcMkcal) << "loading notebooks failed";
     }

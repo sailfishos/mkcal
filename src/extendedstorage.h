@@ -499,8 +499,6 @@ protected:
                     const KCalendarCore::Incidence::List &modified,
                     const KCalendarCore::Incidence::List &deleted);
 
-    void clearLoaded();
-
 private:
     //@cond PRIVATE
     Q_DISABLE_COPY(ExtendedStorage)
