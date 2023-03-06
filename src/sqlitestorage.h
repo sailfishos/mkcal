@@ -111,21 +111,9 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::load(const QDate &)
-    */
-    bool load(const QDate &date);
-
-    /**
-      @copydoc
       ExtendedStorage::load(const QDate &, const QDate &)
     */
     bool load(const QDate &start, const QDate &end);
-
-    /**
-      @copydoc
-      ExtendedStorage::loadIncidenceInstance(const QString &)
-    */
-    bool loadIncidenceInstance(const QString &instanceIdentifier);
 
     /**
       @copydoc

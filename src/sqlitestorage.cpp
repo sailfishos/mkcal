@@ -397,19 +397,6 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::load(const QDate &date)
-{
-    if (!d->mDatabase) {
-        return false;
-    }
-
-    if (date.isValid()) {
-        return load(date, date.addDays(1));
-    }
-
-    return false;
-}
-
 bool SqliteStorage::load(const QDate &start, const QDate &end)
 {
     if (!d->mDatabase) {
@@ -515,31 +502,6 @@ error:
     d->mIsLoading = false;
 
     return count >= 0;
-}
-
-bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
-{
-    QString uid;
-    // At the moment, from KCalendarCore, if the instance is an exception,
-    // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
-    // This is tested in tst_loadIncidenceInstance() to ensure that any
-    // future breakage would be properly detected.
-    if (instanceIdentifier.endsWith('Z')) {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
-    } else if (instanceIdentifier.length() > 19
-               && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
-    } else if (instanceIdentifier.length() > 25
-               && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
-    } else {
-        uid = instanceIdentifier;
-    }
-
-    // Even if we're looking for a specific incidence instance, we load all
-    // the series for recurring event, to avoid orphaned exceptions in the
-    // calendar or recurring events without their exceptions.
-    return load(uid);
 }
 
 bool SqliteStorage::Private::loadRecurringIncidences()

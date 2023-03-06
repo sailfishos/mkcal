@@ -171,7 +171,7 @@ public:
       @param date date
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QDate &date) = 0;
+    virtual bool load(const QDate &date);
 
     /**
       Load incidences between given dates into the memory. start is inclusive,
@@ -192,7 +192,7 @@ public:
       @param instanceIdentifier is an identifier returned by Incidence::instanceIdentifier()
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadIncidenceInstance(const QString &instanceIdentifier) = 0;
+    virtual bool loadIncidenceInstance(const QString &instanceIdentifier);
 
     /**
       Load incidences of one notebook into the memory.

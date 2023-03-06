@@ -104,15 +104,7 @@ public:
     {
         return true;
     }
-    bool load(const QDate &)
-    {
-        return true;
-    }
     bool load(const QDate &, const QDate &)
-    {
-        return true;
-    }
-    bool loadIncidenceInstance(const QString &)
     {
         return true;
     }
