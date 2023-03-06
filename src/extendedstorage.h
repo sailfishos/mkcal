@@ -321,18 +321,6 @@ public:
                                const QString &notebookUid = QString()) = 0;
 
     /**
-      Get possible duplicates for given incidence.
-
-      @param list duplicate incidences
-      @param incidence incidence to check
-      @param notebookUid list incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool duplicateIncidences(KCalendarCore::Incidence::List *list,
-                                     const KCalendarCore::Incidence::Ptr &incidence,
-                                     const QString &notebookUid = QString()) = 0;
-
-    /**
       Get deletion time of incidence
 
       @param incidence incidence to check

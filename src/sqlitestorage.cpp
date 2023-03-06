@@ -145,7 +145,7 @@ public:
     bool selectIncidences(Incidence::List *list,
                           const char *query1, int qsize1,
                           DBOperation dbop, const QDateTime &after,
-                          const QString &notebookUid, const QString &summary = QString());
+                          const QString &notebookUid);
     bool saveTimezones();
     bool loadTimezones();
 };
@@ -884,13 +884,12 @@ void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &inci
 bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
                                               const char *query1, int qsize1,
                                               DBOperation dbop, const QDateTime &after,
-                                              const QString &notebookUid, const QString &summary)
+                                              const QString &notebookUid)
 {
     int rv = 0;
     sqlite3_stmt *stmt1 = NULL;
     int index;
     QByteArray n;
-    QByteArray s;
     Incidence::Ptr incidence;
     sqlite3_int64 secs;
     QString nbook;
@@ -927,21 +926,6 @@ bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
                 index = 2;
                 SL3_bind_int64(stmt1, index, secs);
                 if (!notebookUid.isNull()) {
-                    index = 3;
-                    n = notebookUid.toUtf8();
-                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-                }
-            }
-            if (dbop == DBSelect) {
-                index = 1;
-                secs = mFormat->toOriginTime(after);
-                qCDebug(lcMkcal) << "QUERY FROM" << secs;
-                SL3_bind_int64(stmt1, index, secs);
-                index = 2;
-                s = summary.toUtf8();
-                SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
-                if (!notebookUid.isNull()) {
-                    qCDebug(lcMkcal) << "notebook" << notebookUid.toUtf8().constData();
                     index = 3;
                     n = notebookUid.toUtf8();
                     SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
@@ -1069,35 +1053,6 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
                                    DBSelect, QDateTime(), notebookUid);
     }
     return false;
-}
-
-bool SqliteStorage::duplicateIncidences(Incidence::List *list, const Incidence::Ptr &incidence,
-                                        const QString &notebookUid)
-{
-    if (d->mDatabase && list && incidence) {
-        const char *query1 = NULL;
-        int qsize1 = 0;
-        QDateTime dtStart;
-
-        if (incidence->dtStart().isValid()) {
-            dtStart = incidence->dtStart();
-        } else {
-            dtStart = QDateTime();
-        }
-
-        if (!notebookUid.isNull()) {
-            query1 = SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK);
-        } else {
-            query1 = SELECT_COMPONENTS_BY_DUPLICATE;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DUPLICATE);
-        }
-
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBSelect, dtStart, notebookUid, incidence->summary());
-    }
-    return false;
-
 }
 
 QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)

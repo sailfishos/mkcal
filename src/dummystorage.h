@@ -147,10 +147,6 @@ public:
     {
         return true;
     }
-    bool duplicateIncidences(KCalendarCore::Incidence::List *, const KCalendarCore::Incidence::Ptr &, const QString &)
-    {
-        return true;
-    }
     bool loadNotebooks()
     {
         return true;

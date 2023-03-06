@@ -437,10 +437,6 @@ private:
 "select * from Attachments where ComponentId=?"
 #define SELECT_CALENDARPROPERTIES_BY_ID \
 "select * from Calendarproperties where CalendarId=?"
-#define SELECT_COMPONENTS_BY_DUPLICATE \
-"select * from Components where DateStart=? and Summary=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK \
-"select * from Components where DateStart=? and Summary=? and Notebook=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_CREATED \
 "select * from Components where DateCreated>=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK \
