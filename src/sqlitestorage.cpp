@@ -876,15 +876,6 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
             }
         }
     } else if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence)) {
-
-        QString uid = incidence->uid();
-
-        if (uid.length() < 7) {   // We force a minimum length of uid to grant uniqness
-            QByteArray suuid(QUuid::createUuid().toByteArray());
-            qCDebug(lcMkcal) << "changing" << uid << "to" << suuid;
-            incidence->setUid(suuid.mid(1, suuid.length() - 2));
-        }
-
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
         d->mIncidencesToInsert.insert(incidence->uid(), incidence);
     }
