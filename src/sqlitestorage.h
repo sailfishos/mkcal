@@ -211,14 +211,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::duplicateIncidences()
-    */
-    bool duplicateIncidences(KCalendarCore::Incidence::List *list,
-                             const KCalendarCore::Incidence::Ptr &incidence,
-                             const QString &notebookUid = QString());
-
-    /**
-      @copydoc
       ExtendedStorage::incidenceDeletedDate()
     */
     QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence);
