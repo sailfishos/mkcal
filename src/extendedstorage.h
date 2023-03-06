@@ -464,11 +464,11 @@ protected:
     bool isRecurrenceLoaded() const;
     void setIsRecurrenceLoaded(bool loaded);
 
-    void setModified(const QString &info);
-    void setFinished(bool error, const QString &info);
-    void setUpdated(const KCalendarCore::Incidence::List &added,
-                    const KCalendarCore::Incidence::List &modified,
-                    const KCalendarCore::Incidence::List &deleted);
+    void emitStorageModified(const QString &info);
+    void emitStorageFinished(bool error, const QString &info);
+    void emitStorageUpdated(const KCalendarCore::Incidence::List &added,
+                            const KCalendarCore::Incidence::List &modified,
+                            const KCalendarCore::Incidence::List &deleted);
 
 private:
     //@cond PRIVATE

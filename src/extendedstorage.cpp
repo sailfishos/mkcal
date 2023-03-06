@@ -298,7 +298,7 @@ void ExtendedStorage::unregisterObserver(ExtendedStorageObserver *observer)
     d->mObservers.removeAll(observer);
 }
 
-void ExtendedStorage::setModified(const QString &info)
+void ExtendedStorage::emitStorageModified(const QString &info)
 {
     const QStringList list = d->mNotebooks.keys();
     for (const QString &uid : list) {
@@ -317,16 +317,16 @@ void ExtendedStorage::setModified(const QString &info)
     }
 }
 
-void ExtendedStorage::setFinished(bool error, const QString &info)
+void ExtendedStorage::emitStorageFinished(bool error, const QString &info)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageFinished(this, error, info);
     }
 }
 
-void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
-                                 const KCalendarCore::Incidence::List &modified,
-                                 const KCalendarCore::Incidence::List &deleted)
+void ExtendedStorage::emitStorageUpdated(const KCalendarCore::Incidence::List &added,
+                                         const KCalendarCore::Incidence::List &modified,
+                                         const KCalendarCore::Incidence::List &deleted)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageUpdated(this, added, modified, deleted);

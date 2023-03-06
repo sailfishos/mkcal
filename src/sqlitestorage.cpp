@@ -606,7 +606,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1)
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
-    mStorage->setFinished(false, "load completed");
+    mStorage->emitStorageFinished(false, "load completed");
 
     return count;
 }
@@ -704,14 +704,14 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     }
 
     if (d->mIsSaved) {
-        setUpdated(added, modified, deleted);
+        emitStorageUpdated(added, modified, deleted);
         d->mChanged.resize(0);   // make a change to create signal
     }
 
     if (errors == 0) {
-        setFinished(false, "save completed");
+        emitStorageFinished(false, "save completed");
     } else {
-        setFinished(true, "errors saving incidences");
+        emitStorageFinished(true, "errors saving incidences");
     }
 
     return errors == 0;
@@ -1376,7 +1376,7 @@ void SqliteStorage::fileChanged(const QString &path)
         if (!d->loadTimezones()) {
             qCWarning(lcMkcal) << "loading timezones failed";
         }
-        setModified(path);
+        emitStorageModified(path);
         qCDebug(lcMkcal) << path << "has been modified";
     }
 }
