@@ -459,21 +459,6 @@ public:
     */
     bool isValidNotebook(const QString &notebookUid) const;
 
-    // Alarm Methods //
-
-    /**
-      Checking if an incidence has active alarms.
-      Application can use this function for getting the incidence in
-      question, for example, displaying the incidence after an alarm.
-
-      @param uid uid
-      @param recurrenceId recurrenceId
-      @param loadAlways set true to load always from storage
-      @return the alarmed incidence, or null if there is no active alarm
-    */
-    KCalendarCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
-                                        bool loadAlways = false);
-
     /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.

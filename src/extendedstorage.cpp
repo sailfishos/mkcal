@@ -521,26 +521,6 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
     return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
 }
 
-Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
-                                           bool loadAlways)
-{
-    QDateTime rid;
-
-    if (!recurrenceId.isEmpty()) {
-        rid = QDateTime::fromString(recurrenceId, Qt::ISODate);
-    }
-    Incidence::Ptr incidence = calendar()->incidence(uid, rid);
-    if (!incidence || loadAlways) {
-        load(uid, rid);
-        incidence = calendar()->incidence(uid, rid);
-    }
-    if (incidence && incidence->hasEnabledAlarms()) {
-        // Return incidence if it exists and has active alarms.
-        return incidence;
-    }
-    return Incidence::Ptr();
-}
-
 #if defined(TIMED_SUPPORT)
 // Todo: move this into a service plugin that is a ExtendedStorageObserver.
 QDateTime ExtendedStorage::Private::getNextOccurrence(const Incidence::Ptr &incidence,
