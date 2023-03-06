@@ -347,27 +347,6 @@ public:
     */
     virtual QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence) = 0;
 
-    /**
-      Get count of events
-
-      @return count of events
-    */
-    virtual int eventCount() = 0;
-
-    /**
-      Get count of todos
-
-      @return count of todos
-    */
-    virtual int todoCount() = 0;
-
-    /**
-      Get count of journals
-
-      @return count of journals
-    */
-    virtual int journalCount() = 0;
-
     // Observer Specific Methods //
 
     /**

@@ -243,24 +243,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::eventCount()
-    */
-    int eventCount();
-
-    /**
-      @copydoc
-      ExtendedStorage::todoCount()
-    */
-    int todoCount();
-
-    /**
-      @copydoc
-      ExtendedStorage::journalCount()
-    */
-    int journalCount();
-
-    /**
-      @copydoc
       ExtendedStorage::virtual_hook()
     */
     virtual void virtual_hook(int id, void *data);

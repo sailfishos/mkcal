@@ -455,12 +455,6 @@ private:
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
 "select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
-#define SELECT_EVENT_COUNT \
-"select count(*) from Components where Type='Event' and DateDeleted=0"
-#define SELECT_TODO_COUNT \
-"select count(*) from Components where Type='Todo' and DateDeleted=0"
-#define SELECT_JOURNAL_COUNT \
-"select count(*) from Components where Type='Journal' and DateDeleted=0"
 
 #define UNSET_FLAG_FROM_CALENDAR \
 "update Calendars set Flags=(Flags & (~?))"
