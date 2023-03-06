@@ -138,6 +138,7 @@ public:
     bool mIsSaved;
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
+    bool loadRecurringIncidences();
     int loadIncidences(sqlite3_stmt *stmt1);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
@@ -418,7 +419,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
     // We have no way to know if a recurring incidence
     // is happening within [start, end[, so load them all.
     if ((start.isValid() || end.isValid())
-        && !loadRecurringIncidences()) {
+        && !d->loadRecurringIncidences()) {
         return false;
     }
 
@@ -541,19 +542,19 @@ bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
     return load(uid);
 }
 
-bool SqliteStorage::loadRecurringIncidences()
+bool SqliteStorage::Private::loadRecurringIncidences()
 {
-    if (!d->mDatabase) {
+    if (!mDatabase) {
         return false;
     }
 
-    if (isRecurrenceLoaded()) {
+    if (mStorage->isRecurrenceLoaded()) {
         return true;
     }
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
+    mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -563,18 +564,19 @@ bool SqliteStorage::loadRecurringIncidences()
     query1 = SELECT_COMPONENTS_BY_RECURSIVE;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_RECURSIVE);
 
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
 
-    count = d->loadIncidences(stmt1);
+    count = loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
+    mIsLoading = false;
 
-    setIsRecurrenceLoaded(count >= 0);
+    mStorage->setIsRecurrenceLoaded(count >= 0);
 
     return count >= 0;
 }
 
+//@cond PRIVATE
 static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
 {
     QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());

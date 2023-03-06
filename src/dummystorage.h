@@ -120,10 +120,6 @@ public:
     {
         return true;
     }
-    bool loadRecurringIncidences()
-    {
-        return true;
-    }
     bool cancel()
     {
         return true;

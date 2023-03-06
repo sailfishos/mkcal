@@ -203,13 +203,6 @@ public:
     virtual bool loadNotebookIncidences(const QString &notebookUid) = 0;
 
     /**
-      Load recurring incidences.
-
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadRecurringIncidences() = 0;
-
-    /**
       Remove from storage all incidences that have been previously
       marked as deleted and that matches the UID / RecID of the incidences
       in list. The action is performed immediately on database.

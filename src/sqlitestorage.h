@@ -135,12 +135,6 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::loadRecurringIncidences()
-    */
-    bool loadRecurringIncidences();
-
-    /**
-      @copydoc
       ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
     */
     bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
