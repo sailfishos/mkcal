@@ -28,8 +28,9 @@
 
 #include <sqlite3.h>
 
+#include "dummystorage.h" // Not used, but tests API compilation
+
 #include "tst_storage.h"
-#include "dummystorage.h" // Not used, but tests API compilqtion
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
 #ifdef TIMED_SUPPORT
