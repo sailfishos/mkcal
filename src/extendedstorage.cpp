@@ -87,33 +87,17 @@ public:
     Private(bool validateNotebooks)
         : mValidateNotebooks(validateNotebooks),
           mIsRecurrenceLoaded(false),
-          mIsUncompletedTodosLoaded(false),
-          mIsCompletedTodosDateLoaded(false),
-          mIsCompletedTodosCreatedLoaded(false),
-          mIsDateLoaded(false),
-          mIsCreatedLoaded(false),
-          mIsFutureDateLoaded(false),
-          mIsGeoDateLoaded(false),
-          mIsGeoCreatedLoaded(false),
-          mIsJournalsLoaded(false),
           mDefaultNotebook(0)
     {}
 
     bool mValidateNotebooks;
     QList<Range> mRanges;
     bool mIsRecurrenceLoaded;
-    bool mIsUncompletedTodosLoaded;
-    bool mIsCompletedTodosDateLoaded;
-    bool mIsCompletedTodosCreatedLoaded;
-    bool mIsDateLoaded;
-    bool mIsCreatedLoaded;
-    bool mIsFutureDateLoaded;
-    bool mIsGeoDateLoaded;
-    bool mIsGeoCreatedLoaded;
-    bool mIsJournalsLoaded;
     QList<ExtendedStorageObserver *> mObservers;
     QHash<QString, Notebook::Ptr> mNotebooks; // uid to notebook
     Notebook::Ptr mDefaultNotebook;
+
+    bool clear();
 
 #if defined(TIMED_SUPPORT)
     // These alarm methods are used to communicate with an external
@@ -129,6 +113,16 @@ public:
     void commitEvents(Timed::Event::List &events);
 #endif
 };
+
+bool ExtendedStorage::Private::clear()
+{
+    mRanges.clear();
+    mIsRecurrenceLoaded = false;
+    mNotebooks.clear();
+    mDefaultNotebook = Notebook::Ptr();
+
+    return true;
+}
 //@endcond
 
 ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
@@ -146,27 +140,7 @@ ExtendedStorage::~ExtendedStorage()
 
 bool ExtendedStorage::close()
 {
-    clearLoaded();
-
-    d->mNotebooks.clear();
-    d->mDefaultNotebook = Notebook::Ptr();
-
-    return true;
-}
-
-void ExtendedStorage::clearLoaded()
-{
-    d->mRanges.clear();
-    d->mIsRecurrenceLoaded = false;
-    d->mIsUncompletedTodosLoaded = false;
-    d->mIsCompletedTodosDateLoaded = false;
-    d->mIsCompletedTodosCreatedLoaded = false;
-    d->mIsDateLoaded = false;
-    d->mIsCreatedLoaded = false;
-    d->mIsFutureDateLoaded = false;
-    d->mIsGeoDateLoaded = false;
-    d->mIsGeoCreatedLoaded = false;
-    d->mIsJournalsLoaded = false;
+    return d->clear();
 }
 
 bool ExtendedStorage::getLoadDates(const QDate &start, const QDate &end,
@@ -242,96 +216,6 @@ void ExtendedStorage::setIsRecurrenceLoaded(bool loaded)
     d->mIsRecurrenceLoaded = loaded;
 }
 
-bool ExtendedStorage::isUncompletedTodosLoaded()
-{
-    return d->mIsUncompletedTodosLoaded;
-}
-
-void ExtendedStorage::setIsUncompletedTodosLoaded(bool loaded)
-{
-    d->mIsUncompletedTodosLoaded = loaded;
-}
-
-bool ExtendedStorage::isCompletedTodosDateLoaded()
-{
-    return d->mIsCompletedTodosDateLoaded;
-}
-
-void ExtendedStorage::setIsCompletedTodosDateLoaded(bool loaded)
-{
-    d->mIsCompletedTodosDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isCompletedTodosCreatedLoaded()
-{
-    return d->mIsCompletedTodosCreatedLoaded;
-}
-
-void ExtendedStorage::setIsCompletedTodosCreatedLoaded(bool loaded)
-{
-    d->mIsCompletedTodosCreatedLoaded = loaded;
-}
-
-bool ExtendedStorage::isDateLoaded()
-{
-    return d->mIsDateLoaded;
-}
-
-void ExtendedStorage::setIsDateLoaded(bool loaded)
-{
-    d->mIsDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isFutureDateLoaded()
-{
-    return d->mIsFutureDateLoaded;
-}
-
-void ExtendedStorage::setIsFutureDateLoaded(bool loaded)
-{
-    d->mIsFutureDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isJournalsLoaded()
-{
-    return d->mIsJournalsLoaded;
-}
-
-void ExtendedStorage::setIsJournalsLoaded(bool loaded)
-{
-    d->mIsJournalsLoaded = loaded;
-}
-
-bool ExtendedStorage::isCreatedLoaded()
-{
-    return d->mIsCreatedLoaded;
-}
-
-void ExtendedStorage::setIsCreatedLoaded(bool loaded)
-{
-    d->mIsCreatedLoaded = loaded;
-}
-
-bool ExtendedStorage::isGeoDateLoaded()
-{
-    return d->mIsGeoDateLoaded;
-}
-
-void ExtendedStorage::setIsGeoDateLoaded(bool loaded)
-{
-    d->mIsGeoDateLoaded = loaded;
-}
-
-bool ExtendedStorage::isGeoCreatedLoaded()
-{
-    return d->mIsGeoCreatedLoaded;
-}
-
-void ExtendedStorage::setIsGeoCreatedLoaded(bool loaded)
-{
-    d->mIsGeoCreatedLoaded = loaded;
-}
-
 bool ExtendedStorage::loadSeries(const QString &uid)
 {
     qCWarning(lcMkcal) << "deprecated call to loadSeries(), use load() instead.";
@@ -344,6 +228,36 @@ bool ExtendedStorage::load(const QString &uid, const QDateTime &recurrenceId)
 
     qCWarning(lcMkcal) << "deprecated call to load(uid, recid), use load(uid) instead.";
     return load(uid);
+}
+
+bool ExtendedStorage::loadIncidenceInstance(const QString &instanceIdentifier)
+{
+    QString uid;
+    // At the moment, from KCalendarCore, if the instance is an exception,
+    // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
+    // This is tested in tst_loadIncidenceInstance() to ensure that any
+    // future breakage would be properly detected.
+    if (instanceIdentifier.endsWith('Z')) {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
+    } else if (instanceIdentifier.length() > 19
+               && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
+    } else if (instanceIdentifier.length() > 25
+               && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
+        uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
+    } else {
+        uid = instanceIdentifier;
+    }
+
+    // Even if we're looking for a specific incidence instance, we load all
+    // the series for recurring event, to avoid orphaned exceptions in the
+    // calendar or recurring events without their exceptions.
+    return load(uid);
+}
+
+bool ExtendedStorage::load(const QDate &date)
+{
+    return date.isValid() && load(date, date.addDays(1));
 }
 
 void ExtendedStorageObserver::storageModified(ExtendedStorage *storage,
@@ -384,7 +298,7 @@ void ExtendedStorage::unregisterObserver(ExtendedStorageObserver *observer)
     d->mObservers.removeAll(observer);
 }
 
-void ExtendedStorage::setModified(const QString &info)
+void ExtendedStorage::emitStorageModified(const QString &info)
 {
     const QStringList list = d->mNotebooks.keys();
     for (const QString &uid : list) {
@@ -393,9 +307,7 @@ void ExtendedStorage::setModified(const QString &info)
         }
     }
     calendar()->close();
-    clearLoaded();
-    d->mNotebooks.clear();
-    d->mDefaultNotebook.clear();
+    d->clear();
     if (!loadNotebooks()) {
         qCWarning(lcMkcal) << "loading notebooks failed";
     }
@@ -405,16 +317,16 @@ void ExtendedStorage::setModified(const QString &info)
     }
 }
 
-void ExtendedStorage::setFinished(bool error, const QString &info)
+void ExtendedStorage::emitStorageFinished(bool error, const QString &info)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageFinished(this, error, info);
     }
 }
 
-void ExtendedStorage::setUpdated(const KCalendarCore::Incidence::List &added,
-                                 const KCalendarCore::Incidence::List &modified,
-                                 const KCalendarCore::Incidence::List &deleted)
+void ExtendedStorage::emitStorageUpdated(const KCalendarCore::Incidence::List &added,
+                                         const KCalendarCore::Incidence::List &modified,
+                                         const KCalendarCore::Incidence::List &deleted)
 {
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageUpdated(this, added, modified, deleted);
@@ -459,7 +371,7 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBInsert)) {
+    if (!nb->isRunTimeOnly() && !insertNotebook(nb)) {
         return false;
     }
 
@@ -479,7 +391,7 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBUpdate)) {
+    if (!nb->isRunTimeOnly() && !modifyNotebook(nb)) {
         return false;
     }
 
@@ -518,7 +430,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-    if (!nb->isRunTimeOnly() && !modifyNotebook(nb, DBDelete)) {
+    if (!nb->isRunTimeOnly() && !eraseNotebook(nb)) {
         return false;
     }
 
@@ -636,26 +548,6 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
         color = "#0000FF";
     Notebook::Ptr nbDefault(new Notebook(name, QString(), color));
     return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
-}
-
-Incidence::Ptr ExtendedStorage::checkAlarm(const QString &uid, const QString &recurrenceId,
-                                           bool loadAlways)
-{
-    QDateTime rid;
-
-    if (!recurrenceId.isEmpty()) {
-        rid = QDateTime::fromString(recurrenceId, Qt::ISODate);
-    }
-    Incidence::Ptr incidence = calendar()->incidence(uid, rid);
-    if (!incidence || loadAlways) {
-        load(uid, rid);
-        incidence = calendar()->incidence(uid, rid);
-    }
-    if (incidence && incidence->hasEnabledAlarms()) {
-        // Return incidence if it exists and has active alarms.
-        return incidence;
-    }
-    return Incidence::Ptr();
 }
 
 #if defined(TIMED_SUPPORT)

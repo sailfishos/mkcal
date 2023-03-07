@@ -61,33 +61,14 @@ public:
     void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &)
     {
     }
-    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
-    {
-        return true;
-    }
-
-    /**
-      @copydoc
-      ExtendedStorage::open()
-    */
     bool open()
     {
         return true;
     }
-
-    /**
-      @copydoc
-      ExtendedStorage::load()
-    */
     bool load()
     {
         return true;
     }
-
-    /**
-      @copydoc
-      ExtendedStorage::save()
-    */
     bool save()
     {
         return true;
@@ -104,15 +85,7 @@ public:
     {
         return true;
     }
-    bool load(const QDate &)
-    {
-        return true;
-    }
     bool load(const QDate &, const QDate &)
-    {
-        return true;
-    }
-    bool loadIncidenceInstance(const QString &)
     {
         return true;
     }
@@ -120,28 +93,9 @@ public:
     {
         return true;
     }
-    bool loadRecurringIncidences()
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
     {
         return true;
-    }
-    bool cancel()
-    {
-        return true;
-    }
-    void calendarModified(bool, const KCalendarCore::Calendar *) const
-    {
-    }
-    void calendarIncidenceAdded(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceChanged(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceDeleted(const KCalendarCore::Incidence::Ptr &) const
-    {
-    }
-    void calendarIncidenceAdditionCanceled(const KCalendarCore::Incidence::Ptr &) const
-    {
     }
     bool insertedIncidences(KCalendarCore::Incidence::List *, const QDateTime &, const QString &)
     {
@@ -159,33 +113,25 @@ public:
     {
         return true;
     }
-    bool duplicateIncidences(KCalendarCore::Incidence::List *, const KCalendarCore::Incidence::Ptr &, const QString &)
-    {
-        return true;
-    }
     bool loadNotebooks()
     {
         return true;
     }
-    bool modifyNotebook(const mKCal::Notebook::Ptr &, mKCal::DBOperation)
+    bool insertNotebook(const Notebook::Ptr &)
+    {
+        return true;
+    }
+    bool modifyNotebook(const Notebook::Ptr &)
+    {
+        return true;
+    }
+    bool eraseNotebook(const Notebook::Ptr &)
     {
         return true;
     }
     QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &)
     {
         return QDateTime();
-    }
-    int eventCount()
-    {
-        return 0;
-    }
-    int todoCount()
-    {
-        return 0;
-    }
-    int journalCount()
-    {
-        return 0;
     }
     void virtual_hook(int, void *)
     {

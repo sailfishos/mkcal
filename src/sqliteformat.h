@@ -44,6 +44,16 @@
 namespace mKCal {
 
 /**
+  Database operation type.
+*/
+enum DBOperation {
+    DBInsert,
+    DBUpdate,
+    DBMarkDeleted,
+    DBDelete
+};
+
+/**
   @brief
   Sqlite format implementation.
 
@@ -437,10 +447,6 @@ private:
 "select * from Attachments where ComponentId=?"
 #define SELECT_CALENDARPROPERTIES_BY_ID \
 "select * from Calendarproperties where CalendarId=?"
-#define SELECT_COMPONENTS_BY_DUPLICATE \
-"select * from Components where DateStart=? and Summary=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK \
-"select * from Components where DateStart=? and Summary=? and Notebook=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_CREATED \
 "select * from Components where DateCreated>=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK \
@@ -455,12 +461,6 @@ private:
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
 "select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
-#define SELECT_EVENT_COUNT \
-"select count(*) from Components where Type='Event' and DateDeleted=0"
-#define SELECT_TODO_COUNT \
-"select count(*) from Components where Type='Todo' and DateDeleted=0"
-#define SELECT_JOURNAL_COUNT \
-"select count(*) from Components where Type='Journal' and DateDeleted=0"
 
 #define UNSET_FLAG_FROM_CALENDAR \
 "update Calendars set Flags=(Flags & (~?))"

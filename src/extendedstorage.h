@@ -49,18 +49,6 @@ class tst_load;
 namespace mKCal {
 
 /**
-  Database operation type.
-*/
-enum DBOperation {
-    DBNone,
-    DBInsert,
-    DBUpdate,
-    DBMarkDeleted,
-    DBDelete,
-    DBSelect
-};
-
-/**
   @brief
   This class provides a calendar storage interface.
   Every action on the storage can be synchronous or asynchronous,
@@ -171,7 +159,7 @@ public:
       @param date date
       @return true if the load was successful; false otherwise.
     */
-    virtual bool load(const QDate &date) = 0;
+    virtual bool load(const QDate &date);
 
     /**
       Load incidences between given dates into the memory. start is inclusive,
@@ -192,7 +180,7 @@ public:
       @param instanceIdentifier is an identifier returned by Incidence::instanceIdentifier()
       @return true if the load was successful; false otherwise.
     */
-    virtual bool loadIncidenceInstance(const QString &instanceIdentifier) = 0;
+    virtual bool loadIncidenceInstance(const QString &instanceIdentifier);
 
     /**
       Load incidences of one notebook into the memory.
@@ -201,13 +189,6 @@ public:
       @return true if the load was successful; false otherwise.
     */
     virtual bool loadNotebookIncidences(const QString &notebookUid) = 0;
-
-    /**
-      Load recurring incidences.
-
-      @return true if the load was successful; false otherwise.
-    */
-    virtual bool loadRecurringIncidences() = 0;
 
     /**
       Remove from storage all incidences that have been previously
@@ -328,45 +309,12 @@ public:
                                const QString &notebookUid = QString()) = 0;
 
     /**
-      Get possible duplicates for given incidence.
-
-      @param list duplicate incidences
-      @param incidence incidence to check
-      @param notebookUid list incidences for given notebook
-      @return true if execution was scheduled; false otherwise
-    */
-    virtual bool duplicateIncidences(KCalendarCore::Incidence::List *list,
-                                     const KCalendarCore::Incidence::Ptr &incidence,
-                                     const QString &notebookUid = QString()) = 0;
-
-    /**
       Get deletion time of incidence
 
       @param incidence incidence to check
       @return valid deletion time of incidence in UTC if incidence has been deleted otherwise QDateTime()
     */
     virtual QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence) = 0;
-
-    /**
-      Get count of events
-
-      @return count of events
-    */
-    virtual int eventCount() = 0;
-
-    /**
-      Get count of todos
-
-      @return count of todos
-    */
-    virtual int todoCount() = 0;
-
-    /**
-      Get count of journals
-
-      @return count of journals
-    */
-    virtual int journalCount() = 0;
 
     // Observer Specific Methods //
 
@@ -480,21 +428,6 @@ public:
     */
     bool isValidNotebook(const QString &notebookUid) const;
 
-    // Alarm Methods //
-
-    /**
-      Checking if an incidence has active alarms.
-      Application can use this function for getting the incidence in
-      question, for example, displaying the incidence after an alarm.
-
-      @param uid uid
-      @param recurrenceId recurrenceId
-      @param loadAlways set true to load always from storage
-      @return the alarmed incidence, or null if there is no active alarm
-    */
-    KCalendarCore::Incidence::Ptr checkAlarm(const QString &uid, const QString &recurrenceId,
-                                        bool loadAlways = false);
-
     /**
       Creates and sets a default notebook. Usually called for an empty
       calendar.
@@ -520,7 +453,9 @@ public:
 
 protected:
     virtual bool loadNotebooks() = 0;
-    virtual bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop) = 0;
+    virtual bool insertNotebook(const Notebook::Ptr &nb) = 0;
+    virtual bool modifyNotebook(const Notebook::Ptr &nb) = 0;
+    virtual bool eraseNotebook(const Notebook::Ptr &nb) = 0;
 
     bool getLoadDates(const QDate &start, const QDate &end,
                       QDateTime *loadStart, QDateTime *loadEnd) const;
@@ -529,36 +464,11 @@ protected:
     bool isRecurrenceLoaded() const;
     void setIsRecurrenceLoaded(bool loaded);
 
-    void setModified(const QString &info);
-    void setFinished(bool error, const QString &info);
-    void setUpdated(const KCalendarCore::Incidence::List &added,
-                    const KCalendarCore::Incidence::List &modified,
-                    const KCalendarCore::Incidence::List &deleted);
-
-    bool isUncompletedTodosLoaded();
-    void setIsUncompletedTodosLoaded(bool loaded);
-
-    bool isCompletedTodosDateLoaded();
-    void setIsCompletedTodosDateLoaded(bool loaded);
-    bool isCompletedTodosCreatedLoaded();
-    void setIsCompletedTodosCreatedLoaded(bool loaded);
-
-    bool isJournalsLoaded();
-    void setIsJournalsLoaded(bool loaded);
-
-    bool isDateLoaded();
-    void setIsDateLoaded(bool loaded);
-    bool isCreatedLoaded();
-    void setIsCreatedLoaded(bool loaded);
-    bool isFutureDateLoaded();
-    void setIsFutureDateLoaded(bool loaded);
-
-    bool isGeoDateLoaded();
-    void setIsGeoDateLoaded(bool loaded);
-    bool isGeoCreatedLoaded();
-    void setIsGeoCreatedLoaded(bool loaded);
-
-    void clearLoaded();
+    void emitStorageModified(const QString &info);
+    void emitStorageFinished(bool error, const QString &info);
+    void emitStorageUpdated(const KCalendarCore::Incidence::List &added,
+                            const KCalendarCore::Incidence::List &modified,
+                            const KCalendarCore::Incidence::List &deleted);
 
 private:
     //@cond PRIVATE

@@ -138,14 +138,11 @@ public:
     bool mIsSaved;
 
     bool addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid);
+    bool loadRecurringIncidences();
+    bool saveNotebook(const Notebook::Ptr &nb, DBOperation dbop);
     int loadIncidences(sqlite3_stmt *stmt1);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
-    bool selectIncidences(Incidence::List *list,
-                          const char *query1, int qsize1,
-                          DBOperation dbop, const QDateTime &after,
-                          const QString &notebookUid, const QString &summary = QString());
-    int selectCount(const char *query, int qsize);
     bool saveTimezones();
     bool loadTimezones();
 };
@@ -397,19 +394,6 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::load(const QDate &date)
-{
-    if (!d->mDatabase) {
-        return false;
-    }
-
-    if (date.isValid()) {
-        return load(date, date.addDays(1));
-    }
-
-    return false;
-}
-
 bool SqliteStorage::load(const QDate &start, const QDate &end)
 {
     if (!d->mDatabase) {
@@ -419,7 +403,7 @@ bool SqliteStorage::load(const QDate &start, const QDate &end)
     // We have no way to know if a recurring incidence
     // is happening within [start, end[, so load them all.
     if ((start.isValid() || end.isValid())
-        && !loadRecurringIncidences()) {
+        && !d->loadRecurringIncidences()) {
         return false;
     }
 
@@ -517,44 +501,19 @@ error:
     return count >= 0;
 }
 
-bool SqliteStorage::loadIncidenceInstance(const QString &instanceIdentifier)
+bool SqliteStorage::Private::loadRecurringIncidences()
 {
-    QString uid;
-    // At the moment, from KCalendarCore, if the instance is an exception,
-    // the instanceIdentifier will ends with yyyy-MM-ddTHH:mm:ss[Z|[+|-]HH:mm]
-    // This is tested in tst_loadIncidenceInstance() to ensure that any
-    // future breakage would be properly detected.
-    if (instanceIdentifier.endsWith('Z')) {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 20);
-    } else if (instanceIdentifier.length() > 19
-               && instanceIdentifier[instanceIdentifier.length() - 9] == 'T') {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 19);
-    } else if (instanceIdentifier.length() > 25
-               && instanceIdentifier[instanceIdentifier.length() - 3] == ':') {
-        uid = instanceIdentifier.left(instanceIdentifier.length() - 25);
-    } else {
-        uid = instanceIdentifier;
-    }
-
-    // Even if we're looking for a specific incidence instance, we load all
-    // the series for recurring event, to avoid orphaned exceptions in the
-    // calendar or recurring events without their exceptions.
-    return load(uid);
-}
-
-bool SqliteStorage::loadRecurringIncidences()
-{
-    if (!d->mDatabase) {
+    if (!mDatabase) {
         return false;
     }
 
-    if (isRecurrenceLoaded()) {
+    if (mStorage->isRecurrenceLoaded()) {
         return true;
     }
 
     int rv = 0;
     int count = 0;
-    d->mIsLoading = true;
+    mIsLoading = true;
 
     const char *query1 = NULL;
     int qsize1 = 0;
@@ -564,18 +523,19 @@ bool SqliteStorage::loadRecurringIncidences()
     query1 = SELECT_COMPONENTS_BY_RECURSIVE;
     qsize1 = sizeof(SELECT_COMPONENTS_BY_RECURSIVE);
 
-    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, NULL);
+    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
 
-    count = d->loadIncidences(stmt1);
+    count = loadIncidences(stmt1);
 
 error:
-    d->mIsLoading = false;
+    mIsLoading = false;
 
-    setIsRecurrenceLoaded(count >= 0);
+    mStorage->setIsRecurrenceLoaded(count >= 0);
 
     return count >= 0;
 }
 
+//@cond PRIVATE
 static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
 {
     QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());
@@ -646,7 +606,7 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1)
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
-    mStorage->setFinished(false, "load completed");
+    mStorage->emitStorageFinished(false, "load completed");
 
     return count;
 }
@@ -730,16 +690,7 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     // Incidences to delete
     Incidence::List deleted;
     if (!d->mIncidencesToDelete.isEmpty()) {
-        DBOperation dbop = DBNone;
-        switch (deleteAction) {
-        case ExtendedStorage::PurgeDeleted:
-            dbop = DBDelete;
-            break;
-        case ExtendedStorage::MarkDeleted:
-            dbop = DBMarkDeleted;
-            break;
-        }
-
+        DBOperation dbop = deleteAction == ExtendedStorage::PurgeDeleted ? DBDelete : DBMarkDeleted;
         if (!d->saveIncidences(d->mIncidencesToDelete, dbop, &deleted)) {
             errors++;
         }
@@ -753,14 +704,14 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     }
 
     if (d->mIsSaved) {
-        setUpdated(added, modified, deleted);
+        emitStorageUpdated(added, modified, deleted);
         d->mChanged.resize(0);   // make a change to create signal
     }
 
     if (errors == 0) {
-        setFinished(false, "save completed");
+        emitStorageFinished(false, "save completed");
     } else {
-        setFinished(true, "errors saving incidences");
+        emitStorageFinished(true, "errors saving incidences");
     }
 
     return errors == 0;
@@ -877,15 +828,6 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
             }
         }
     } else if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence)) {
-
-        QString uid = incidence->uid();
-
-        if (uid.length() < 7) {   // We force a minimum length of uid to grant uniqness
-            QByteArray suuid(QUuid::createUuid().toByteArray());
-            qCDebug(lcMkcal) << "changing" << uid << "to" << suuid;
-            incidence->setUid(suuid.mid(1, suuid.length() - 2));
-        }
-
         qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
         d->mIncidencesToInsert.insert(incidence->uid(), incidence);
     }
@@ -926,112 +868,22 @@ void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &inci
     }
 }
 
-//@cond PRIVATE
-bool SqliteStorage::Private::selectIncidences(Incidence::List *list,
-                                              const char *query1, int qsize1,
-                                              DBOperation dbop, const QDateTime &after,
-                                              const QString &notebookUid, const QString &summary)
-{
-    int rv = 0;
-    sqlite3_stmt *stmt1 = NULL;
-    int index;
-    QByteArray n;
-    QByteArray s;
-    Incidence::Ptr incidence;
-    sqlite3_int64 secs;
-    QString nbook;
-
-    if (!mSem.acquire()) {
-        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
-        return false;
-    }
-
-    SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, nullptr);
-
-    qCDebug(lcMkcal) << "incidences"
-             << (dbop == DBInsert ? "inserted" :
-                 dbop == DBUpdate ? "updated" :
-                 dbop == DBMarkDeleted ? "deleted" : "")
-             << "since" << after.toString();
-
-    if (query1) {
-        if (after.isValid()) {
-            if (dbop == DBInsert) {
-                index = 1;
-                secs = mFormat->toOriginTime(after);
-                SL3_bind_int64(stmt1, index, secs);
-                if (!notebookUid.isNull()) {
-                    index = 2;
-                    n = notebookUid.toUtf8();
-                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-                }
-            }
-            if (dbop == DBUpdate || dbop == DBMarkDeleted) {
-                index = 1;
-                secs = mFormat->toOriginTime(after);
-                SL3_bind_int64(stmt1, index, secs);
-                index = 2;
-                SL3_bind_int64(stmt1, index, secs);
-                if (!notebookUid.isNull()) {
-                    index = 3;
-                    n = notebookUid.toUtf8();
-                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-                }
-            }
-            if (dbop == DBSelect) {
-                index = 1;
-                secs = mFormat->toOriginTime(after);
-                qCDebug(lcMkcal) << "QUERY FROM" << secs;
-                SL3_bind_int64(stmt1, index, secs);
-                index = 2;
-                s = summary.toUtf8();
-                SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
-                if (!notebookUid.isNull()) {
-                    qCDebug(lcMkcal) << "notebook" << notebookUid.toUtf8().constData();
-                    index = 3;
-                    n = notebookUid.toUtf8();
-                    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-                }
-            }
-        } else {
-            if (!notebookUid.isNull()) {
-                index = 1;
-                n = notebookUid.toUtf8();
-                SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-            }
-        }
-    }
-
-    while ((incidence = mFormat->selectComponents(stmt1, nbook))) {
-        qCDebug(lcMkcal) << "adding incidence" << incidence->uid() << "into list"
-                 << incidence->created() << incidence->lastModified();
-        list->append(incidence);
-    }
-    sqlite3_finalize(stmt1);
-
-    if (!mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
-    }
-    mStorage->setFinished(false, "select completed");
-    return true;
-
-error:
-    if (!mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
-    }
-    mStorage->setFinished(true, "error selecting incidences");
-    return false;
-}
-//@endcond
-
 bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &after,
                                        const QString &notebookUid)
 {
     if (d->mDatabase && list && after.isValid()) {
         const char *query1 = NULL;
         int qsize1 = 0;
+        int rv = 0;
+        sqlite3_stmt *stmt1 = NULL;
+        int index = 1;
+        QByteArray n;
+        sqlite3_int64 secs;
+        Incidence::Ptr incidence;
+        QString nbook;
+        bool success = false;
 
-        if (!notebookUid.isNull()) {
+        if (!notebookUid.isEmpty()) {
             query1 = SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK);
         } else {
@@ -1039,8 +891,30 @@ bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &a
             qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED);
         }
 
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBInsert, after, notebookUid);
+        qCDebug(lcMkcal) << "incidences inserted since" << after;
+        if (!d->mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            return false;
+        }
+
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, nullptr);
+        secs = d->mFormat->toOriginTime(after);
+        SL3_bind_int64(stmt1, index, secs);
+        if (!notebookUid.isEmpty()) {
+            n = notebookUid.toUtf8();
+            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+        }
+        while ((incidence = d->mFormat->selectComponents(stmt1, nbook))) {
+            list->append(incidence);
+        }
+        success = true;
+
+    error:
+        sqlite3_finalize(stmt1);
+        if (!d->mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        }
+        return success;
     }
     return false;
 }
@@ -1051,8 +925,16 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
     if (d->mDatabase && list && after.isValid()) {
         const char *query1 = NULL;
         int qsize1 = 0;
+        int rv = 0;
+        sqlite3_stmt *stmt1 = NULL;
+        int index = 1;
+        QByteArray n;
+        sqlite3_int64 secs;
+        Incidence::Ptr incidence;
+        QString nbook;
+        bool success = false;
 
-        if (!notebookUid.isNull()) {
+        if (!notebookUid.isEmpty()) {
             query1 = SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK);
         } else {
@@ -1060,8 +942,31 @@ bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &a
             qsize1 = sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED);
         }
 
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBUpdate, after, notebookUid);
+        qCDebug(lcMkcal) << "incidences updated since" << after;
+        if (!d->mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            return false;
+        }
+
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, nullptr);
+        secs = d->mFormat->toOriginTime(after);
+        SL3_bind_int64(stmt1, index, secs);
+        SL3_bind_int64(stmt1, index, secs);
+        if (!notebookUid.isEmpty()) {
+            n = notebookUid.toUtf8();
+            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+        }
+        while ((incidence = d->mFormat->selectComponents(stmt1, nbook))) {
+            list->append(incidence);
+        }
+        success = true;
+
+    error:
+        sqlite3_finalize(stmt1);
+        if (!d->mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        }
+        return success;
     }
     return false;
 }
@@ -1072,8 +977,16 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
     if (d->mDatabase && list) {
         const char *query1 = NULL;
         int qsize1 = 0;
+        int rv = 0;
+        sqlite3_stmt *stmt1 = NULL;
+        int index = 1;
+        QByteArray n;
+        sqlite3_int64 secs;
+        Incidence::Ptr incidence;
+        QString nbook;
+        bool success = false;
 
-        if (!notebookUid.isNull()) {
+        if (!notebookUid.isEmpty()) {
             if (after.isValid()) {
                 query1 = SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK;
                 qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK);
@@ -1091,8 +1004,33 @@ bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &af
             }
         }
 
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBMarkDeleted, after, notebookUid);
+        qCDebug(lcMkcal) << "incidences deleted since" << after;
+        if (!d->mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            return false;
+        }
+
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, nullptr);
+        if (after.isValid()) {
+            secs = d->mFormat->toOriginTime(after);
+            SL3_bind_int64(stmt1, index, secs);
+            SL3_bind_int64(stmt1, index, secs);
+        }
+        if (!notebookUid.isEmpty()) {
+            n = notebookUid.toUtf8();
+            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+        }
+        while ((incidence = d->mFormat->selectComponents(stmt1, nbook))) {
+            list->append(incidence);
+        }
+        success = true;
+
+    error:
+        sqlite3_finalize(stmt1);
+        if (!d->mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        }
+        return success;
     }
     return false;
 }
@@ -1102,8 +1040,15 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
     if (d->mDatabase && list) {
         const char *query1 = NULL;
         int qsize1 = 0;
+        int rv = 0;
+        sqlite3_stmt *stmt1 = NULL;
+        int index = 1;
+        QByteArray n;
+        Incidence::Ptr incidence;
+        QString nbook;
+        bool success = false;
 
-        if (!notebookUid.isNull()) {
+        if (!notebookUid.isEmpty()) {
             query1 = SELECT_COMPONENTS_BY_NOTEBOOK;
             qsize1 = sizeof(SELECT_COMPONENTS_BY_NOTEBOOK);
         } else {
@@ -1111,39 +1056,30 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
             qsize1 = sizeof(SELECT_COMPONENTS_ALL);
         }
 
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBSelect, QDateTime(), notebookUid);
-    }
-    return false;
-}
-
-bool SqliteStorage::duplicateIncidences(Incidence::List *list, const Incidence::Ptr &incidence,
-                                        const QString &notebookUid)
-{
-    if (d->mDatabase && list && incidence) {
-        const char *query1 = NULL;
-        int qsize1 = 0;
-        QDateTime dtStart;
-
-        if (incidence->dtStart().isValid()) {
-            dtStart = incidence->dtStart();
-        } else {
-            dtStart = QDateTime();
+        qCDebug(lcMkcal) << "all incidences";
+        if (!d->mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+            return false;
         }
 
-        if (!notebookUid.isNull()) {
-            query1 = SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DUPLICATE_AND_NOTEBOOK);
-        } else {
-            query1 = SELECT_COMPONENTS_BY_DUPLICATE;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DUPLICATE);
+        SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, nullptr);
+        if (!notebookUid.isEmpty()) {
+            n = notebookUid.toUtf8();
+            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
         }
+        while ((incidence = d->mFormat->selectComponents(stmt1, nbook))) {
+            list->append(incidence);
+        }
+        success = true;
 
-        return d->selectIncidences(list, query1, qsize1,
-                                   DBSelect, dtStart, notebookUid, incidence->summary());
+    error:
+        sqlite3_finalize(stmt1);
+        if (!d->mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        }
+        return success;
     }
     return false;
-
 }
 
 QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
@@ -1200,64 +1136,6 @@ error:
     return deletionDate;
 }
 
-//@cond PRIVATE
-int SqliteStorage::Private::selectCount(const char *query, int qsize)
-{
-    int rv = 0;
-    int count = 0;
-    sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
-
-    if (!mDatabase) {
-        return count;
-    }
-
-    if (!mSem.acquire()) {
-        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
-        return count;
-    }
-
-    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-    SL3_step(stmt);
-    if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
-        count = sqlite3_column_int(stmt, 0);
-    }
-
-error:
-    sqlite3_reset(stmt);
-    sqlite3_finalize(stmt);
-
-    if (!mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
-    }
-    return count;
-}
-//@endcond
-
-int SqliteStorage::eventCount()
-{
-    const char *query = SELECT_EVENT_COUNT;
-    int qsize = sizeof(SELECT_EVENT_COUNT);
-
-    return d->selectCount(query, qsize);
-}
-
-int SqliteStorage::todoCount()
-{
-    const char *query = SELECT_TODO_COUNT;
-    int qsize = sizeof(SELECT_TODO_COUNT);
-
-    return d->selectCount(query, qsize);
-}
-
-int SqliteStorage::journalCount()
-{
-    const char *query = SELECT_JOURNAL_COUNT;
-    int qsize = sizeof(SELECT_JOURNAL_COUNT);
-
-    return d->selectCount(query, qsize);
-}
-
 bool SqliteStorage::loadNotebooks()
 {
     const char *query = SELECT_CALENDARS_ALL;
@@ -1309,10 +1187,26 @@ error:
     return false;
 }
 
-bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
+bool SqliteStorage::insertNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBInsert);
+}
+
+bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBUpdate);
+}
+
+bool SqliteStorage::eraseNotebook(const Notebook::Ptr &nb)
+{
+    return d->saveNotebook(nb, DBDelete);
+}
+
+//@cond PRIVATE
+bool SqliteStorage::Private::saveNotebook(const Notebook::Ptr &nb, DBOperation dbop)
 {
     int rv = 0;
-    bool success = d->mIsLoading; // true if we are currently loading
+    bool success = mIsLoading; // true if we are currently loading
     const char *query = NULL;
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
@@ -1320,11 +1214,11 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
     const char *operation = (dbop == DBInsert) ? "inserting" :
                             (dbop == DBUpdate) ? "updating" : "deleting";
 
-    if (!d->mDatabase) {
+    if (!mDatabase) {
         return false;
     }
 
-    if (!d->mIsLoading) {
+    if (!mIsLoading) {
         // Execute database operation.
         if (dbop == DBInsert) {
             query = INSERT_CALENDARS;
@@ -1340,44 +1234,44 @@ bool SqliteStorage::modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop)
             return false;
         }
 
-        if (!d->mSem.acquire()) {
-            qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        if (!mSem.acquire()) {
+            qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
             return false;
         }
 
-        SL3_prepare_v2(d->mDatabase, query, qsize, &stmt, &tail);
+        SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = d->mFormat->modifyCalendars(nb, dbop, stmt, nb == defaultNotebook()))) {
+        if ((success = mFormat->modifyCalendars(nb, dbop, stmt, nb == mStorage->defaultNotebook()))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
-        sqlite3_reset(stmt);
         sqlite3_finalize(stmt);
 
         if (success) {
             // Don't save the incremented transactionId at the moment,
             // let it be seen as an external modification.
             // Todo: add a method for observers on notebook changes.
-            if (!d->mFormat->incrementTransactionId(nullptr))
-                d->mSavedTransactionId = -1;
+            if (!mFormat->incrementTransactionId(nullptr))
+                mSavedTransactionId = -1;
         }
 
-        if (!d->mSem.release()) {
-            qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+        if (!mSem.release()) {
+            qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
         }
 
         if (success) {
-            d->mChanged.resize(0);   // make a change to create signal
+            mChanged.resize(0);   // make a change to create signal
         }
     }
     return success;
 
 error:
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
+    if (!mSem.release()) {
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
     }
     return false;
 }
+//@endcond
 
 bool SqliteStorage::Private::saveTimezones()
 {
@@ -1482,7 +1376,7 @@ void SqliteStorage::fileChanged(const QString &path)
         if (!d->loadTimezones()) {
             qCWarning(lcMkcal) << "loading timezones failed";
         }
-        setModified(path);
+        emitStorageModified(path);
         qCDebug(lcMkcal) << path << "has been modified";
     }
 }

@@ -111,33 +111,15 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::load(const QDate &)
-    */
-    bool load(const QDate &date);
-
-    /**
-      @copydoc
       ExtendedStorage::load(const QDate &, const QDate &)
     */
     bool load(const QDate &start, const QDate &end);
 
     /**
       @copydoc
-      ExtendedStorage::loadIncidenceInstance(const QString &)
-    */
-    bool loadIncidenceInstance(const QString &instanceIdentifier);
-
-    /**
-      @copydoc
       ExtendedStorage::loadNotebookIncidences(const QString &)
     */
     bool loadNotebookIncidences(const QString &notebookUid);
-
-    /**
-      @copydoc
-      ExtendedStorage::loadRecurringIncidences()
-    */
-    bool loadRecurringIncidences();
 
     /**
       @copydoc
@@ -229,35 +211,9 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::duplicateIncidences()
-    */
-    bool duplicateIncidences(KCalendarCore::Incidence::List *list,
-                             const KCalendarCore::Incidence::Ptr &incidence,
-                             const QString &notebookUid = QString());
-
-    /**
-      @copydoc
       ExtendedStorage::incidenceDeletedDate()
     */
     QDateTime incidenceDeletedDate(const KCalendarCore::Incidence::Ptr &incidence);
-
-    /**
-      @copydoc
-      ExtendedStorage::eventCount()
-    */
-    int eventCount();
-
-    /**
-      @copydoc
-      ExtendedStorage::todoCount()
-    */
-    int todoCount();
-
-    /**
-      @copydoc
-      ExtendedStorage::journalCount()
-    */
-    int journalCount();
 
     /**
       @copydoc
@@ -267,7 +223,9 @@ public:
 
 protected:
     bool loadNotebooks();
-    bool modifyNotebook(const Notebook::Ptr &nb, DBOperation dbop);
+    bool insertNotebook(const Notebook::Ptr &nb);
+    bool modifyNotebook(const Notebook::Ptr &nb);
+    bool eraseNotebook(const Notebook::Ptr &nb);
 
 private:
     //@cond PRIVATE
