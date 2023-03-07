@@ -117,15 +117,15 @@ public:
     {
         return true;
     }
-    bool insertNotebook(const Notebook::Ptr &)
+    bool insertNotebook(const mKCal::Notebook::Ptr &)
     {
         return true;
     }
-    bool modifyNotebook(const Notebook::Ptr &)
+    bool modifyNotebook(const mKCal::Notebook::Ptr &)
     {
         return true;
     }
-    bool eraseNotebook(const Notebook::Ptr &)
+    bool eraseNotebook(const mKCal::Notebook::Ptr &)
     {
         return true;
     }
