@@ -404,8 +404,6 @@ private:
 "select * from Calendars order by Name"
 #define SELECT_COMPONENTS_ALL \
 "select * from Components where DateDeleted=0"
-#define SELECT_COMPONENTS_BY_NOTEBOOK \
-"select * from Components where Notebook=? and DateDeleted=0"
 #define SELECT_COMPONENTS_ALL_DELETED \
 "select * from Components where DateDeleted<>0"
 #define SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK \

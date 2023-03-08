@@ -1037,8 +1037,8 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
         bool success = false;
 
         if (!notebookUid.isEmpty()) {
-            query1 = SELECT_COMPONENTS_BY_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_NOTEBOOK);
+            query1 = SELECT_COMPONENTS_BY_NOTEBOOKUID;
+            qsize1 = sizeof(SELECT_COMPONENTS_BY_NOTEBOOKUID);
         } else {
             query1 = SELECT_COMPONENTS_ALL;
             qsize1 = sizeof(SELECT_COMPONENTS_ALL);
