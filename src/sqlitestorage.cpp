@@ -359,6 +359,14 @@ bool SqliteStorage::load(const QString &uid)
         return false;
     }
 
+    // Don't reload an existing incidence from DB.
+    // Either the calendar is already in sync with
+    // the calendar or the database has been externally
+    // modified and in that case, the calendar has been emptied.
+    if (calendar()->incidence(uid)) {
+        return true;
+    }
+
     int rv = 0;
     int count = -1;
     d->mIsLoading = true;
