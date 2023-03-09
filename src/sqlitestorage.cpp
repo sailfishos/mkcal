@@ -62,7 +62,6 @@ static const QString gChanged(QLatin1String(".changed"));
 static const char *createStatements[] =
 {
     CREATE_METADATA,
-    CREATE_TIMEZONES,
     CREATE_CALENDARS,
     CREATE_COMPONENTS,
     CREATE_RDATES,
@@ -143,8 +142,6 @@ public:
     int loadIncidences(sqlite3_stmt *stmt1);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
-    bool saveTimezones();
-    bool loadTimezones();
 };
 //@endcond
 
@@ -279,7 +276,7 @@ bool SqliteStorage::open()
          SL3_exec(d->mDatabase);
     }
 
-    d->mFormat = new SqliteFormat(d->mDatabase, calendar()->timeZone());
+    d->mFormat = new SqliteFormat(d->mDatabase);
     d->mFormat->selectMetadata(&d->mSavedTransactionId);
 
     if (!d->mChanged.open(QIODevice::Append)) {
@@ -293,11 +290,6 @@ bool SqliteStorage::open()
 
     if (!d->mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-        goto error;
-    }
-
-    if (!d->loadTimezones()) {
-        qCWarning(lcMkcal) << "cannot load timezones from calendar";
         goto error;
     }
 
@@ -665,10 +657,6 @@ bool SqliteStorage::save(ExtendedStorage::DeleteAction deleteAction)
     if (!d->mSem.acquire()) {
         qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
         return false;
-    }
-
-    if (!d->saveTimezones()) {
-        qCWarning(lcMkcal) << "saving timezones failed";
     }
 
     int errors = 0;
@@ -1273,91 +1261,6 @@ error:
 }
 //@endcond
 
-bool SqliteStorage::Private::saveTimezones()
-{
-    int rv = 0;
-    int index = 1;
-
-    if (!mDatabase) {
-        return false;
-    }
-
-    const char *query1 = UPDATE_TIMEZONES;
-    int qsize1 = sizeof(UPDATE_TIMEZONES);
-    sqlite3_stmt *stmt1 = NULL;
-
-    const QTimeZone &zone = mCalendar->timeZone();
-    if (zone.isValid()) {
-        MemoryCalendar::Ptr temp = MemoryCalendar::Ptr(new MemoryCalendar(mCalendar->timeZone()));
-        ICalFormat ical;
-        QByteArray data = ical.toString(temp, QString()).toUtf8();
-
-        // Semaphore is already locked here.
-        SL3_prepare_v2(mDatabase, query1, qsize1, &stmt1, NULL);
-        SL3_bind_text(stmt1, index, data, data.length(), SQLITE_STATIC);
-        SL3_step(stmt1);
-        mIsSaved = true;
-        qCDebug(lcMkcal) << "updated timezones in database";
-        sqlite3_finalize(stmt1);
-    }
-
-    return true;
-
- error:
-    sqlite3_finalize(stmt1);
-    qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase);
-
-    return false;
-}
-
-bool SqliteStorage::Private::loadTimezones()
-{
-    int rv = 0;
-    bool success = false;
-
-    if (!mDatabase) {
-        return false;
-    }
-
-    const char *query = SELECT_TIMEZONES;
-    int qsize = sizeof(SELECT_TIMEZONES);
-    sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
-
-    SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
-
-    if (!mSem.acquire()) {
-        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
-        return false;
-    }
-
-    SL3_step(stmt);
-    if (rv == SQLITE_ROW) {
-        QString zoneData = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 1));
-        if (!zoneData.isEmpty()) {
-            MemoryCalendar::Ptr temp = MemoryCalendar::Ptr(new MemoryCalendar(mCalendar->timeZone()));
-            ICalFormat ical;
-            if (ical.fromString(temp, zoneData)) {
-                qCDebug(lcMkcal) << "loaded timezones from database";
-                mCalendar->setTimeZone(temp->timeZone());
-            } else {
-                qCWarning(lcMkcal) << "failed to load timezones from database";
-            }
-        }
-    }
-    // Return true in any case, unless there was an sql error.
-    success = true;
-
-error:
-    sqlite3_reset(stmt);
-    sqlite3_finalize(stmt);
-
-    if (!mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
-    }
-    return success;
-}
-
 void SqliteStorage::fileChanged(const QString &path)
 {
     if (!d->mSem.acquire()) {
@@ -1373,9 +1276,6 @@ void SqliteStorage::fileChanged(const QString &path)
 
     if (transactionId != d->mSavedTransactionId) {
         d->mSavedTransactionId = transactionId;
-        if (!d->loadTimezones()) {
-            qCWarning(lcMkcal) << "loading timezones failed";
-        }
         emitStorageModified(path);
         qCDebug(lcMkcal) << path << "has been modified";
     }

@@ -34,6 +34,8 @@
 #include "sqliteformat.h"
 #include "logging_p.h"
 
+#include <QTimeZone>
+
 #include <KCalendarCore/Alarm>
 #include <KCalendarCore/Attendee>
 #include <KCalendarCore/Person>
@@ -47,9 +49,8 @@ using namespace mKCal;
 class mKCal::SqliteFormat::Private
 {
 public:
-    Private(SqliteFormat *format, sqlite3 *database, const QTimeZone &timeZone)
+    Private(SqliteFormat *format, sqlite3 *database)
         : mFormat(format), mDatabase(database)
-        , mTimeZone(timeZone)
     {
     }
     ~Private()
@@ -84,7 +85,6 @@ public:
     }
     SqliteFormat *mFormat;
     sqlite3 *mDatabase;
-    QTimeZone mTimeZone;
 
     // Cache for various queries.
     sqlite3_stmt *mSelectMetadata = nullptr;
@@ -150,8 +150,8 @@ public:
 };
 //@endcond
 
-SqliteFormat::SqliteFormat(sqlite3 *database, const QTimeZone &timeZone)
-    : d(new Private(this, database, timeZone))
+SqliteFormat::SqliteFormat(sqlite3 *database)
+    : d(new Private(this, database))
 {
 }
 
@@ -2200,12 +2200,16 @@ QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds, const QByteArray &
     if (zonename == "UTC") {
         dt = fromOriginTime(seconds);
     } else if (!zonename.isEmpty()) {
-        // First try system zones.
+        // zonename should match a valid system time zone,
+        // since it's the only way to create a timezone.
         const QTimeZone timezone(zonename);
         if (timezone.isValid()) {
             dt = fromOriginTime(seconds).toTimeZone(timezone);
-        } else if (d->mTimeZone.isValid() && d->mTimeZone.id() == zonename) {
-            dt = fromOriginTime(seconds).toTimeZone(d->mTimeZone);
+        } else {
+            qCWarning(lcMkcal) << "invalid timezone" << zonename
+                               << ", assuming local time";
+            dt = fromOriginTime(seconds);
+            dt.setTimeSpec(Qt::LocalTime);
         }
     } else {
         // Empty zonename, use floating time.
