@@ -108,7 +108,7 @@ public:
       @param isDefault if the notebook is the default one in the DB
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyCalendars(const Notebook::Ptr &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
+    bool modifyCalendars(const Notebook &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
 
     /**
       Select notebooks from Calendars table.
@@ -127,10 +127,10 @@ public:
       @param dbop database operation
       @return true if the operation was successful; false otherwise.
     */
-    bool modifyComponents(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebook,
+    bool modifyComponents(const KCalendarCore::Incidence &incidence, const QString &notebook,
                           DBOperation dbop);
 
-    bool purgeDeletedComponents(const KCalendarCore::Incidence::Ptr &incidence);
+    bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence);
 
     /**
       Select incidences from Components table.
