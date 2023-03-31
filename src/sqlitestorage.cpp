@@ -140,6 +140,7 @@ public:
     bool loadRecurringIncidences();
     bool saveNotebook(const Notebook::Ptr &nb, DBOperation dbop);
     int loadIncidences(sqlite3_stmt *stmt1);
+    int loadIncidencesBySeries(sqlite3_stmt *stmt1, QStringList *identifiers = nullptr, int limit = 0);
     bool saveIncidences(QHash<QString, Incidence::Ptr> &list, DBOperation dbop,
                         Incidence::List *savedIncidences);
 };
@@ -535,6 +536,36 @@ error:
     return count >= 0;
 }
 
+bool SqliteStorage::search(const QString &key, QStringList *identifiers, int limit)
+{
+    if (!d->mDatabase || key.isEmpty())
+        return false;
+
+    d->mIsLoading = true;
+    const char *query1 = SEARCH_COMPONENTS;
+    int qsize1 = sizeof(SEARCH_COMPONENTS);
+    const QByteArray s('%' + key.toUtf8().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + '%');
+    int rv = 0;
+    sqlite3_stmt *stmt1 = NULL;
+    int index = 1;
+    Incidence::Ptr incidence;
+    QString nbook;
+    int count = -1;
+
+    qCDebug(lcMkcal) << "Searching DB for" << s;
+    SL3_prepare_v2(d->mDatabase, query1, qsize1, &stmt1, nullptr);
+    SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
+    SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
+    SL3_bind_text(stmt1, index, s.constData(), s.length(), SQLITE_STATIC);
+
+    count = d->loadIncidencesBySeries(stmt1, identifiers, limit);
+
+error:
+    d->mIsLoading = false;
+
+    return count >= 0;
+}
+
 //@cond PRIVATE
 static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
 {
@@ -602,6 +633,66 @@ int SqliteStorage::Private::loadIncidences(sqlite3_stmt *stmt1)
     }
 
     sqlite3_finalize(stmt1);
+
+    if (!mSem.release()) {
+        qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();
+    }
+    mStorage->emitStorageFinished(false, "load completed");
+
+    return count;
+}
+
+int SqliteStorage::Private::loadIncidencesBySeries(sqlite3_stmt *stmt1, QStringList *identifiers, int limit)
+{
+    int count = 0;
+    Incidence::Ptr incidence;
+    QString notebookUid;
+    QSet<QString> recurringUids;
+
+    if (!mSem.acquire()) {
+        qCWarning(lcMkcal) << "cannot lock" << mDatabaseName << "error" << mSem.errorString();
+        return -1;
+    }
+
+    while ((incidence = mFormat->selectComponents(stmt1, notebookUid))
+           && (limit <= 0 || count < limit)) {
+        if (addIncidence(incidence, notebookUid)) {
+            if (incidence->recurs() || incidence->hasRecurrenceId()) {
+                recurringUids.insert(incidence->uid());
+            }
+            count += 1;
+        }
+        if (identifiers) {
+            identifiers->append(incidence->instanceIdentifier());
+        }
+    }
+
+    sqlite3_finalize(stmt1);
+
+    if (recurringUids.count() > 0) {
+        // Additionally load any exception or parent to ensure calendar
+        // consistency.
+        int rv = 0;
+        sqlite3_stmt *loadByUid = NULL;
+        const char *query1 = NULL;
+        int qsize1 = 0;
+        query1 = SELECT_COMPONENTS_BY_UID;
+        qsize1 = sizeof(SELECT_COMPONENTS_BY_UID);
+        SL3_prepare_v2(mDatabase, query1, qsize1, &loadByUid, NULL);
+
+        for (const QString &uid : const_cast<const QSet<QString>&>(recurringUids)) {
+            int index = 1;
+            QByteArray u = uid.toUtf8();
+            SL3_reset(loadByUid);
+            SL3_bind_text(loadByUid, index, u.constData(), u.length(), SQLITE_STATIC);
+            while ((incidence = mFormat->selectComponents(stmt1, notebookUid))) {
+                addIncidence(incidence, notebookUid);
+            }
+        }
+
+    error:
+        sqlite3_finalize(loadByUid);
+    }
 
     if (!mSem.release()) {
         qCWarning(lcMkcal) << "cannot release lock" << mDatabaseName << "error" << mSem.errorString();

@@ -309,6 +309,23 @@ public:
                                const QString &notebookUid = QString()) = 0;
 
     /**
+      Get all incidences from storage that match key. Incidences are
+      loaded into the associated ExtendedCalendar. More incidences than
+      the listed ones in @param identifiers may be loaded into memory
+      to ensure calendar consistency with respect to exceptions of
+      recurring incidences.
+
+      Matching is done on summary, description and location fields.
+
+      @param key can be any substring from the summary, the description or the location.
+      @param identifiers optional, stores the instance identifiers of
+             matching incidences.
+      @param limit the maximum number of loaded incidences, unlimited by default
+      @return true on success.
+     */
+    virtual bool search(const QString &key, QStringList *identifiers, int limit = 0) = 0;
+
+    /**
       Get deletion time of incidence
 
       @param incidence incidence to check

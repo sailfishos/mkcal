@@ -113,6 +113,10 @@ public:
     {
         return true;
     }
+    bool search(const QString &, QStringList *, int)
+    {
+        return true;
+    }
     bool loadNotebooks()
     {
         return true;
