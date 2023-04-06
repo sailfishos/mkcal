@@ -790,13 +790,10 @@ void ExtendedStorage::Private::addAlarms(const Incidence::Ptr &incidence,
         }
 
         QDateTime preTime = laterThan;
-        if (incidence->recurs()) {
-            QDateTime nextRecurrence = incidence->recurrence()->getNextDateTime(laterThan);
-            if (nextRecurrence.isValid() && alarm->startOffset().asSeconds() < 0) {
-                if (laterThan.addSecs(::abs(alarm->startOffset().asSeconds())) >= nextRecurrence) {
-                    preTime = nextRecurrence;
-                }
-            }
+        if (incidence->recurs() && alarm->startOffset().asSeconds() < 0) {
+            // by construction for recurring events, laterThan is the time of the
+            // actual next occurrence, so one need to remove the alarm offset.
+            preTime = preTime.addSecs(alarm->startOffset().asSeconds());
         }
 
         // nextTime() is returning time strictly later than its argument.

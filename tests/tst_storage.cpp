@@ -1767,7 +1767,7 @@ void tst_storage::tst_recurringAlarms()
     ev->recurrence()->setDaily(1);
     KCalendarCore::Alarm::Ptr alarm = ev->newAlarm();
     alarm->setDisplayAlarm(QLatin1String("Testing alarm"));
-    alarm->setStartOffset(KCalendarCore::Duration(0));
+    alarm->setStartOffset(KCalendarCore::Duration(-600));
     alarm->setEnabled(true);
     QVERIFY(m_calendar->addEvent(ev, uid));
     QVERIFY(m_storage->save());
