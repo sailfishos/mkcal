@@ -659,8 +659,10 @@ int SqliteStorage::Private::loadIncidencesBySeries(sqlite3_stmt *stmt1, QStringL
         if (addIncidence(incidence, notebookUid)) {
             if (incidence->recurs() || incidence->hasRecurrenceId()) {
                 recurringUids.insert(incidence->uid());
+            } else {
+                // Apply limit on load on non recurring events only.
+                count += 1;
             }
-            count += 1;
         }
         if (identifiers) {
             identifiers->append(incidence->instanceIdentifier());

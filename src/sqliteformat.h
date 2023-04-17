@@ -456,7 +456,11 @@ private:
 "select ComponentId from Components where Notebook=? and UID=? and RecurId=? and DateDeleted<>0"
 
 #define SEARCH_COMPONENTS \
-"select * from Components where summary like ? escape '\\' or description like ? escape '\\' or location like ? escape '\\' order by datestart desc"
+"select *, (ComponentId in (select DISTINCT ComponentId from Recursive)" \
+"        or ComponentId in (select DISTINCT ComponentId from Rdates)) as doRecur" \
+" from Components where DateDeleted=0 and (summary like ? escape '\\'" \
+"                                       or description like ? escape '\\'" \
+"                                       or location like ? escape '\\') order by doRecur desc, datestart desc"
 
 #define UNSET_FLAG_FROM_CALENDAR \
 "update Calendars set Flags=(Flags & (~?))"
