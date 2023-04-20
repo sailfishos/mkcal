@@ -725,7 +725,7 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
 
     error = 0;
     for (const KCalendarCore::Incidence::Ptr &incidence: list) {
-        if (!d->mFormat->purgeDeletedComponents(incidence)) {
+        if (!d->mFormat->purgeDeletedComponents(*incidence)) {
             error += 1;
         }
     }
@@ -834,21 +834,13 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
          }
          (*savedIncidences) << *it;
 
-        // lastModified is a public field of iCal RFC, so user should be
-        // able to set its value to arbitrary date and time. This field is
-        // updated automatically at each incidence modification already by
-        // ExtendedCalendar::incidenceUpdated(). We're just ensuring that
-        // the lastModified is valid and set it if not.
-        if (!(*it)->lastModified().isValid()) {
-            (*it)->setLastModified(QDateTime::currentDateTimeUtc());
-        }
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
-        if (!mFormat->modifyComponents(*it, notebookUid, dbop)) {
+        if (!mFormat->modifyComponents(**it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
         } else  if (dbop == DBInsert) {
             // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(*it)) {
+            if (!mFormat->purgeDeletedComponents(**it)) {
                 qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
                 errors += 1;
             }
@@ -1328,7 +1320,7 @@ bool SqliteStorage::Private::saveNotebook(const Notebook::Ptr &nb, DBOperation d
 
         SL3_prepare_v2(mDatabase, query, qsize, &stmt, &tail);
 
-        if ((success = mFormat->modifyCalendars(nb, dbop, stmt, nb == mStorage->defaultNotebook()))) {
+        if ((success = mFormat->modifyCalendars(*nb, dbop, stmt, nb == mStorage->defaultNotebook()))) {
             qCDebug(lcMkcal) << operation << "notebook" << nb->uid() << nb->name() << "in database";
         }
 
