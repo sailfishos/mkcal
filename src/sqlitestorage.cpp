@@ -703,10 +703,15 @@ int SqliteStorage::Private::loadIncidencesBySeries(sqlite3_stmt *stmt1, QStringL
 }
 //@endcond
 
-bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List &list)
+bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List &list,
+                                           const QString &notebookUid)
 {
     if (!d->mDatabase) {
         return false;
+    }
+
+    if (notebookUid.isEmpty()) {
+        qCWarning(lcMkcal) << "Deprecated call to purgeDeletedIncidences() with an empty notebook uid,";
     }
 
     if (!d->mSem.acquire()) {
@@ -725,7 +730,7 @@ bool SqliteStorage::purgeDeletedIncidences(const KCalendarCore::Incidence::List 
 
     error = 0;
     for (const KCalendarCore::Incidence::Ptr &incidence: list) {
-        if (!d->mFormat->purgeDeletedComponents(*incidence)) {
+        if (!d->mFormat->purgeDeletedComponents(*incidence, notebookUid)) {
             error += 1;
         }
     }
@@ -838,12 +843,6 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
         if (!mFormat->modifyComponents(**it, notebookUid, dbop)) {
             qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
             errors++;
-        } else  if (dbop == DBInsert) {
-            // Don't leave deleted events with the same UID/recID.
-            if (!mFormat->purgeDeletedComponents(**it)) {
-                qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
-                errors += 1;
-            }
         }
     }
 

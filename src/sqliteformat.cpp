@@ -66,6 +66,7 @@ public:
         sqlite3_finalize(mSelectIncRDates);
         sqlite3_finalize(mSelectIncAttachments);
         sqlite3_finalize(mSelectDeletedIncidences);
+        sqlite3_finalize(mSelectDeletedIncidencesFromNotebook);
         sqlite3_finalize(mDeleteIncComponents);
         sqlite3_finalize(mDeleteIncProperties);
         sqlite3_finalize(mDeleteIncAttendees);
@@ -101,6 +102,7 @@ public:
     sqlite3_stmt *mSelectIncAttachments = nullptr;
 
     sqlite3_stmt *mSelectDeletedIncidences = nullptr;
+    sqlite3_stmt *mSelectDeletedIncidencesFromNotebook = nullptr;
 
     sqlite3_stmt *mDeleteIncComponents = nullptr;
     sqlite3_stmt *mDeleteIncProperties = nullptr;
@@ -296,11 +298,12 @@ error:
     return false;
 }
 
-bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence &incidence)
+bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence &incidence, const QString &notebook)
 {
     int rv;
     int index = 1;
-    const QByteArray u(incidence.uid().toUtf8());
+    const QByteArray uid(incidence.uid().toUtf8());
+    const QByteArray nbUid(notebook.toUtf8());
     qint64 secsRecurId = 0;
 
     if (incidence.hasRecurrenceId() && incidence.recurrenceId().timeSpec() == Qt::LocalTime) {
@@ -320,13 +323,28 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence &incide
         int qsize = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
         SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectDeletedIncidences, nullptr);
     }
-    SL3_reset(d->mSelectDeletedIncidences);
-    SL3_bind_text(d->mSelectDeletedIncidences, index, u.constData(), u.length(), SQLITE_STATIC);
-    SL3_bind_int64(d->mSelectDeletedIncidences, index, secsRecurId);
 
-    SL3_step(d->mSelectDeletedIncidences);
+    if (!d->mSelectDeletedIncidencesFromNotebook) {
+        const char *query = SELECT_COMPONENTS_BY_NOTEBOOK_UID_RECID_AND_DELETED;
+        int qsize = sizeof(SELECT_COMPONENTS_BY_NOTEBOOK_UID_RECID_AND_DELETED);
+        SL3_prepare_v2(d->mDatabase, query, qsize, &d->mSelectDeletedIncidencesFromNotebook, nullptr);
+    }
+    sqlite3_stmt *stmt;
+    if (notebook.isEmpty()) {
+        stmt = d->mSelectDeletedIncidences;
+    } else {
+        stmt = d->mSelectDeletedIncidencesFromNotebook;
+    }
+    SL3_reset(stmt);
+    if (!nbUid.isEmpty()) {
+        SL3_bind_text(stmt, index, nbUid.constData(), nbUid.length(), SQLITE_STATIC);
+    }
+    SL3_bind_text(stmt, index, uid.constData(), uid.length(), SQLITE_STATIC);
+    SL3_bind_int64(stmt, index, secsRecurId);
+
+    SL3_step(stmt);
     while (rv == SQLITE_ROW) {
-        int rowid = sqlite3_column_int(d->mSelectDeletedIncidences, 0);
+        int rowid = sqlite3_column_int(stmt, 0);
 
         int index2 = 1;
         SL3_reset(d->mDeleteIncComponents);
@@ -334,10 +352,10 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence &incide
         SL3_step(d->mDeleteIncComponents);
 
         if (!d->deleteListsForIncidence(rowid)) {
-            qCWarning(lcMkcal) << "failed to delete lists for incidence" << u;
+            qCWarning(lcMkcal) << "failed to delete lists for incidence" << uid;
         }
 
-        SL3_step(d->mSelectDeletedIncidences);
+        SL3_step(stmt);
     }
 
     return true;
@@ -403,6 +421,13 @@ bool SqliteFormat::modifyComponents(const Incidence &incidence, const QString &n
     sqlite3_int64 secs;
     int rowid = 0;
     sqlite3_stmt *stmt1;
+
+    // Don't leave deleted events with the same UID/recID in the
+    // notebook to add a new incidence to. It may otherwise
+    // confuse sync processes, getting both added and deleted events.
+    if (dbop == DBInsert && !purgeDeletedComponents(incidence, nbook)) {
+        qCWarning(lcMkcal) << "cannot purge deleted components on insertion.";
+    }
 
     if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
         rowid = d->selectRowId(incidence);

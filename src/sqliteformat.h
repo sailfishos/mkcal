@@ -130,7 +130,8 @@ public:
     bool modifyComponents(const KCalendarCore::Incidence &incidence, const QString &notebook,
                           DBOperation dbop);
 
-    bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence);
+    bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence,
+                                const QString &notebook = QString());
 
     /**
       Select incidences from Components table.
@@ -451,6 +452,8 @@ private:
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \
 "select ComponentId, DateDeleted from Components where UID=? and RecurId=? and DateDeleted<>0"
+#define SELECT_COMPONENTS_BY_NOTEBOOK_UID_RECID_AND_DELETED \
+"select ComponentId from Components where Notebook=? and UID=? and RecurId=? and DateDeleted<>0"
 
 #define SEARCH_COMPONENTS \
 "select * from Components where summary like ? escape '\\' or description like ? escape '\\' or location like ? escape '\\' order by datestart desc"
