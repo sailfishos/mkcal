@@ -4,17 +4,22 @@ set(SRC
 	notebook.cpp
 	sqliteformat.cpp
 	sqlitestorage.cpp
+        calendarstorage.cpp
+        sqlitecalendarstorage.cpp
         singlesqlitebackend.cpp
 	servicehandler.cpp
         alarmhandler.cpp
 	logging.cpp
-	semaphore_p.cpp)
+	semaphore_p.cpp
+        calendarhandler.cpp)
 set(HEADERS
 	extendedcalendar.h
 	extendedstorage.h
 	extendedstorageobserver.h
 	notebook.h
 	sqlitestorage.h
+        calendarstorage.h
+        sqlitecalendarstorage.h
 	servicehandlerif.h
 	servicehandler.h
 	dummystorage.h
@@ -23,6 +28,7 @@ set(HEADERS
 
 set(PRIVATE_HEADERS
         alarmhandler_p.h
+        calendarhandler_p.h
         logging_p.h
         semaphore_p.h
         sqliteformat.h
