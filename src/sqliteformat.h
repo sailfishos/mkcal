@@ -82,8 +82,11 @@ public:
         Shareable     = (1 << 10)
     };
 
-    SqliteFormat(sqlite3 *database);
+    SqliteFormat(const QString &databaseName);
+
     virtual ~SqliteFormat();
+
+    sqlite3* database() const;
 
     /*
       Update notebook data in Calendars table.
@@ -118,6 +121,8 @@ public:
 
     bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence,
                                 const QString &notebook = QString());
+
+    bool purgeAllComponents(const QString &notebook);
 
     /*
       Select incidences from Components table.
@@ -396,19 +401,38 @@ private:
 #define SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK \
 "select * from Components where Notebook=? and DateDeleted<>0"
 #define SELECT_COMPONENTS_BY_RECURSIVE \
-"select * from Components where ((ComponentId in (select DISTINCT ComponentId from Recursive)) or (ComponentId in (select DISTINCT ComponentId from Rdates)) or (RecurId!=0)) and DateDeleted=0"
+"select * from Components where" \
+"    ((ComponentId in (select DISTINCT ComponentId from Recursive))" \
+"     or (ComponentId in (select DISTINCT ComponentId from Rdates))" \
+"     or RecurId!=0) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_BOTH \
-"select * from Components where DateStart<? and (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
+"select * from Components where" \
+"    DateStart<? and (DateEndDue>=? or (DateEndDue=0 and DateStart>=?))" \
+"    and DateDeleted=0" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Recursive))" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Rdates)) and RecurId=0"
 #define SELECT_COMPONENTS_BY_DATE_START \
-"select * from Components where (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
+"select * from Components where" \
+"    (DateEndDue>=? or (DateEndDue=0 and DateStart>=?))" \
+"    and DateDeleted=0" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Recursive))" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Rdates)) and RecurId=0"
 #define SELECT_COMPONENTS_BY_DATE_END \
-"select * from Components where DateStart<? and DateDeleted=0"
+"select * from Components where" \
+"    DateStart<?" \
+"    and DateDeleted=0" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Recursive))" \
+"    and (ComponentId not in (select DISTINCT ComponentId from Rdates)) and RecurId=0"
 #define SELECT_COMPONENTS_BY_UID \
 "select * from Components where UID=? and DateDeleted=0"
+#define SELECT_COMPONENTS_BY_NOTEBOOKUID_AND_UID \
+"select * from Components where Notebook=? and UID=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
 #define SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK_UID_AND_RECURID \
 "select ComponentId from Components where Notebook=? and UID=? and RecurId=? and DateDeleted=0"
+#define SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK \
+"select ComponentId from Components where Notebook=?"
 
 #define SELECT_RDATES_BY_ID \
 "select * from Rdates where ComponentId=?"

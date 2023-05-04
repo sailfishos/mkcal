@@ -45,12 +45,25 @@ target_link_libraries(tst_load
 
 add_test(tst_load tst_load)
 
+add_executable(tst_backend tst_backend.cpp)
+
+target_include_directories(tst_backend PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(tst_backend
+	Qt5::Test
+	KF5::CalendarCore
+	mkcal-qt5)
+
+add_test(tst_backend tst_backend)
+
 if(INSTALL_TESTS)
 	install(TARGETS tst_storage
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_load
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_perf
+		DESTINATION /opt/tests/mkcal)
+	install(TARGETS tst_backend
 		DESTINATION /opt/tests/mkcal)
 	install(FILES tests.xml
 		DESTINATION /opt/tests/mkcal)

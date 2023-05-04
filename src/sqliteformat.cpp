@@ -35,6 +35,7 @@
 #include "logging_p.h"
 
 #include <QTimeZone>
+#include <QFile>
 
 #include <KCalendarCore/Alarm>
 #include <KCalendarCore/Attendee>
@@ -45,13 +46,112 @@ using namespace KCalendarCore;
 
 #define FLOATING_DATE "FloatingDate"
 
+static const char *createStatements[] =
+{
+    CREATE_METADATA,
+    CREATE_CALENDARS,
+    CREATE_COMPONENTS,
+    CREATE_RDATES,
+    CREATE_CUSTOMPROPERTIES,
+    CREATE_RECURSIVE,
+    CREATE_ALARM,
+    CREATE_ATTENDEE,
+    CREATE_ATTACHMENTS,
+    CREATE_CALENDARPROPERTIES,
+    /* Create index on frequently used columns */
+    INDEX_CALENDAR,
+    INDEX_COMPONENT,
+    INDEX_COMPONENT_UID,
+    INDEX_COMPONENT_NOTEBOOK,
+    INDEX_RDATES,
+    INDEX_CUSTOMPROPERTIES,
+    INDEX_RECURSIVE,
+    INDEX_ALARM,
+    INDEX_ATTENDEE,
+    INDEX_ATTACHMENTS,
+    INDEX_CALENDARPROPERTIES,
+    "PRAGMA foreign_keys = ON",
+    "PRAGMA user_version = 2"
+};
+
 using namespace mKCal;
 class mKCal::SqliteFormat::Private
 {
 public:
-    Private(SqliteFormat *format, sqlite3 *database)
-        : mFormat(format), mDatabase(database)
+    Private(SqliteFormat *format, const QString &databaseName)
+        : mFormat(format)
     {
+        int rv;
+        char *errmsg = NULL;
+        const char *query = NULL;
+        bool fileExisted = QFile::exists(databaseName);
+
+        rv = sqlite3_open(databaseName.toUtf8(), &mDatabase);
+        if (rv) {
+            qCWarning(lcMkcal) << "sqlite3_open error:" << rv << "on database" << databaseName;
+            goto error;
+        }
+        qCDebug(lcMkcal) << "database" << databaseName << "opened";
+
+        // Set one and half second busy timeout for waiting for internal sqlite locks
+        sqlite3_busy_timeout(mDatabase, 1500);
+
+        {
+            sqlite3_stmt *dbVersion = nullptr;
+            SL3_prepare_v2(mDatabase, "PRAGMA user_version", -1, &dbVersion, nullptr);
+            SL3_step(dbVersion);
+            int version = 0;
+            if (rv == SQLITE_ROW) {
+                version = sqlite3_column_int(dbVersion, 0);
+            }
+            sqlite3_finalize(dbVersion);
+
+            if (version == 0 && fileExisted) {
+                qCWarning(lcMkcal) << "Migrating mkcal database to version 1";
+                query = BEGIN_TRANSACTION;
+                SL3_exec(mDatabase);
+                query = "DROP INDEX IF EXISTS IDX_ATTENDEE"; // recreate on new format
+                SL3_exec(mDatabase);
+                // insert normal attendee for every organizer
+                query = "INSERT INTO ATTENDEE(ComponentId, Email, Name, IsOrganizer, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom) "
+                    "              SELECT ComponentId, Email, Name, 0, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom "
+                    "              FROM ATTENDEE WHERE isOrganizer=1";
+                SL3_exec(mDatabase);
+                query = "PRAGMA user_version = 1";
+                SL3_exec(mDatabase);
+                query = COMMIT_TRANSACTION;
+                SL3_exec(mDatabase);
+
+                version = 1;
+            }
+            if (version == 1) {
+                qCWarning(lcMkcal) << "Migrating mkcal database to version 2";
+                query = BEGIN_TRANSACTION;
+                SL3_exec(mDatabase);
+                query = "ALTER TABLE Components ADD COLUMN thisAndFuture INTEGER";
+                SL3_try_exec(mDatabase); // Ignore error if any, consider that column already exists.
+                query = "PRAGMA user_version = 2";
+                SL3_exec(mDatabase);
+                query = COMMIT_TRANSACTION;
+                SL3_exec(mDatabase);
+
+                version = 2;
+            }
+        }
+
+        for (unsigned int i = 0; i < (sizeof(createStatements)/sizeof(createStatements[0])); i++) {
+            query = createStatements[i];
+            SL3_exec(mDatabase);
+        }
+
+        return;
+
+    error:
+        if (mDatabase) {
+            qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase);
+            sqlite3_close(mDatabase);
+            mDatabase = nullptr;
+        }
     }
     ~Private()
     {
@@ -85,7 +185,7 @@ public:
         sqlite3_finalize(mMarkDeletedIncidences);
     }
     SqliteFormat *mFormat;
-    sqlite3 *mDatabase;
+    sqlite3 *mDatabase = nullptr;
 
     // Cache for various queries.
     sqlite3_stmt *mSelectMetadata = nullptr;
@@ -153,14 +253,19 @@ public:
 };
 //@endcond
 
-SqliteFormat::SqliteFormat(sqlite3 *database)
-    : d(new Private(this, database))
+SqliteFormat::SqliteFormat(const QString &databaseName)
+    : d(new Private(this, databaseName))
 {
 }
 
 SqliteFormat::~SqliteFormat()
 {
     delete d;
+}
+
+sqlite3* SqliteFormat::database() const
+{
+    return d->mDatabase;
 }
 
 bool SqliteFormat::selectMetadata(int *id)
@@ -363,6 +468,50 @@ bool SqliteFormat::purgeDeletedComponents(const KCalendarCore::Incidence &incide
 
 error:
     qCWarning(lcMkcal) << "Sqlite error:" << sqlite3_errmsg(d->mDatabase);
+    return false;
+}
+
+bool SqliteFormat::purgeAllComponents(const QString &notebook)
+{
+    if (notebook.isEmpty()) {
+        qCWarning(lcMkcal) << "empty notebook uid, cannot purge all components.";
+        return false;
+    }
+
+    int rv = 0;
+    int index = 1;
+    sqlite3_stmt *stmt = nullptr;
+
+    const QByteArray nb = notebook.toUtf8();
+
+    if (!d->mDeleteIncComponents) {
+        SL3_prepare_v2(d->mDatabase, DELETE_COMPONENTS, sizeof(DELETE_COMPONENTS),
+                       &d->mDeleteIncComponents, nullptr);
+    }
+
+    SL3_prepare_v2(d->mDatabase, SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK,
+                   sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK), &stmt, NULL);
+    SL3_bind_text(stmt, index, nb.constData(), nb.length(), SQLITE_STATIC);
+
+    SL3_step(stmt);
+    while (rv == SQLITE_ROW) {
+        int rowid = sqlite3_column_int(stmt, 0);
+
+        int index2 = 1;
+        SL3_reset(d->mDeleteIncComponents);
+        SL3_bind_int(d->mDeleteIncComponents, index2, rowid);
+        SL3_step(d->mDeleteIncComponents);
+        if (!d->deleteListsForIncidence(rowid)) {
+            qCWarning(lcMkcal) << "failed to delete lists for incidence" << rowid;
+        }
+
+        SL3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+    return true;
+
+error:
+    sqlite3_finalize(stmt);
     return false;
 }
 
