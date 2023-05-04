@@ -4,6 +4,7 @@ set(SRC
 	notebook.cpp
 	sqliteformat.cpp
 	sqlitestorage.cpp
+        singlesqlitebackend.cpp
 	servicehandler.cpp
         alarmhandler.cpp
 	logging.cpp
@@ -25,6 +26,7 @@ set(PRIVATE_HEADERS
         logging_p.h
         semaphore_p.h
         sqliteformat.h
+        singlesqlitebackend_p.h
         )
 
 add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})

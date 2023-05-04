@@ -8,6 +8,9 @@
        <case manual="false" name="tst_load">
          <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_load</step>
        </case>
+       <case manual="false" name="tst_backend">
+         <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_backend</step>
+       </case>
        <case manual="false" name="tst_perf">
          <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_perf</step>
        </case>

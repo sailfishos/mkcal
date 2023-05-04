@@ -23,6 +23,7 @@
 #include <QObject>
 
 #include "extendedstorage.h"
+#include "singlesqlitebackend_p.h"
 
 using namespace mKCal;
 
@@ -45,8 +46,9 @@ private slots:
     void tst_loadRange();
 
 private:
+    SingleSqliteBackend *mBackend;
     ExtendedStorage::Ptr m_storage;
-    QTemporaryFile *db;
+    QTemporaryFile *mDb;
 };
 
 #endif
