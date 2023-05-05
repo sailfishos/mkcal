@@ -1343,13 +1343,16 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt, bool *isDefault)
         QString plugin = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 6));
         QString account = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7));
         int attachmentSize = sqlite3_column_int(stmt, 8);
-        syncDate = fromOriginTime(date);
+        if (date)
+            syncDate = fromOriginTime(date);
         date = sqlite3_column_int64(stmt, 9);
-        modifiedDate = fromOriginTime(date);
+        if (date)
+            modifiedDate = fromOriginTime(date);
         QString sharedWith = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 10));
         QString syncProfile = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 11));
         date = sqlite3_column_int64(stmt, 12);
-        creationDate = fromOriginTime(date);
+        if (date)
+            creationDate = fromOriginTime(date);
 
         notebook = Notebook::Ptr(new Notebook(name, description));
         notebook->setUid(id);
