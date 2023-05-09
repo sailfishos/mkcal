@@ -32,21 +32,12 @@
 */
 #include "extendedstorage.h"
 #include "extendedstorageobserver.h"
+#include "alarmhandler_p.h"
 #include "logging_p.h"
 
 #include <KCalendarCore/Exceptions>
 #include <KCalendarCore/Calendar>
 using namespace KCalendarCore;
-
-#ifdef TIMED_SUPPORT
-# include <timed-qt5/interface.h>
-# include <timed-qt5/event-declarations.h>
-# include <timed-qt5/exception.h>
-# include <QtCore/QMap>
-# include <QtDBus/QDBusReply>
-using namespace Maemo;
-static const QLatin1String RESET_ALARMS_CMD("invoker --type=generic -n /usr/bin/mkcaltool --reset-alarms");
-#endif
 
 using namespace mKCal;
 
@@ -81,15 +72,19 @@ bool operator<(const QDate &at, const Range &range)
   @internal
 */
 //@cond PRIVATE
-class mKCal::ExtendedStorage::Private
+class mKCal::ExtendedStorage::Private: public AlarmHandler
 {
 public:
-    Private(bool validateNotebooks)
-        : mValidateNotebooks(validateNotebooks),
-          mIsRecurrenceLoaded(false),
-          mDefaultNotebook(0)
+    Private(ExtendedStorage *storage, bool validateNotebooks)
+        : mStorage(storage)
+        , mValidateNotebooks(validateNotebooks)
+        , mIsRecurrenceLoaded(false)
     {}
 
+    ~Private()
+    {}
+
+    ExtendedStorage *mStorage;
     bool mValidateNotebooks;
     QList<Range> mRanges;
     bool mIsRecurrenceLoaded;
@@ -99,19 +94,8 @@ public:
 
     bool clear();
 
-#if defined(TIMED_SUPPORT)
-    // These alarm methods are used to communicate with an external
-    // daemon, like timed, to bind Incidence::Alarm with the system notification.
-    void clearAlarms(const Incidence::Ptr &incidence, const QString &notebookUid);
-    void clearAlarmsByNotebook(const QString &notebookUid);
-    QDateTime getNextOccurrence(const Incidence::Ptr &incidence,
-                                const QDateTime &start,
-                                const Incidence::List &exceptions);
-    void setAlarms(const Incidence::List &incidences, const Calendar::Ptr &calendar);
-
-    void addAlarms(const Incidence::Ptr &incidence, const QString &nbuid, Timed::Event::List *events, const QDateTime &now);
-    void commitEvents(Timed::Event::List &events);
-#endif
+    Incidence::List incidencesWithAlarms(const QString &notebookUid,
+                                         const QString &uid) override;
 };
 
 bool ExtendedStorage::Private::clear()
@@ -123,11 +107,54 @@ bool ExtendedStorage::Private::clear()
 
     return true;
 }
+
+Incidence::List ExtendedStorage::Private::incidencesWithAlarms(const QString &notebookUid, const QString &uid)
+{
+    Incidence::List list;
+    if (!mNotebooks.contains(notebookUid)
+        || !mNotebooks.value(notebookUid)->isVisible()) {
+        return list;
+    }
+
+    // The assumption on wether the incidences are already in memory
+    // or not is explained in AlarmHandler::incidencesWithAlarms() documentation
+    // and is reminded here for completeness.
+    if (uid.isEmpty()) {
+        // This case is called when changing notebook visibility.
+        // There is no guarantee that the calendar contains all incidences.
+        Incidence::List all;
+        mStorage->allIncidences(&all, notebookUid);
+        for (Incidence::List::ConstIterator it = all.constBegin();
+             it != all.constEnd(); it++) {
+            // Recurring incidences may not have alarms but their exception may.
+            if ((*it)->hasEnabledAlarms() || (*it)->recurs()) {
+                list.append(*it);
+            }
+        }
+    } else {
+        // This case is called when modifying (insertion, update or deletion)
+        // one or several incidences. The series is guaranteed to be already
+        // in memory.
+        Incidence::Ptr parent = mStorage->calendar()->incidence(uid);
+        if (!parent) {
+            return list;
+        }
+        if (parent->hasEnabledAlarms()) {
+            list.append(parent);
+        }
+        for (const Incidence::Ptr &exception : mStorage->calendar()->instances(parent)) {
+            if (exception->hasEnabledAlarms() || parent->hasEnabledAlarms()) {
+                list.append(exception);
+            }
+        }
+    }
+    return list;
+}
 //@endcond
 
 ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
     : CalStorage(cal),
-      d(new ExtendedStorage::Private(validateNotebooks))
+      d(new ExtendedStorage::Private(this, validateNotebooks))
 {
     cal->registerObserver(this);
 }
@@ -331,38 +358,13 @@ void ExtendedStorage::emitStorageUpdated(const KCalendarCore::Incidence::List &a
     foreach (ExtendedStorageObserver *observer, d->mObservers) {
         observer->storageUpdated(this, added, modified, deleted);
     }
-#if defined(TIMED_SUPPORT)
-    if (!added.isEmpty())
-        d->setAlarms(added, calendar());
-    // Store the recurring event uids, to avoid treating them twice in modified
-    // and deleted cases.
-    QSet<QString> recurringUids;
-    for (const Incidence::Ptr incidence : modified + deleted) {
-        d->clearAlarms(incidence, calendar()->notebook(incidence));
-        if (incidence->recurs()) {
-            recurringUids.insert(incidence->uid());
-        }
+
+    QSet<QPair<QString, QString>> uids;
+    for (const Incidence::Ptr &incidence : added + modified + deleted) {
+        uids.insert(QPair<QString, QString>(calendar()->notebook(incidence),
+                                            incidence->uid()));
     }
-    if (!modified.isEmpty()) {
-        d->setAlarms(modified, calendar());
-    }
-    if (!deleted.isEmpty()) {
-        Incidence::List recurring; // List of recurring events to be updated because of exception deletion.
-        for (const Incidence::Ptr incidence : deleted) {
-            // If deleting an exception but not the recurring parent,
-            // the alarm of the parent need to be recomputed.
-            if (incidence->hasRecurrenceId() && !recurringUids.contains(incidence->uid())) {
-                Incidence::Ptr parent = calendar()->incidence(incidence->uid());
-                if (parent) {
-                    d->clearAlarms(parent, calendar()->notebook(parent));
-                    recurring << parent;
-                    recurringUids.insert(parent->uid());
-                }
-            }
-        }
-        d->setAlarms(recurring, calendar());
-    }
-#endif
+    d->setupAlarms(uids);
 }
 
 bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
@@ -401,25 +403,11 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
         return false;
     }
 
-#if defined(TIMED_SUPPORT)
-    if (!nb->isRunTimeOnly()) {
-        if (wasVisible && !nb->isVisible()) {
-            d->clearAlarmsByNotebook(nb->uid());
-        } else if (!wasVisible && nb->isVisible()) {
-            Incidence::List list;
-            if (allIncidences(&list, nb->uid())) {
-                MemoryCalendar::Ptr calendar(new MemoryCalendar(QTimeZone::utc()));
-                if (calendar->addNotebook(nb->uid(), true)) {
-                    for (const Incidence::Ptr &incidence : const_cast<const Incidence::List&>(list)) {
-                        calendar->addIncidence(incidence);
-                        calendar->setNotebook(incidence, nb->uid());
-                    }
-                }
-                d->setAlarms(calendar->incidences(), calendar);
-            }
-        }
+    if (wasVisible && !nb->isVisible()) {
+        d->clearAlarms(nb->uid());
+    } else if (!wasVisible && nb->isVisible()) {
+        d->setupAlarms(nb->uid());
     }
-#endif
 
     return true;
 }
@@ -549,287 +537,3 @@ Notebook::Ptr ExtendedStorage::createDefaultNotebook(QString name, QString color
     Notebook::Ptr nbDefault(new Notebook(name, QString(), color));
     return setDefaultNotebook(nbDefault) ? nbDefault : Notebook::Ptr();
 }
-
-#if defined(TIMED_SUPPORT)
-// Todo: move this into a service plugin that is a ExtendedStorageObserver.
-QDateTime ExtendedStorage::Private::getNextOccurrence(const Incidence::Ptr &incidence,
-                                                      const QDateTime &start,
-                                                      const Incidence::List &exceptions)
-{
-    if (!start.isNull() && incidence->recurs()) {
-        Recurrence *recurrence = incidence->recurrence();
-        QSet<QDateTime> recurrenceIds;
-        for (const Incidence::Ptr &exception : exceptions)
-            recurrenceIds.insert(exception->recurrenceId());
-
-        QDateTime match = start;
-        if (!recurrence->recursAt(start) || recurrenceIds.contains(start)) {
-            do {
-                match = recurrence->getNextDateTime(match);
-            } while (match.isValid() && recurrenceIds.contains(match));
-        }
-        return match;
-    } else {
-        return incidence->dtStart();
-    }
-}
-
-void ExtendedStorage::Private::setAlarms(const Incidence::List &incidences,
-                                         const Calendar::Ptr &calendar)
-{
-    QSet<QString> recurringUids;
-    for (const Incidence::Ptr &incidence : incidences) {
-        if (incidence->recurs()) {
-            recurringUids.insert(incidence->uid());
-        }
-    }
-    const QDateTime now = QDateTime::currentDateTime();
-    Timed::Event::List events;
-    for (const Incidence::Ptr &incidence : incidences) {
-        // The incidence from the list must be in the calendar and in a notebook.
-        const QString &nbuid = calendar->notebook(incidence->uid());
-        if (!calendar->isVisible(incidence) || nbuid.isEmpty()) {
-            continue;
-        }
-        if (incidence->recurs()) {
-            const QDateTime next = getNextOccurrence(incidence, now, calendar->instances(incidence));
-            addAlarms(incidence, nbuid, &events, next);
-        } else if (incidence->hasRecurrenceId()) {
-            const Incidence::Ptr parent = calendar->incidence(incidence->uid());
-            if (parent && !recurringUids.contains(parent->uid())) {
-                clearAlarms(parent, calendar->notebook(parent));
-                const QDateTime next = getNextOccurrence(parent, now, calendar->instances(parent));
-                addAlarms(parent, nbuid, &events, next);
-                recurringUids.insert(parent->uid());
-            }
-            addAlarms(incidence, nbuid, &events, now);
-        } else {
-            addAlarms(incidence, nbuid, &events, now);
-        }
-    }
-    commitEvents(events);
-}
-
-void ExtendedStorage::Private::clearAlarms(const Incidence::Ptr &incidence, const QString &notebookUid)
-{
-    QMap<QString, QVariant> map;
-    map["APPLICATION"] = "libextendedkcal";
-    map["uid"] = incidence->uid();
-    map["notebook"] = notebookUid;
-
-    Timed::Interface timed;
-    if (!timed.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
-                           << "alarm interface is not valid" << timed.lastError();
-        return;
-    }
-    QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
-    if (!reply.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << incidence->uid()
-                           << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
-                           << timed.lastError();
-        return;
-    }
-
-    const QList<QVariant> &result = reply.value();
-    for (int i = 0; i < result.size(); i++) {
-        uint32_t cookie = result[i].toUInt();
-        // We got a list of all alarm matching UID of this incidence
-        // - single event -> delete the alarm
-        // - recurring parent event -> the recurs() case, delete if
-        //   recurrenceId attribute is empty (thus invalid QDateTime)
-        // - recurring exception event -> the hasRecurrenceId() case,
-        //   delete if the recurrenceId attribute is matching in terms of QDateTime.
-        if (incidence->recurs() || incidence->hasRecurrenceId()) {
-            QDBusReply<QMap<QString, QVariant> > attributesReply = timed.query_attributes_sync(cookie);
-            const QMap<QString, QVariant> attributeMap = attributesReply.value();
-            const QVariant recurrenceId = attributeMap.value("recurrenceId", QVariant(QString()));
-            QDateTime recid = QDateTime::fromString(recurrenceId.toString(), Qt::ISODate);
-            if (incidence->recurrenceId() != recid) {
-                continue;
-            }
-        }
-        qCDebug(lcMkcal) << "removing alarm" << cookie << incidence->uid()
-                         << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-");
-        QDBusReply<bool> reply = timed.cancel_sync(cookie);
-        if (!reply.isValid() || !reply.value()) {
-            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << incidence->uid()
-                               << (incidence->hasRecurrenceId() ? incidence->recurrenceId().toString(Qt::ISODate) : "-")
-                               << reply.value() << timed.lastError();
-        }
-    }
-}
-
-void ExtendedStorage::Private::clearAlarmsByNotebook(const QString &notebookUid)
-{
-    QMap<QString, QVariant> map;
-    map["APPLICATION"] = "libextendedkcal";
-    map["notebook"] = notebookUid;
-
-    Timed::Interface timed;
-    if (!timed.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << notebookUid
-                 << "alarm interface is not valid" << timed.lastError();
-        return;
-    }
-    QDBusReply<QList<QVariant> > reply = timed.query_sync(map);
-    if (!reply.isValid()) {
-        qCWarning(lcMkcal) << "cannot clear alarms for" << notebookUid << timed.lastError();
-        return;
-    }
-    const QList<QVariant> &result = reply.value();
-    for (int i = 0; i < result.size(); i++) {
-        uint32_t cookie = result[i].toUInt();
-        qCDebug(lcMkcal) << "removing alarm" << cookie << notebookUid;
-        QDBusReply<bool> reply = timed.cancel_sync(cookie);
-        if (!reply.isValid() || !reply.value()) {
-            qCWarning(lcMkcal) << "cannot remove alarm" << cookie << notebookUid;
-        }
-    }
-}
-
-void ExtendedStorage::Private::addAlarms(const Incidence::Ptr &incidence,
-                                         const QString &nbuid,
-                                         Timed::Event::List *events,
-                                         const QDateTime &laterThan)
-{
-    if (incidence->status() == Incidence::StatusCanceled || laterThan.isNull()) {
-        return;
-    }
-
-    const QDateTime now = QDateTime::currentDateTime();
-    const Alarm::List alarms = incidence->alarms();
-    foreach (const Alarm::Ptr alarm, alarms) {
-        if (!alarm->enabled()) {
-            continue;
-        }
-
-        QDateTime preTime = laterThan;
-        if (incidence->recurs() && alarm->startOffset().asSeconds() < 0) {
-            // by construction for recurring events, laterThan is the time of the
-            // actual next occurrence, so one need to remove the alarm offset.
-            preTime = preTime.addSecs(alarm->startOffset().asSeconds());
-        }
-
-        // nextTime() is returning time strictly later than its argument.
-        QDateTime alarmTime = alarm->nextTime(preTime.addSecs(-1), true);
-        if (!alarmTime.isValid()) {
-            continue;
-        }
-
-        if (now.addSecs(60) > alarmTime) {
-            // don't allow alarms within the current minute -> take next alarm if so
-            alarmTime = alarm->nextTime(preTime.addSecs(60), true);
-            if (!alarmTime.isValid()) {
-                continue;
-            }
-        }
-        Timed::Event &e = events->append();
-        e.setUserModeFlag();
-        e.setMaximalTimeoutSnoozeCounter(2);
-        e.setTicker(alarmTime.toUTC().toTime_t());
-        // The code'll crash (=exception) iff the content is empty. So
-        // we have to check here.
-        QString s;
-
-        s = incidence->summary();
-        // Timed braindeath: Required field, BUT if empty, it asserts
-        if (s.isEmpty()) {
-            s = ' ';
-        }
-        e.setAttribute("TITLE", s);
-        e.setAttribute("PLUGIN", "libCalendarReminder");
-        e.setAttribute("APPLICATION", "libextendedkcal");
-        //e.setAttribute( "translation", "organiser" );
-        // This really has to exist or code is badly broken
-        Q_ASSERT(!incidence->uid().isEmpty());
-        e.setAttribute("uid", incidence->uid());
-#ifndef QT_NO_DEBUG_OUTPUT //Helps debuggin
-        e.setAttribute("alarmtime", alarmTime.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-#endif
-        if (!incidence->location().isEmpty()) {
-            e.setAttribute("location", incidence->location());
-        }
-        if (incidence->recurs()) {
-            e.setAttribute("recurs", "true");
-            Timed::Event::Action &a = e.addAction();
-            a.runCommand(QString("%1 %2 %3")
-                         .arg(RESET_ALARMS_CMD)
-                         .arg(nbuid)
-                         .arg(incidence->uid()));
-            a.whenServed();
-        }
-
-        // TODO - consider this how it should behave for recurrence
-        if ((incidence->type() == Incidence::TypeTodo)) {
-            Todo::Ptr todo = incidence.staticCast<Todo>();
-
-            if (todo->hasDueDate()) {
-                e.setAttribute("time", todo->dtDue(true).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-            }
-            e.setAttribute("type", "todo");
-        } else if (incidence->dtStart().isValid()) {
-            QDateTime eventStart;
-
-            if (incidence->recurs()) {
-                // assuming alarms not later than event start
-                eventStart = incidence->recurrence()->getNextDateTime(alarmTime.addSecs(-60));
-            } else {
-                eventStart = incidence->dtStart();
-            }
-            e.setAttribute("time", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-            e.setAttribute("startDate", eventStart.toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-            if (incidence->endDateForStart(eventStart).isValid()) {
-                e.setAttribute("endDate", incidence->endDateForStart(eventStart).toTimeSpec(Qt::OffsetFromUTC).toString(Qt::ISODate));
-            }
-            e.setAttribute("type", "event");
-        }
-
-        if (incidence->hasRecurrenceId()) {
-            e.setAttribute("recurrenceId", incidence->recurrenceId().toString(Qt::ISODate));
-        }
-        e.setAttribute("notebook", nbuid);
-
-        if (alarm->type() == Alarm::Procedure) {
-            QString prog = alarm->programFile();
-            if (!prog.isEmpty()) {
-                Timed::Event::Action &a = e.addAction();
-                a.runCommand(prog + " " + alarm->programArguments());
-                a.whenFinalized();
-            }
-        } else {
-            e.setReminderFlag();
-            e.setAlignedSnoozeFlag();
-        }
-    }
-}
-
-void ExtendedStorage::Private::commitEvents(Timed::Event::List &events)
-{
-    if (events.count() > 0) {
-        Timed::Interface timed;
-        if (!timed.isValid()) {
-            qCWarning(lcMkcal) << "cannot set alarm for incidence: "
-                               << "alarm interface is not valid" << timed.lastError();
-            return;
-        }
-        QDBusReply < QList<QVariant> > reply = timed.add_events_sync(events);
-        if (reply.isValid()) {
-            foreach (QVariant v, reply.value()) {
-                bool ok = true;
-                uint cookie = v.toUInt(&ok);
-                if (ok && cookie) {
-                    qCDebug(lcMkcal) << "added alarm: " << cookie;
-                } else {
-                    qCWarning(lcMkcal) << "failed to add alarm";
-                }
-            }
-        } else {
-            qCWarning(lcMkcal) << "failed to add alarms: " << reply.error().message();
-        }
-    } else {
-        qCDebug(lcMkcal) << "No alarms to send";
-    }
-}
-#endif

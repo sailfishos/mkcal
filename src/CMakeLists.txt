@@ -5,6 +5,7 @@ set(SRC
 	sqliteformat.cpp
 	sqlitestorage.cpp
 	servicehandler.cpp
+        alarmhandler.cpp
 	logging.cpp
 	semaphore_p.cpp)
 set(HEADERS
@@ -20,6 +21,7 @@ set(HEADERS
 	invitationhandlerif.h)
 
 set(PRIVATE_HEADERS
+        alarmhandler_p.h
         logging_p.h
         semaphore_p.h
         sqliteformat.h
