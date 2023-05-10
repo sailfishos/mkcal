@@ -78,5 +78,6 @@ install -m 644 -p %{SOURCE1} %{buildroot}%{_datadir}/mapplauncherd/privileges.d/
 /opt/tests/mkcal/tst_load
 /opt/tests/mkcal/tst_perf
 /opt/tests/mkcal/tst_storage
+/opt/tests/mkcal/tst_sqliteformat
 /opt/tests/mkcal/tst_backend
 /opt/tests/mkcal/tests.xml
