@@ -195,9 +195,14 @@ public:
       marked as deleted and that matches the UID / RecID of the incidences
       in list. The action is performed immediately on database.
 
+      @param list is the incidences to remove from the DB
+      @param notebook is the notebook they belong to,
+             using an empty notebook uid is deprecated, but kept for
+             backward backward compatibility.
       @return True on success, false otherwise.
      */
-    virtual bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list) = 0;
+    virtual bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list,
+                                        const QString &notebook = QString()) = 0;
 
     /**
       @copydoc

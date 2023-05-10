@@ -1332,9 +1332,23 @@ void tst_storage::tst_deleted()
 
     // Deleted events are marked as deleted but remains in the DB
     QVERIFY(m_storage->save());
-    reloadDb();
-    QVERIFY(m_storage->loadNotebookIncidences(notebook->uid()));
 
+    // One can then add the same event in another notebook (here the default one).
+    QVERIFY(m_calendar->addEvent(event));
+    QVERIFY(m_storage->save());
+
+    // And later on, also delete it.
+    reloadDb();
+    QVERIFY(m_storage->loadNotebookIncidences(m_calendar->defaultNotebook()));
+    fetchEvent = m_calendar->event(event->uid());
+    QVERIFY(fetchEvent);
+    QThread::sleep(1); // Need to sleep to avoid UNIQUE constrain violation
+                       // by deleting the same event at the same time than
+                       // on the other notebook.
+    QVERIFY(m_calendar->deleteIncidence(fetchEvent));
+    QVERIFY(m_storage->save());
+
+    // Check that event is listed as deleted from notebook.
     KCalendarCore::Incidence::List deleted;
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(1), notebook->uid()));
     QVERIFY(deleted.isEmpty());
@@ -1346,10 +1360,16 @@ void tst_storage::tst_deleted()
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime(), "123456789-deletion"));
     QCOMPARE(deleted.length(), 1);
 
-    // One can purge previously deleted events from DB
-    QVERIFY(m_storage->purgeDeletedIncidences(deleted));
+    // One can purge from DB previously deleted events from calendar
+    QVERIFY(m_storage->purgeDeletedIncidences(deleted, notebook->uid()));
     deleted.clear();
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), notebook->uid()));
+    QCOMPARE(deleted.length(), 0);
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), m_calendar->defaultNotebook()));
+    QCOMPARE(deleted.length(), 1);
+    QVERIFY(m_storage->purgeDeletedIncidences(deleted));
+    deleted.clear();
+    QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), m_calendar->defaultNotebook()));
     QCOMPARE(deleted.length(), 0);
 
     // One can purge deleted events from DB directly when they are

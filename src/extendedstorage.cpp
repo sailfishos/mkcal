@@ -439,7 +439,7 @@ bool ExtendedStorage::deleteNotebook(const Notebook::Ptr &nb)
         Incidence::List deleted;
         deletedIncidences(&deleted, QDateTime(), nb->uid());
         qCDebug(lcMkcal) << "purging" << deleted.count() << "incidences of notebook" << nb->name();
-        if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted)) {
+        if (!deleted.isEmpty() && !purgeDeletedIncidences(deleted, nb->uid())) {
             qCWarning(lcMkcal) << "error when purging deleted incidences from notebook" << nb->uid();
         }
         if (loadNotebookIncidences(nb->uid())) {

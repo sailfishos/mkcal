@@ -123,9 +123,10 @@ public:
 
     /**
       @copydoc
-      ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &)
+      ExtendedStorage::purgeDeletedIncidences(const KCalCore::Incidence::List &, const QString &)
     */
-    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list);
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &list,
+                                const QString &notebookUid = QString());
 
     /**
       @copydoc

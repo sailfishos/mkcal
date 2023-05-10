@@ -93,7 +93,7 @@ public:
     {
         return true;
     }
-    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &)
+    bool purgeDeletedIncidences(const KCalendarCore::Incidence::List &, const QString &)
     {
         return true;
     }
