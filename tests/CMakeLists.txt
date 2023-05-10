@@ -56,6 +56,18 @@ target_link_libraries(tst_backend
 
 add_test(tst_backend tst_backend)
 
+add_executable(tst_sqliteformat tst_sqliteformat.cpp)
+
+target_include_directories(tst_sqliteformat PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(tst_sqliteformat
+	Qt5::Test
+	KF5::CalendarCore
+	PkgConfig::SQLITE3
+	mkcal-qt5)
+
+add_test(tst_sqliteformat tst_sqliteformat)
+
 if(INSTALL_TESTS)
 	install(TARGETS tst_storage
 		DESTINATION /opt/tests/mkcal)
@@ -64,6 +76,8 @@ if(INSTALL_TESTS)
 	install(TARGETS tst_perf
 		DESTINATION /opt/tests/mkcal)
 	install(TARGETS tst_backend
+		DESTINATION /opt/tests/mkcal)
+	install(TARGETS tst_sqliteformat
 		DESTINATION /opt/tests/mkcal)
 	install(FILES tests.xml
 		DESTINATION /opt/tests/mkcal)
