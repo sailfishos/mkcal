@@ -70,9 +70,12 @@ void tst_sqlitecalendarstorage::init()
 
 void tst_sqlitecalendarstorage::cleanup()
 {
+    Notebook::Ptr notebook = mStorage->notebook();
+    QVERIFY(notebook);
     QVERIFY(mStorage->close());
     QVERIFY(!mStorage->notebook());
     mStorage.clear();
+    QVERIFY(Notebook::deleteSystemNotebook(*notebook));
 }
 
 void tst_sqlitecalendarstorage::testConstructorByUid()
@@ -310,6 +313,7 @@ void tst_sqlitecalendarstorage::testObserver()
     QVERIFY(storage.save());
     QVERIFY(modified.wait());
     QVERIFY(updated.isEmpty());
+    QVERIFY(Notebook::deleteSystemNotebook(*storage.notebook()));
 }
 
 void tst_sqlitecalendarstorage::testAlarms()
