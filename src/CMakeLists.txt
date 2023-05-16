@@ -6,6 +6,8 @@ set(SRC
 	sqlitestorage.cpp
         calendarstorage.cpp
         sqlitecalendarstorage.cpp
+        multicalendarstorage.cpp
+        sqlitemulticalendarstorage.cpp
         singlesqlitebackend.cpp
 	servicehandler.cpp
         alarmhandler.cpp
@@ -20,6 +22,8 @@ set(HEADERS
 	sqlitestorage.h
         calendarstorage.h
         sqlitecalendarstorage.h
+        multicalendarstorage.h
+        sqlitemulticalendarstorage.h
 	servicehandlerif.h
 	servicehandler.h
 	dummystorage.h
