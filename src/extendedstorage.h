@@ -322,10 +322,16 @@ public:
 
       Matching is done on summary, description and location fields.
 
+      The matching incidences are sorted by start dates before applying
+      the @param limit. Since recurring incidences have occurrences later
+      than their start date, they are not taken into account when
+      counting the limit and all matching recurring events are always
+      loaded.
+
       @param key can be any substring from the summary, the description or the location.
       @param identifiers optional, stores the instance identifiers of
              matching incidences.
-      @param limit the maximum number of loaded incidences, unlimited by default
+      @param limit the maximum number of non-recurring incidences, unlimited by default
       @return true on success.
      */
     virtual bool search(const QString &key, QStringList *identifiers, int limit = 0) = 0;
