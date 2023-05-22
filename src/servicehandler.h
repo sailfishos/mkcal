@@ -1,7 +1,7 @@
 #ifndef MKCAL_SERVICEHANDLER_H
 #define MKCAL_SERVICEHANDLER_H
 /*
-  This file is part of the libextendedkcal library.
+  This file is part of the libmkcal library.
 
   Copyright (c) 2009 Nokia Corporation and/or its subsidiary(-ies). All rights reserved.
   Contact: Alvaro Manera <alvaro.manera@nokia.com>
@@ -26,8 +26,6 @@
 #include <QObject>
 #include "mkcal_export.h"
 #include "notebook.h"
-#include "extendedcalendar.h"
-#include "extendedstorage.h"
 #include "servicehandlerif.h"
 
 const QString defaultName = "DefaultInvitationPlugin";
@@ -37,6 +35,8 @@ class ServiceHandlerPrivate;
 namespace mKCal {
 
 /** Singleton class to get the exact handler (plugin) of the service
+    In case of API with a notebook argument, the plugin to be used is
+    determined calling `Notebook::pluginName()`.
 */
 class MKCAL_EXPORT ServiceHandler : QObject
 {
@@ -74,80 +74,54 @@ public:
     }
 
     /** Send the invitation to the list of people stated as attendees.
-      It would load the appropriate plugin to do it, and if there
-      is no plugin it would use the default fall back plugin.
+      @param notebook notebook to use for account info
       @param invitation The Incidence to send
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendInvitation(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
-                        const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                        const Notebook::Ptr &notebook = Notebook::Ptr());
+    bool sendInvitation(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
 
     /** Send the updated invitation to the list of people stated as attendees.
-      It would load the appropriate plugin to do it, and if there
-      is no plugin it would use the default fall back plugin.
+      @param notebook notebook to use for account info
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendUpdate(const KCalendarCore::Incidence::Ptr &invitation, const QString &body, const ExtendedCalendar::Ptr &calendar,
-                    const ExtendedStorage::Ptr &storage, const Notebook::Ptr &notebook = Notebook::Ptr());
+    bool sendUpdate(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
 
     /** Send the updated invitation to the organiser.
-      It would load the appropriate plugin to do it, and if there
-      is no plugin it would use the default fall back plugin.
+      @param notebook notebook to use for account info
       @param invitation The Incidence to udpate
       @param body The body of the reply if any
-      @param calendar Pointer to the calendar in use
-      @param storage Pointer to the storage in use
-      @param notebook Optional notebook to use for account info
       @return True if OK, false in case of error
       */
-    bool sendResponse(const KCalendarCore::Incidence::Ptr &invitation, const QString &body,
-                      const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                      const Notebook::Ptr &notebook = Notebook::Ptr());
+    bool sendResponse(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
 
     /** Icon
-      It would load the appropriate plugin to do it
-      @param notebook notebook
-      @param storage Pointer to the storage in use
+      @param serviceId the name of the service to use
       @return Icon
       */
-    QString icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString icon(const QString &serviceId);
 
     /** multiCalendar
-      It would load the appropriate plugin to do it
-      @param notebook notebook
-      @param storage Pointer to the storage in use
+      @param serviceId the name of the service to use
       @return True if multicalendar otherwise false
       */
-    bool multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    bool multiCalendar(const QString &serviceId);
 
     /** emailAddress
-      It would load the appropriate plugin to do it
-      @param notebook notebook
-      @param storage Pointer to the storage in use
-      @return email address
-      */
-    QString emailAddress(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+       Retrieve the email address of the notebook.
+     */
+    QString emailAddress(const Notebook::Ptr &notebook);
 
     /** displayName
-      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return display name
       */
-    QString displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QString displayName(const Notebook::Ptr &notebook);
 
     /** downloadAttachment
-      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @param uri uri of attachment to be downloaded
@@ -155,11 +129,9 @@ public:
       @return Id of the attachment download. It will be used to notify changes about it. If < 0
       there was an error.
       */
-    int downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage, const QString &uri,
-                           const QString &path);
+    int downloadAttachment(const Notebook::Ptr &notebook, const QString &uri, const QString &path);
 
     /** deleteAttachment
-      It would load the appropriate plugin to do it
       @param incience incidence of attachment to be deleted
       @param notebook notebook
       @param storage Pointer to the storage in use
@@ -167,26 +139,24 @@ public:
       @return True if OK, false in case of error
       */
     bool deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
-                          const ExtendedStorage::Ptr &storage, const QString &uri);
+                          const QString &uri);
 
     /** Share notebook
-      It would load the appropriate plugin to do it
       @param notebook Shared notebook
       @param sharedWith The list of email addresses or phone numbers of users
       @param storage Pointer to the storage in use
       @return True if OK, false in case of error
       */
-    bool shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith, const ExtendedStorage::Ptr &storage);
+    bool shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith);
 
     /** sharedWith
-      It would load the appropriate plugin to do it
       @param notebook notebook
       @param storage Pointer to the storage in use
       @return list of users to share with
       */
-    QStringList sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    QStringList sharedWith(const Notebook::Ptr &notebook);
 
-    /** Try to get the notebook where to put the inviatation.
+    /** Try to get the notebook where to put the invitation.
       This is done based on the product Id of the invitation received. (in the iCal file).
 
       @param productId the id of the generator of the iCal

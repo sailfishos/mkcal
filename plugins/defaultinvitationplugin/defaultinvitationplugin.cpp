@@ -15,7 +15,6 @@
 
 
 #include "defaultinvitationplugin.h"
-#include <extendedcalendar.h>
 #include <QDebug>
 #include <QTimer>
 
@@ -231,8 +230,7 @@ bool DefaultInvitationPlugin::sendInvitation(const QString &accountId, const QSt
         emails.append(att.email());
     }
 
-    const QString &description = invitation->description();
-    const bool res = d->sendMail(accountId, emails, invitation->summary(), description, ical, false);
+    const bool res = d->sendMail(accountId, emails, invitation->summary(), invitation->description(), ical, false);
 
     d->uninit();
     return res;

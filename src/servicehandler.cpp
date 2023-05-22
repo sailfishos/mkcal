@@ -18,13 +18,6 @@
 using namespace mKCal;
 using namespace KCalendarCore;
 
-enum ExecutedPlugin {
-    None = 0,
-    SendInvitation,
-    SendResponse,
-    SendUpdate
-};
-
 class ServiceHandlerPrivate
 {
 public:
@@ -36,10 +29,7 @@ public:
     ServiceHandler::ErrorCode mError;
 
     void loadPlugins();
-    bool executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
-                       const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                       const Notebook::Ptr &notebook);
-    ServiceInterface *getServicePlugin(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage);
+    InvitationHandlerInterface* invitationPlugin(const QString &pluginName);
 
     ServiceHandlerPrivate();
 };
@@ -82,110 +72,18 @@ void ServiceHandlerPrivate::loadPlugins()
     mLoaded = true;
 }
 
-bool ServiceHandlerPrivate::executePlugin(ExecutedPlugin action, const Incidence::Ptr &invitation, const QString &body,
-                                          const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                          const Notebook::Ptr &notebook)
+InvitationHandlerInterface* ServiceHandlerPrivate::invitationPlugin(const QString &pluginName)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
     if (!mLoaded)
         loadPlugins();
 
-    Notebook::Ptr accountNotebook;
-    QString notebookUid;
-
-    if (!notebook.isNull()) {
-        accountNotebook = notebook;
-        notebookUid = notebook->uid();
-    } else {
-        notebookUid = calendar->notebook(invitation);
-        accountNotebook = storage->notebook(notebookUid);
-    }
-
-    if (accountNotebook.isNull() ||
-        accountNotebook->isRunTimeOnly() ||
-        accountNotebook->isReadOnly() ||
-        !calendar->hasValidNotebook(notebookUid)) {
-        qCWarning(lcMkcal) << "No notebook available for invitation plugin to use";
-        return false;
-    }
-
-    QString pluginName = accountNotebook->pluginName();
-    QString accountId = accountNotebook->account() ;
-
-    if (pluginName.isEmpty() || !mPlugins.contains(pluginName))
-        pluginName = defaultName;
-
-    qCDebug(lcMkcal) <<  "Using plugin:" << pluginName;
-
     QHash<QString, InvitationHandlerInterface *>::const_iterator i = mPlugins.find(pluginName);
-
     if (i != mPlugins.end()) {
-        // service needed to get possible error, because
-        // invitationhandlerinterface doesn't have error-function
-        QHash<QString, ServiceInterface *>::const_iterator is = mServices.find(pluginName);
-
-        switch (action) {
-        case SendInvitation:
-            if (i.value()->sendInvitation(accountId, notebookUid, invitation, body)) {
-                return true;
-            } else {
-                mError = (ServiceHandler::ErrorCode) is.value()->error();
-                return false;
-            }
-
-        case SendResponse:
-            if (i.value()->sendResponse(accountId, invitation, body)) {
-                return true;
-            } else {
-                mError = (ServiceHandler::ErrorCode) is.value()->error();
-                return false;
-            }
-
-        case SendUpdate:
-            if (i.value()->sendUpdate(accountId, invitation, body)) {
-                return true;
-            } else {
-                mError = (ServiceHandler::ErrorCode) is.value()->error();
-                return false;
-            }
-
-        default:
-            return false;
-        }
-    } else {
-        return false;
-    }
-}
-
-ServiceInterface *ServiceHandlerPrivate::getServicePlugin(const Notebook::Ptr &notebook,
-                                                          const ExtendedStorage::Ptr &storage)
-{
-    if (storage.isNull() || notebook.isNull())
-        return 0;
-
-    if (!storage->isValidNotebook(notebook->uid()))
-        return 0;
-
-    QString name(notebook->pluginName());
-
-    if (name.isEmpty() || !mServices.contains(name)) {
-        name = defaultName;
-    }
-
-    if (!mLoaded) {
-        loadPlugins();
-    }
-
-    qCDebug(lcMkcal) <<  "Using service:" << name;
-
-    QHash<QString, ServiceInterface *>::const_iterator i = mServices.find(name);
-
-    if (i != mServices.end()) {
+        return i.value();
+    } else if ((i = mPlugins.find(defaultName)) != mPlugins.end()) {
         return i.value();
     } else {
-        return 0;
+        return nullptr;
     }
 }
 
@@ -194,122 +92,152 @@ ServiceHandler::ServiceHandler()
 {
 }
 
-bool ServiceHandler::sendInvitation(const Incidence::Ptr &invitation, const QString &body,
-                                    const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                    const Notebook::Ptr &notebook)
+bool ServiceHandler::sendInvitation(const Notebook::Ptr &notebook, const Incidence::Ptr &invitation, const QString &body)
 {
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
+    if (!notebook || !invitation)
         return false;
 
-    return d->executePlugin(SendInvitation, invitation, body, calendar, storage, notebook);
-}
+    InvitationHandlerInterface* plugin = d->invitationPlugin(notebook->pluginName());
 
-
-bool ServiceHandler::sendUpdate(const Incidence::Ptr &invitation, const QString &body,
-                                const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                const Notebook::Ptr &notebook)
-{
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
-    return d->executePlugin(SendUpdate, invitation, body, calendar, storage, notebook);
-}
-
-
-bool ServiceHandler::sendResponse(const Incidence::Ptr &invitation, const QString &body,
-                                  const ExtendedCalendar::Ptr &calendar, const ExtendedStorage::Ptr &storage,
-                                  const Notebook::Ptr &notebook)
-{
-    if (storage.isNull() || invitation.isNull() || calendar.isNull())
-        return false;
-
-    return d->executePlugin(SendResponse, invitation, body, calendar, storage, notebook);
-}
-
-QString ServiceHandler::icon(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
-{
-    if (storage.isNull() || notebook.isNull())
-        return QString();
-
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
-
-    if (service) {
-        QString res(service->icon());
-        if (res.isNull()) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    d->mError = ErrorOk;
+    if (plugin) {
+        if (plugin->sendInvitation(notebook->account(), notebook->uid(), invitation, body)) {
+            return true;
+        } else {
+            // service needed to get possible error, because
+            // invitationhandlerinterface doesn't have error-function
+            // This is utterly broken by design, except when the invitation plugin is also a service plugin
+            ServiceInterface *interface = service(notebook->pluginName());
+            if (!interface) {
+                interface = service(defaultName);
+            }
+            d->mError = interface ? (ServiceHandler::ErrorCode)interface->error() : ErrorInternal;
+            return false;
         }
-        return res;
-    } else {
-        return QString();
-    }
-}
-
-bool ServiceHandler::multiCalendar(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
-{
-    if (storage.isNull() || notebook.isNull())
-        return false;
-
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
-
-    if (service) {
-        bool res = service->multiCalendar();
-        if (!res) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
-        }
-        return res;
     } else {
         return false;
     }
 }
 
-QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+
+bool ServiceHandler::sendUpdate(const Notebook::Ptr &notebook, const Incidence::Ptr &invitation, const QString &body)
 {
-    if (storage.isNull() || notebook.isNull())
-        return QString();
+    if (!notebook || !invitation)
+        return false;
 
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
+    InvitationHandlerInterface* plugin = d->invitationPlugin(notebook->pluginName());
 
-    if (service) {
-        QString res = service->emailAddress(notebook);
-        if (res.isNull()) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    d->mError = ErrorOk;
+    if (plugin) {
+        if (plugin->sendUpdate(notebook->account(), invitation, body)) {
+            return true;
+        } else {
+            // service needed to get possible error, because
+            // invitationhandlerinterface doesn't have error-function
+            // This is utterly broken by design, except when the invitation plugin is also a service plugin
+            ServiceInterface *interface = service(notebook->pluginName());
+            if (!interface) {
+                interface = service(defaultName);
+            }
+            d->mError = interface ? (ServiceHandler::ErrorCode)interface->error() : ErrorInternal;
+            return false;
         }
-        return res;
     } else {
-        return QString();
+        return false;
     }
 }
 
-QString ServiceHandler::displayName(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+
+bool ServiceHandler::sendResponse(const Notebook::Ptr &notebook, const Incidence::Ptr &invitation, const QString &body)
 {
-    if (storage.isNull() || notebook.isNull())
-        return QString();
+    if (!notebook || !invitation)
+        return false;
 
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
+    InvitationHandlerInterface* plugin = d->invitationPlugin(notebook->pluginName());
 
-    if (service) {
-        QString res = service->displayName(notebook);
-        if (res.isNull()) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+    d->mError = ErrorOk;
+    if (plugin) {
+        if (plugin->sendResponse(notebook->account(), invitation, body)) {
+            return true;
+        } else {
+            // service needed to get possible error, because
+            // invitationhandlerinterface doesn't have error-function
+            // This is utterly broken by design, except when the invitation plugin is also a service plugin
+            ServiceInterface *interface = service(notebook->pluginName());
+            if (!interface) {
+                interface = service(defaultName);
+            }
+            d->mError = interface ? (ServiceHandler::ErrorCode)interface->error() : ErrorInternal;
+            return false;
         }
-        return res;
     } else {
-        return QString();
+        return false;
     }
 }
 
-int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage,
-                                       const QString &uri, const QString &path)
+QString ServiceHandler::icon(const QString &serviceId)
 {
-    if (storage.isNull() || notebook.isNull())
+    ServiceInterface *plugin = service(serviceId);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
+
+    return plugin ? plugin->icon() : QString();
+}
+
+bool ServiceHandler::multiCalendar(const QString &serviceId)
+{
+    ServiceInterface *plugin = service(serviceId);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
+
+    d->mError = ErrorOk;
+    if (plugin) {
+        bool res = plugin->multiCalendar();
+        d->mError = (ServiceHandler::ErrorCode) plugin->error(); //Right now convert directly
+        return res;
+    } else {
+        return false;
+    }
+}
+
+QString ServiceHandler::emailAddress(const Notebook::Ptr &notebook)
+{
+    ServiceInterface *plugin = service(notebook ? notebook->pluginName() : defaultName);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
+
+    return plugin ? plugin->emailAddress(notebook) : QString();
+}
+
+QString ServiceHandler::displayName(const Notebook::Ptr &notebook)
+{
+    ServiceInterface *plugin = service(notebook ? notebook->pluginName() : defaultName);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
+
+    return plugin ? plugin->displayName(notebook) : QString();
+}
+
+int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const QString &uri, const QString &path)
+{
+    if (!notebook) {
         return -1;
+    }
 
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
+    ServiceInterface *plugin = service(notebook->pluginName());
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
 
-    if (service) {
-        bool res = service->downloadAttachment(notebook, uri, path);
+    d->mError = ErrorOk;
+    if (plugin) {
+        bool res = plugin->downloadAttachment(notebook, uri, path);
         if (!res) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+            d->mError = (ServiceHandler::ErrorCode) plugin->error(); //Right now convert directly
         }
         return d->mDownloadId++;
     } else {
@@ -318,17 +246,22 @@ int ServiceHandler::downloadAttachment(const Notebook::Ptr &notebook, const Exte
 }
 
 bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incidence, const Notebook::Ptr &notebook,
-                                      const ExtendedStorage::Ptr &storage, const QString &uri)
+                                      const QString &uri)
 {
-    if (storage.isNull() || notebook.isNull() || incidence.isNull())
+    if (!notebook) {
         return false;
+    }
 
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
+    ServiceInterface *plugin = service(notebook->pluginName());
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
 
-    if (service) {
-        bool res = service->deleteAttachment(notebook, incidence, uri);
+    d->mError = ErrorOk;
+    if (plugin) {
+        bool res = plugin->deleteAttachment(notebook, incidence, uri);
         if (!res) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+            d->mError = (ServiceHandler::ErrorCode) plugin->error(); //Right now convert directly
         }
         return res;
     } else {
@@ -336,20 +269,18 @@ bool ServiceHandler::deleteAttachment(const KCalendarCore::Incidence::Ptr &incid
     }
 }
 
-bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith,
-                                   const ExtendedStorage::Ptr &storage)
+bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringList &sharedWith)
 {
-    if (storage.isNull() || notebook.isNull())
-        return false;
+    ServiceInterface *plugin = service(notebook ? notebook->pluginName() : defaultName);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
 
-    qCDebug(lcMkcal) <<  "shareNotebook";
-
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
-
-    if (service) {
-        bool res = service->shareNotebook(notebook, sharedWith);
+    d->mError = ErrorOk;
+    if (plugin) {
+        bool res = plugin->shareNotebook(notebook, sharedWith);
         if (!res) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
+            d->mError = (ServiceHandler::ErrorCode) plugin->error(); //Right now convert directly
         }
         return res;
     } else {
@@ -357,18 +288,17 @@ bool ServiceHandler::shareNotebook(const Notebook::Ptr &notebook, const QStringL
     }
 }
 
-QStringList ServiceHandler::sharedWith(const Notebook::Ptr &notebook, const ExtendedStorage::Ptr &storage)
+QStringList ServiceHandler::sharedWith(const Notebook::Ptr &notebook)
 {
-    if (storage.isNull() || notebook.isNull())
-        return QStringList();
+    ServiceInterface *plugin = service(notebook ? notebook->pluginName() : defaultName);
+    if (!plugin) {
+        plugin = service(defaultName);
+    }
 
-    ServiceInterface *service = d->getServicePlugin(notebook, storage);
-
-    if (service) {
-        QStringList res = service->sharedWith(notebook);
-        if (res.isEmpty()) {
-            d->mError = (ServiceHandler::ErrorCode) service->error(); //Right now convert directly
-        }
+    d->mError = ErrorOk;
+    if (plugin) {
+        QStringList res = plugin->sharedWith(notebook);
+        d->mError = (ServiceHandler::ErrorCode) plugin->error(); //Right now convert directly
         return res;
     } else {
         return QStringList();
