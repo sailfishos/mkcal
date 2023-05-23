@@ -20,10 +20,6 @@
   Boston, MA 02110-1301, USA.
 */
 /**
-  @file
-  This file is part of the API for handling calendar data and
-  defines the SqliteFormat class.
-
   @author Tero Aho \<ext-tero.1.aho@nokia.com\>
   @author Pertti Luukko \<ext-pertti.luukko@nokia.com\>
 */
@@ -41,9 +37,6 @@
 
 namespace mKCal {
 
-/**
-  Database operation type.
-*/
 enum DBOperation {
     DBInsert,
     DBUpdate,
@@ -51,18 +44,18 @@ enum DBOperation {
     DBDelete
 };
 
-/**
-  @brief
+/*
   Sqlite format implementation.
 
   This class implements the Sqlite format. It provides methods for
   loading/saving/converting Sqlite format data into the internal
   representation as Calendar and Incidences.
 */
+// exported just for unit test. Would be better to avoid.
 class MKCAL_EXPORT SqliteFormat
 {
 public:
-    /**
+    /*
       The different types of rdates.
     */
     enum RDateType {
@@ -72,7 +65,7 @@ public:
         XDateTime
     };
 
-    /**
+    /*
       Values stored in the flag column of the calendars table.
      */
     enum CalendarFlag {
@@ -89,17 +82,10 @@ public:
         Shareable     = (1 << 10)
     };
 
-    /**
-      Constructor a new Sqlite Format object.
-    */
     SqliteFormat(sqlite3 *database);
-
-    /**
-      Destructor.
-    */
     virtual ~SqliteFormat();
 
-    /**
+    /*
       Update notebook data in Calendars table.
 
       @param notebook notebook to update
@@ -110,7 +96,7 @@ public:
     */
     bool modifyCalendars(const Notebook &notebook, DBOperation dbop, sqlite3_stmt *stmt, bool isDefault);
 
-    /**
+    /*
       Select notebooks from Calendars table.
 
       @param stmt prepared sqlite statement for calendars table
@@ -119,7 +105,7 @@ public:
     */
     Notebook::Ptr selectCalendars(sqlite3_stmt *stmt, bool *isDefault);
 
-    /**
+    /*
       Update incidence data in Components table.
 
       @param incidence incidence to update
@@ -133,7 +119,7 @@ public:
     bool purgeDeletedComponents(const KCalendarCore::Incidence &incidence,
                                 const QString &notebook = QString());
 
-    /**
+    /*
       Select incidences from Components table.
 
       @param stmt1 prepared sqlite statement for components table
@@ -147,7 +133,7 @@ public:
 
     // Helper Functions //
 
-    /**
+    /*
       Convert datetime to seconds relative to the origin.
 
       @param dt datetime
@@ -155,7 +141,7 @@ public:
     */
     static sqlite3_int64 toOriginTime(const QDateTime &dt);
 
-    /**
+    /*
       Convert local datetime to seconds relative to the origin.
 
       @param dt datetime
@@ -163,21 +149,21 @@ public:
     */
     static sqlite3_int64 toLocalOriginTime(const QDateTime &dt);
 
-    /**
+    /*
       Convert seconds from the origin to clock time.
       @param seconds relative to origin.
       @return clocktime datetime.
     */
     static QDateTime fromLocalOriginTime(sqlite3_int64 seconds);
 
-    /**
+    /*
       Convert seconds from the origin to UTC datetime.
       @param seconds relative to origin.
       @return UTC datetime.
     */
     static QDateTime fromOriginTime(sqlite3_int64 seconds);
 
-    /**
+    /*
       Convert seconds from the origin to datetime in given timezone.
       @param seconds relative to origin.
       @param zonename timezone name.
