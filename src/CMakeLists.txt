@@ -20,8 +20,7 @@ set(HEADERS
 	mkcal_export.h
 	logging_p.h
 	semaphore_p.h
-	invitationhandlerif.h
-	config-mkcal.h)
+	invitationhandlerif.h)
 
 add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS})
 
