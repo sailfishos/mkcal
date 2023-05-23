@@ -12,18 +12,20 @@ set(HEADERS
 	extendedstorage.h
 	extendedstorageobserver.h
 	notebook.h
-	sqliteformat.h
 	sqlitestorage.h
 	servicehandlerif.h
 	servicehandler.h
 	dummystorage.h
 	mkcal_export.h
-	logging_p.h
-	semaphore_p.h
-	invitationhandlerif.h
-	config-mkcal.h)
+	invitationhandlerif.h)
 
-add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS})
+set(PRIVATE_HEADERS
+        logging_p.h
+        semaphore_p.h
+        sqliteformat.h
+        )
+
+add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
 
 target_link_libraries(mkcal-qt5
 		PRIVATE
