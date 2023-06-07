@@ -130,9 +130,9 @@ public:
     int mSavedTransactionId;
     sqlite3 *mDatabase = nullptr;
     SqliteFormat *mFormat = nullptr;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToInsert;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToUpdate;
-    QMultiHash<QString, Incidence::Ptr> mIncidencesToDelete;
+    QHash<QString, Incidence::Ptr> mIncidencesToInsert;
+    QHash<QString, Incidence::Ptr> mIncidencesToUpdate;
+    QHash<QString, Incidence::Ptr> mIncidencesToDelete;
     bool mIsLoading;
     bool mIsSaved;
 
@@ -567,28 +567,14 @@ error:
 }
 
 //@cond PRIVATE
-static bool isContaining(const QMultiHash<QString, Incidence::Ptr> &list, const Incidence::Ptr &incidence)
-{
-    QMultiHash<QString, Incidence::Ptr>::ConstIterator it = list.find(incidence->uid());
-    for (; it != list.constEnd(); ++it) {
-        if ((*it)->recurrenceId() == incidence->recurrenceId()) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const QString &notebookUid)
 {
     bool added = true;
     bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
-    // Cannot use .contains(incidence->uid(), incidence) here, like
-    // in the rest of the file, since incidence here is a new one
-    // returned by the selectComponents() that cannot by design be already
-    // in the multihash tables.
-    if (isContaining(mIncidencesToInsert, incidence) ||
-        isContaining(mIncidencesToUpdate, incidence) ||
-        isContaining(mIncidencesToDelete, incidence) ||
+    const QString key = incidence->instanceIdentifier();
+    if (mIncidencesToInsert.contains(key) ||
+        mIncidencesToUpdate.contains(key) ||
+        mIncidencesToDelete.contains(key) ||
         (mStorage->validateNotebooks() && !hasNotebook)) {
         qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
                            << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
@@ -895,31 +881,24 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
         return;
     }
 
-    QMultiHash<QString, KCalendarCore::Incidence::Ptr>::Iterator deleted =
-        d->mIncidencesToDelete.find(incidence->uid());
-    if (deleted != d->mIncidencesToDelete.end()) {
-        qCDebug(lcMkcal) << "removing incidence from deleted" << incidence->uid();
-        while (deleted != d->mIncidencesToDelete.end()) {
-            if ((*deleted)->recurrenceId() == incidence->recurrenceId()) {
-                deleted = d->mIncidencesToDelete.erase(deleted);
-                calendarIncidenceChanged(incidence);
-            } else {
-                ++deleted;
-            }
-        }
-    } else if (!d->mIncidencesToInsert.contains(incidence->uid(), incidence)) {
-        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database insert";
-        d->mIncidencesToInsert.insert(incidence->uid(), incidence);
+    const QString key = incidence->instanceIdentifier();
+    if (d->mIncidencesToDelete.remove(key) > 0) {
+        qCDebug(lcMkcal) << "removing incidence from deleted" << key;
+        calendarIncidenceChanged(incidence);
+    } else if (!d->mIncidencesToInsert.contains(key)) {
+        qCDebug(lcMkcal) << "appending incidence" << key << "for database insert";
+        d->mIncidencesToInsert.insert(key, incidence);
     }
 }
 
 void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
 {
-    if (!d->mIncidencesToUpdate.contains(incidence->uid(), incidence) &&
-            !d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
-            !d->mIsLoading) {
-        qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database update";
-        d->mIncidencesToUpdate.insert(incidence->uid(), incidence);
+    const QString key = incidence->instanceIdentifier();
+    if (!d->mIncidencesToUpdate.contains(key) &&
+        !d->mIncidencesToInsert.contains(key) &&
+        !d->mIsLoading) {
+        qCDebug(lcMkcal) << "appending incidence" << key << "for database update";
+        d->mIncidencesToUpdate.insert(key, incidence);
     }
 }
 
@@ -927,24 +906,24 @@ void SqliteStorage::calendarIncidenceDeleted(const Incidence::Ptr &incidence, co
 {
     Q_UNUSED(calendar);
 
-    if (d->mIncidencesToInsert.contains(incidence->uid(), incidence) &&
-            !d->mIsLoading) {
-        qCDebug(lcMkcal) << "removing incidence from inserted" << incidence->uid();
-        d->mIncidencesToInsert.remove(incidence->uid(), incidence);
+    const QString key = incidence->instanceIdentifier();
+    if (d->mIncidencesToInsert.contains(key) && !d->mIsLoading) {
+        qCDebug(lcMkcal) << "removing incidence from inserted" << key;
+        d->mIncidencesToInsert.remove(key);
     } else {
-        if (!d->mIncidencesToDelete.contains(incidence->uid(), incidence) &&
-                !d->mIsLoading) {
-            qCDebug(lcMkcal) << "appending incidence" << incidence->uid() << "for database delete";
-            d->mIncidencesToDelete.insert(incidence->uid(), incidence);
+        if (!d->mIncidencesToDelete.contains(key) && !d->mIsLoading) {
+            qCDebug(lcMkcal) << "appending incidence" << key << "for database delete";
+            d->mIncidencesToDelete.insert(key, incidence);
         }
     }
 }
 
 void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &incidence)
 {
-    if (d->mIncidencesToInsert.contains(incidence->uid()) && !d->mIsLoading) {
-        qCDebug(lcMkcal) << "duplicate - removing incidence from inserted" << incidence->uid();
-        d->mIncidencesToInsert.remove(incidence->uid(), incidence);
+    const QString key = incidence->instanceIdentifier();
+    if (d->mIncidencesToInsert.contains(key) && !d->mIsLoading) {
+        qCDebug(lcMkcal) << "duplicate - removing incidence from inserted" << key;
+        d->mIncidencesToInsert.remove(key);
     }
 }
 

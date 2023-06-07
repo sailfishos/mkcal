@@ -126,7 +126,8 @@ public:
 
     bool updateMetadata(int transactionId);
     bool selectCustomproperties(Incidence::Ptr &incidence, int rowid);
-    int selectRowId(const Incidence &incidence);
+    int selectRowId(const QString &notebookUid, const QString &uid,
+                    const QDateTime &recId);
     bool selectRecursives(Incidence::Ptr &incidence, int rowid);
     bool selectAlarms(Incidence::Ptr &incidence, int rowid);
     bool selectAttendees(Incidence::Ptr &incidence, int rowid);
@@ -430,7 +431,7 @@ bool SqliteFormat::modifyComponents(const Incidence &incidence, const QString &n
     }
 
     if (dbop == DBDelete || dbop == DBMarkDeleted || dbop == DBUpdate) {
-        rowid = d->selectRowId(incidence);
+        rowid = d->selectRowId(nbook, incidence.uid(), incidence.recurrenceId());
         if (!rowid && dbop == DBDelete) {
             // Already deleted.
             return true;
@@ -1343,13 +1344,16 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt, bool *isDefault)
         QString plugin = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 6));
         QString account = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 7));
         int attachmentSize = sqlite3_column_int(stmt, 8);
-        syncDate = fromOriginTime(date);
+        if (date)
+            syncDate = fromOriginTime(date);
         date = sqlite3_column_int64(stmt, 9);
-        modifiedDate = fromOriginTime(date);
+        if (date)
+            modifiedDate = fromOriginTime(date);
         QString sharedWith = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 10));
         QString syncProfile = QString::fromUtf8((const char *)sqlite3_column_text(stmt, 11));
         date = sqlite3_column_int64(stmt, 12);
-        creationDate = fromOriginTime(date);
+        if (date)
+            creationDate = fromOriginTime(date);
 
         notebook = Notebook::Ptr(new Notebook(name, description));
         notebook->setUid(id);
@@ -1668,7 +1672,9 @@ error:
 }
 
 //@cond PRIVATE
-int SqliteFormat::Private::selectRowId(const Incidence &incidence)
+int SqliteFormat::Private::selectRowId(const QString &notebookUid,
+                                       const QString &uid,
+                                       const QDateTime &recId)
 {
     int rv = 0;
     int index = 1;
@@ -1676,21 +1682,22 @@ int SqliteFormat::Private::selectRowId(const Incidence &incidence)
     int qsize = 0;
     sqlite3_stmt *stmt = NULL;
 
-    QByteArray u;
-    qint64 secsRecurId;
+    const QByteArray n = notebookUid.toUtf8();
+    const QByteArray u = uid.toUtf8();
     int rowid = 0;
 
-    query = SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID;
-    qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID);
+    query = SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK_UID_AND_RECURID;
+    qsize = sizeof(SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK_UID_AND_RECURID);
 
     SL3_prepare_v2(mDatabase, query, qsize, &stmt, NULL);
-    u = incidence.uid().toUtf8();
+    SL3_bind_text(stmt, index, n.constData(), n.length(), SQLITE_STATIC);
     SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
-    if (incidence.recurrenceId().isValid()) {
-        if (incidence.recurrenceId().timeSpec() == Qt::LocalTime) {
-            secsRecurId = mFormat->toLocalOriginTime(incidence.recurrenceId());
+    if (recId.isValid()) {
+        qint64 secsRecurId;
+        if (recId.timeSpec() == Qt::LocalTime) {
+            secsRecurId = mFormat->toLocalOriginTime(recId);
         } else {
-            secsRecurId = mFormat->toOriginTime(incidence.recurrenceId());
+            secsRecurId = mFormat->toOriginTime(recId);
         }
         SL3_bind_int64(stmt, index, secsRecurId);
     } else {

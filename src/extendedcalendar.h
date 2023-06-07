@@ -375,7 +375,7 @@ public:
 private:
     //@cond PRIVATE
     Q_DISABLE_COPY(ExtendedCalendar)
-    class MKCAL_HIDE Private;
+    class Private;
     Private *const d;
     //@endcond
 };

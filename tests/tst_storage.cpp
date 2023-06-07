@@ -1367,7 +1367,7 @@ void tst_storage::tst_deleted()
     QCOMPARE(deleted.length(), 0);
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), m_calendar->defaultNotebook()));
     QCOMPARE(deleted.length(), 1);
-    QVERIFY(m_storage->purgeDeletedIncidences(deleted));
+    QVERIFY(m_storage->purgeDeletedIncidences(deleted, m_calendar->defaultNotebook()));
     deleted.clear();
     QVERIFY(m_storage->deletedIncidences(&deleted, QDateTime::currentDateTimeUtc().addSecs(-2), m_calendar->defaultNotebook()));
     QCOMPARE(deleted.length(), 0);
@@ -2268,8 +2268,13 @@ void tst_storage::tst_storageObserver()
     QVERIFY(args[1].value<KCalendarCore::Incidence::List>().isEmpty());
     KCalendarCore::Incidence::List deleted = args[2].value<KCalendarCore::Incidence::List>();
     QCOMPARE(deleted.count(), 2);
-    QCOMPARE(deleted[0].staticCast<KCalendarCore::Event>(), event);
-    QCOMPARE(deleted[1].staticCast<KCalendarCore::Event>(), exception.staticCast<KCalendarCore::Event>());
+    if (deleted[0]->recurs()) {
+        QCOMPARE(deleted[0].staticCast<KCalendarCore::Event>(), event);
+        QCOMPARE(deleted[1].staticCast<KCalendarCore::Event>(), exception.staticCast<KCalendarCore::Event>());
+    } else {
+        QCOMPARE(deleted[1].staticCast<KCalendarCore::Event>(), event);
+        QCOMPARE(deleted[0].staticCast<KCalendarCore::Event>(), exception.staticCast<KCalendarCore::Event>());
+    }
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 

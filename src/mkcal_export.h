@@ -21,14 +21,12 @@
 #ifndef MKCAL_EXPORT_H
 #define MKCAL_EXPORT_H
 
-#include <QObject>
+#include <QtGlobal>
 
-#ifndef MKCAL_EXPORT
-#define MKCAL_EXPORT __attribute__ ((visibility("default")))
-#endif
-
-#ifndef MKCAL_HIDE
-#define MKCAL_HIDE __attribute__ ((visibility("hidden")))
+#if defined(MKCAL_LIBRARY)
+#define MKCAL_EXPORT Q_DECL_EXPORT
+#else
+#define MKCAL_EXPORT Q_DECL_IMPORT
 #endif
 
 #endif

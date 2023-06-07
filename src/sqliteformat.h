@@ -174,7 +174,7 @@ public:
 private:
     //@cond PRIVATE
     Q_DISABLE_COPY(SqliteFormat)
-    class MKCAL_HIDE Private;
+    class Private;
     Private *const d;
     //@endcond
 };
@@ -407,8 +407,8 @@ private:
 "select * from Components where UID=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_NOTEBOOKUID \
 "select * from Components where Notebook=? and DateDeleted=0"
-#define SELECT_ROWID_FROM_COMPONENTS_BY_UID_AND_RECURID \
-"select ComponentId from Components where UID=? and RecurId=? and DateDeleted=0"
+#define SELECT_ROWID_FROM_COMPONENTS_BY_NOTEBOOK_UID_AND_RECURID \
+"select ComponentId from Components where Notebook=? and UID=? and RecurId=? and DateDeleted=0"
 
 #define SELECT_RDATES_BY_ID \
 "select * from Rdates where ComponentId=?"

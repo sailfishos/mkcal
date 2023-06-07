@@ -27,6 +27,7 @@ set(PRIVATE_HEADERS
 
 add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
 
+target_compile_definitions(mkcal-qt5 PRIVATE MKCAL_LIBRARY)
 target_link_libraries(mkcal-qt5
 		PRIVATE
 	Qt5::DBus
