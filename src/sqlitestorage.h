@@ -237,7 +237,7 @@ protected:
 private:
     //@cond PRIVATE
     Q_DISABLE_COPY(SqliteStorage)
-    class MKCAL_HIDE Private;
+    class Private;
     Private *const d;
     //@endcond
 
