@@ -1307,11 +1307,7 @@ bool SqliteStorage::Private::saveNotebook(const Notebook::Ptr &nb, DBOperation d
         sqlite3_finalize(stmt);
 
         if (success) {
-            // Don't save the incremented transactionId at the moment,
-            // let it be seen as an external modification.
-            // Todo: add a method for observers on notebook changes.
-            if (!mFormat->incrementTransactionId(nullptr))
-                mSavedTransactionId = -1;
+            mFormat->incrementTransactionId(&mSavedTransactionId);
         }
 
         if (!mSem.release()) {

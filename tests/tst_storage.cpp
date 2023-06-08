@@ -2278,6 +2278,21 @@ void tst_storage::tst_storageObserver()
     QVERIFY(modified.isEmpty());
     QVERIFY(!modified.wait(200));
 
+    mKCal::Notebook::Ptr notebook(new mKCal::Notebook(QString::fromLatin1("signals"),
+                                                      QString()));
+    m_storage->addNotebook(notebook);
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
+    notebook->setDescription(QString::fromLatin1("testing signals"));
+    m_storage->updateNotebook(notebook);
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
+    m_storage->deleteNotebook(notebook);
+    QVERIFY(modified.isEmpty());
+    QVERIFY(!modified.wait(200));
+
     mKCal::ExtendedCalendar::Ptr calendar(new mKCal::ExtendedCalendar(QTimeZone::systemTimeZone()));
     mKCal::ExtendedStorage::Ptr storage = mKCal::ExtendedCalendar::defaultStorage(calendar);
     QVERIFY(storage->open());
