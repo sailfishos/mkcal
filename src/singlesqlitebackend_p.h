@@ -39,8 +39,6 @@
 
 namespace mKCal {
 
-class SqliteFormat;
-
 /**
   @brief
   This class provides method to create, read and write
@@ -140,12 +138,46 @@ public:
       but not yet purged from the database.
 
       @param list stores the list of returned incidences
-      @param notebookUid identify a notebook. It returns an error
+      @param notebookUid identifies a notebook. It returns an error
              to give an empty value.
+      @param after restricts returned list to incidences deleted strictly after.
       @return true on success.
      */
     bool deletedIncidences(KCalendarCore::Incidence::List *list,
-                           const QString &notebookUid);
+                           const QString &notebookUid,
+                           const QDateTime &after = QDateTime());
+
+    /**
+      Read method, providing a way to list incidences created after a given date.
+
+      Warning: since the Incidence::created() is a user value, the returned list
+      may miss incidences or contain false positive values.
+
+      @param list stores the list of returned incidences
+      @param notebookUid identifies a notebook. It returns an error
+             to give an empty value.
+      @param after restricts returned list to incidences created strictly after.
+      @return true on success.
+     */
+    bool insertedIncidences(KCalendarCore::Incidence::List *list,
+                            const QString &notebookUid,
+                            const QDateTime &after);
+
+    /**
+      Read method, providing a way to list incidences modified after a given date.
+
+      Warning: since the Incidence::lastModified() is a user value, the returned list
+      may miss incidences or contain false positive values.
+
+      @param list stores the list of returned incidences
+      @param notebookUid identifies a notebook. It returns an error
+             to give an empty value.
+      @param after restricts returned list to incidences created strictly after.
+      @return true on success.
+     */
+    bool modifiedIncidences(KCalendarCore::Incidence::List *list,
+                            const QString &notebookUid,
+                            const QDateTime &after);
 
     /**
       Read method, providing a way to list incidences based on a substring
@@ -298,9 +330,15 @@ public:
      */
     bool deleteNotebook(const Notebook &notebook);
 
-    // To be removed, kept for backward compatibility inside SqliteStorage.
-    SqliteFormat* acquireDb();
-    void releaseDb();
+    /**
+      Provides the deletion date for an incidence that has been
+      marked as deleted.
+
+      @param incidence should be an instance returned by a read
+             function of a SingleSqliteBackend object.
+      @returns the date time used to mark the incidence as deleted.
+     */
+    static QDateTime deletedDate(const KCalendarCore::Incidence &incidence);
 
 signals:
     /**

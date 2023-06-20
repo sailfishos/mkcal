@@ -74,6 +74,9 @@ static const char *createStatements[] =
     "PRAGMA user_version = 2"
 };
 
+static const QByteArray VOLATILE("VOLATILE");
+static const QByteArray DELETED("DELETED");
+
 using namespace mKCal;
 class mKCal::SqliteFormat::Private
 {
@@ -1776,7 +1779,10 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, QString &note
             index += 4;
         }
 
-        index++; //DateDeleted
+        sqlite3_int64 secs = sqlite3_column_int64(stmt1, index++);
+        if (secs > 0) {
+            incidence->setCustomProperty(VOLATILE, DELETED, QString::number(secs));
+        }
 
         QString colorstr = QString::fromUtf8((const char *) sqlite3_column_text(stmt1, index++));
         if (!colorstr.isEmpty()) {
@@ -2353,6 +2359,13 @@ error:
     sqlite3_reset(mSelectCalProps);
 
     return success;
+}
+
+QDateTime SqliteFormat::deletedDate(const KCalendarCore::Incidence &incidence)
+{
+    bool ok;
+    sqlite3_int64 secs = incidence.customProperty(VOLATILE, DELETED).toULongLong(&ok);
+    return ok ? fromOriginTime(secs) : QDateTime();
 }
 
 sqlite3_int64 SqliteFormat::toOriginTime(const QDateTime &dt)

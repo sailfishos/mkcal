@@ -443,154 +443,43 @@ void SqliteStorage::calendarIncidenceAdditionCanceled(const Incidence::Ptr &inci
 bool SqliteStorage::insertedIncidences(Incidence::List *list, const QDateTime &after,
                                        const QString &notebookUid)
 {
-    if (list && after.isValid()) {
-        SqliteFormat *format = d->mBackend.acquireDb();
-        if (!format) {
-            return false;
+    if (!notebookUid.isEmpty()) {
+        return d->mBackend.insertedIncidences(list, notebookUid, after);
+    } else {
+        bool success = true;
+        for (const Notebook::Ptr &nb : notebooks()) {
+            success = d->mBackend.insertedIncidences(list, nb->uid(), after) && success;
         }
-
-        const char *query1 = NULL;
-        int qsize1 = 0;
-        int rv = 0;
-        sqlite3_stmt *stmt1 = NULL;
-        int index = 1;
-        QByteArray n;
-        sqlite3_int64 secs;
-        Incidence::Ptr incidence;
-        QString nbook;
-        bool success = false;
-
-        if (!notebookUid.isEmpty()) {
-            query1 = SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK);
-        } else {
-            query1 = SELECT_COMPONENTS_BY_CREATED;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_CREATED);
-        }
-
-        qCDebug(lcMkcal) << "incidences inserted since" << after;
-        SL3_prepare_v2(format->database(), query1, qsize1, &stmt1, nullptr);
-        secs = format->toOriginTime(after);
-        SL3_bind_int64(stmt1, index, secs);
-        if (!notebookUid.isEmpty()) {
-            n = notebookUid.toUtf8();
-            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-        }
-        while ((incidence = format->selectComponents(stmt1, nbook))) {
-            list->append(incidence);
-        }
-        success = true;
-
-    error:
-        sqlite3_finalize(stmt1);
-        d->mBackend.releaseDb();
         return success;
     }
-    return false;
 }
 
 bool SqliteStorage::modifiedIncidences(Incidence::List *list, const QDateTime &after,
                                        const QString &notebookUid)
 {
-    if (list && after.isValid()) {
-        SqliteFormat *format = d->mBackend.acquireDb();
-        if (!format) {
-            return false;
+    if (!notebookUid.isEmpty()) {
+        return d->mBackend.modifiedIncidences(list, notebookUid, after);
+    } else {
+        bool success = true;
+        for (const Notebook::Ptr &nb : notebooks()) {
+            success = d->mBackend.modifiedIncidences(list, nb->uid(), after) && success;
         }
-
-        const char *query1 = NULL;
-        int qsize1 = 0;
-        int rv = 0;
-        sqlite3_stmt *stmt1 = NULL;
-        int index = 1;
-        QByteArray n;
-        sqlite3_int64 secs;
-        Incidence::Ptr incidence;
-        QString nbook;
-        bool success = false;
-
-        if (!notebookUid.isEmpty()) {
-            query1 = SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK);
-        } else {
-            query1 = SELECT_COMPONENTS_BY_LAST_MODIFIED;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED);
-        }
-
-        qCDebug(lcMkcal) << "incidences updated since" << after;
-        SL3_prepare_v2(format->database(), query1, qsize1, &stmt1, nullptr);
-        secs = format->toOriginTime(after);
-        SL3_bind_int64(stmt1, index, secs);
-        SL3_bind_int64(stmt1, index, secs);
-        if (!notebookUid.isEmpty()) {
-            n = notebookUid.toUtf8();
-            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-        }
-        while ((incidence = format->selectComponents(stmt1, nbook))) {
-            list->append(incidence);
-        }
-        success = true;
-
-    error:
-        sqlite3_finalize(stmt1);
-        d->mBackend.releaseDb();
         return success;
     }
-    return false;
 }
 
 bool SqliteStorage::deletedIncidences(Incidence::List *list, const QDateTime &after,
                                       const QString &notebookUid)
 {
-    if (!after.isValid()) {
-        return d->mBackend.deletedIncidences(list, notebookUid);
-    }
-
-    if (list) {
-        SqliteFormat *format = d->mBackend.acquireDb();
-        if (!format) {
-            return false;
+    if (!notebookUid.isEmpty()) {
+        return d->mBackend.deletedIncidences(list, notebookUid, after);
+    } else {
+        bool success = true;
+        for (const Notebook::Ptr &nb : notebooks()) {
+            success = d->mBackend.deletedIncidences(list, nb->uid(), after) && success;
         }
-
-        const char *query1 = NULL;
-        int qsize1 = 0;
-        int rv = 0;
-        sqlite3_stmt *stmt1 = NULL;
-        int index = 1;
-        QByteArray n;
-        sqlite3_int64 secs;
-        Incidence::Ptr incidence;
-        QString nbook;
-        bool success = false;
-
-        if (!notebookUid.isEmpty()) {
-            query1 = SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK);
-        } else {
-            query1 = SELECT_COMPONENTS_BY_DELETED;
-            qsize1 = sizeof(SELECT_COMPONENTS_BY_DELETED);
-        }
-
-        qCDebug(lcMkcal) << "incidences deleted since" << after;
-        SL3_prepare_v2(format->database(), query1, qsize1, &stmt1, nullptr);
-        secs = format->toOriginTime(after);
-        SL3_bind_int64(stmt1, index, secs);
-        SL3_bind_int64(stmt1, index, secs);
-        if (!notebookUid.isEmpty()) {
-            n = notebookUid.toUtf8();
-            SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
-        }
-        while ((incidence = format->selectComponents(stmt1, nbook))) {
-            list->append(incidence);
-        }
-        success = true;
-
-    error:
-        sqlite3_finalize(stmt1);
-        d->mBackend.releaseDb();
         return success;
     }
-    return false;
 }
 
 bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebookUid)
@@ -610,48 +499,19 @@ bool SqliteStorage::allIncidences(Incidence::List *list, const QString &notebook
 
 QDateTime SqliteStorage::incidenceDeletedDate(const Incidence::Ptr &incidence)
 {
-    int index;
-    QByteArray u;
-    int rv = 0;
-    sqlite3_int64 date;
-    QDateTime deletionDate;
-    SqliteFormat *format = d->mBackend.acquireDb();
-    if (!format) {
-        return deletionDate;
+    Incidence::List list;
+    if (!deletedIncidences(&list)) {
+        return QDateTime();
     }
-
-    const char *query = SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED;
-    int qsize = sizeof(SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED);
-    sqlite3_stmt *stmt = NULL;
-    const char *tail = NULL;
-
-    SL3_prepare_v2(format->database(), query, qsize, &stmt, &tail);
-    index = 1;
-    u = incidence->uid().toUtf8();
-    SL3_bind_text(stmt, index, u.constData(), u.length(), SQLITE_STATIC);
-    if (incidence->hasRecurrenceId()) {
-        qint64 secsRecurId;
-        if (incidence->recurrenceId().timeSpec() == Qt::LocalTime) {
-            secsRecurId = format->toLocalOriginTime(incidence->recurrenceId());
-        } else {
-            secsRecurId = format->toOriginTime(incidence->recurrenceId());
+    for (Incidence::List::ConstIterator it = list.constBegin();
+         it != list.constEnd(); it++) {
+        if ((*it)->uid() == incidence->uid()
+            && ((!(*it)->hasRecurrenceId() && !incidence->hasRecurrenceId())
+                || (*it)->recurrenceId() == incidence->recurrenceId())) {
+            return d->mBackend.deletedDate(**it);
         }
-        SL3_bind_int64(stmt, index, secsRecurId);
-    } else {
-        SL3_bind_int64(stmt, index, 0);
     }
-
-    SL3_step(stmt);
-    if ((rv == SQLITE_ROW) || (rv == SQLITE_OK)) {
-        date = sqlite3_column_int64(stmt, 1);
-        deletionDate = format->fromOriginTime(date);
-    }
-
-error:
-    sqlite3_reset(stmt);
-    sqlite3_finalize(stmt);
-    d->mBackend.releaseDb();
-    return deletionDate;
+    return QDateTime();
 }
 
 bool SqliteStorage::loadNotebooks()

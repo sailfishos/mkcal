@@ -136,6 +136,8 @@ public:
     bool selectMetadata(int *id);
     bool incrementTransactionId(int *id);
 
+    static QDateTime deletedDate(const KCalendarCore::Incidence &incidence);
+
     // Helper Functions //
 
     /*
@@ -448,16 +450,10 @@ private:
 "select * from Attachments where ComponentId=?"
 #define SELECT_CALENDARPROPERTIES_BY_ID \
 "select * from Calendarproperties where CalendarId=?"
-#define SELECT_COMPONENTS_BY_CREATED \
-"select * from Components where DateCreated>=? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK \
 "select * from Components where DateCreated>=? and Notebook=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_LAST_MODIFIED \
-"select * from Components where DateLastModified>=? and DateCreated<? and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK \
 "select * from Components where DateLastModified>=? and DateCreated<? and Notebook=? and DateDeleted=0"
-#define SELECT_COMPONENTS_BY_DELETED \
-"select * from Components where DateDeleted>=? and DateCreated<?"
 #define SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK \
 "select * from Components where DateDeleted>=? and DateCreated<? and Notebook=?"
 #define SELECT_COMPONENTS_BY_UID_RECID_AND_DELETED \

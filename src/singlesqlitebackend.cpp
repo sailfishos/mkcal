@@ -388,28 +388,112 @@ error:
 }
 
 bool SingleSqliteBackend::deletedIncidences(Incidence::List *list,
-                                            const QString &notebookUid)
+                                            const QString &notebookUid,
+                                            const QDateTime &after)
 {
     if (!d->mFormat || !list || notebookUid.isEmpty()) {
         return false;
     }
 
-    const char *query1 = NULL;
-    int qsize1 = 0;
     int rv = 0;
     sqlite3_stmt *stmt1 = NULL;
     int index = 1;
-    const QByteArray n = notebookUid.toUtf8();
+    sqlite3_int64 secs;
+    const QByteArray nbuid = notebookUid.toUtf8();
     QHash<QString, Incidence::List> hash;
     bool success = false;
 
-    query1 = SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK;
-    qsize1 = sizeof(SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK);
-
     qCDebug(lcMkcal) << "incidences deleted";
 
-    SL3_prepare_v2(d->mFormat->database(), query1, qsize1, &stmt1, nullptr);
-    SL3_bind_text(stmt1, index, n.constData(), n.length(), SQLITE_STATIC);
+    if (after.isValid()) {
+        SL3_prepare_v2(d->mFormat->database(),
+                       SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK,
+                       sizeof(SELECT_COMPONENTS_BY_DELETED_AND_NOTEBOOK),
+                       &stmt1, nullptr);
+        secs = d->mFormat->toOriginTime(after);
+        SL3_bind_int64(stmt1, index, secs);
+        SL3_bind_int64(stmt1, index, secs);
+        SL3_bind_text(stmt1, index, nbuid.constData(), nbuid.length(), SQLITE_STATIC);
+    } else {
+        SL3_prepare_v2(d->mFormat->database(),
+                       SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK,
+                       sizeof(SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK),
+                       &stmt1, nullptr);
+        SL3_bind_text(stmt1, index, nbuid.constData(), nbuid.length(), SQLITE_STATIC);
+    }
+
+    success = d->loadIncidences(&hash, stmt1);
+    if (success) {
+        list->append(hash.value(notebookUid));
+    }
+
+ error:
+    sqlite3_finalize(stmt1);
+    return success;
+}
+
+bool SingleSqliteBackend::insertedIncidences(Incidence::List *list,
+                                             const QString &notebookUid,
+                                             const QDateTime &after)
+{
+    if (!d->mFormat || !list || notebookUid.isEmpty() || !after.isValid()) {
+        return false;
+    }
+
+    int rv = 0;
+    sqlite3_stmt *stmt1 = NULL;
+    int index = 1;
+    sqlite3_int64 secs;
+    const QByteArray nbuid = notebookUid.toUtf8();
+    QHash<QString, Incidence::List> hash;
+    bool success = false;
+
+    qCDebug(lcMkcal) << "incidences inserted since" << after;
+
+    SL3_prepare_v2(d->mFormat->database(),
+                   SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK,
+                   sizeof(SELECT_COMPONENTS_BY_CREATED_AND_NOTEBOOK),
+                   &stmt1, nullptr);
+    secs = d->mFormat->toOriginTime(after);
+    SL3_bind_int64(stmt1, index, secs);
+    SL3_bind_text(stmt1, index, nbuid.constData(), nbuid.length(), SQLITE_STATIC);
+
+    success = d->loadIncidences(&hash, stmt1);
+    if (success) {
+        list->append(hash.value(notebookUid));
+    }
+
+ error:
+    sqlite3_finalize(stmt1);
+    return success;
+}
+
+bool SingleSqliteBackend::modifiedIncidences(Incidence::List *list,
+                                             const QString &notebookUid,
+                                             const QDateTime &after)
+{
+    if (!d->mFormat || !list || notebookUid.isEmpty() || !after.isValid()) {
+        return false;
+    }
+
+    int rv = 0;
+    sqlite3_stmt *stmt1 = NULL;
+    int index = 1;
+    sqlite3_int64 secs;
+    const QByteArray nbuid = notebookUid.toUtf8();
+    QHash<QString, Incidence::List> hash;
+    bool success = false;
+
+    qCDebug(lcMkcal) << "incidences updated since" << after;
+
+    SL3_prepare_v2(d->mFormat->database(),
+                   SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK,
+                   sizeof(SELECT_COMPONENTS_BY_LAST_MODIFIED_AND_NOTEBOOK),
+                   &stmt1, nullptr);
+    secs = d->mFormat->toOriginTime(after);
+    SL3_bind_int64(stmt1, index, secs);
+    SL3_bind_int64(stmt1, index, secs);
+    SL3_bind_text(stmt1, index, nbuid.constData(), nbuid.length(), SQLITE_STATIC);
 
     success = d->loadIncidences(&hash, stmt1);
     if (success) {
@@ -883,19 +967,7 @@ bool SingleSqliteBackend::deleteNotebook(const Notebook &notebook)
     return success;
 }
 
-SqliteFormat* SingleSqliteBackend::acquireDb()
+QDateTime SingleSqliteBackend::deletedDate(const Incidence &incidence)
 {
-    if (!d->mSem.acquire()) {
-        qCWarning(lcMkcal) << "cannot lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-        return nullptr;
-    }
-
-    return d->mFormat;
-}
-
-void SingleSqliteBackend::releaseDb()
-{
-    if (!d->mSem.release()) {
-        qCWarning(lcMkcal) << "cannot release lock" << d->mDatabaseName << "error" << d->mSem.errorString();
-    }
+    return SqliteFormat::deletedDate(incidence);
 }
