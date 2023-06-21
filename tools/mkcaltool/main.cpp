@@ -34,6 +34,10 @@ int main(int argc, char *argv[])
         QString eventUid = argv[3];
         MkcalTool mkcalTool;
         exit(mkcalTool.resetAlarms(notebookUid, eventUid));
+    } else if (argc == 3 && 0 == ::strcmp(argv[1], "--reset-alarms")) {
+        QString notebookUid = argv[2];
+        MkcalTool mkcalTool;
+        exit(mkcalTool.resetAlarms(notebookUid, QString()));
     }
     exit(0);
 }
