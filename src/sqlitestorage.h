@@ -242,7 +242,10 @@ private:
     //@endcond
 
 public Q_SLOTS:
-    void fileChanged(const QString &path);
+    void onModified();
+    void onUpdated(const QHash<QString, QStringList> &added,
+                   const QHash<QString, QStringList> &modified,
+                   const QHash<QString, QStringList> &deleted);
 };
 
 }
