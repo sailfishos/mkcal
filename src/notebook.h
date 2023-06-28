@@ -434,6 +434,25 @@ public:
     */
     bool operator==(const Notebook &notebook) const;
 
+    /**
+      Retrieve the list of notebooks as stored in the system.
+
+      @param account when not empty restrict the list to a given
+             account.
+      @return the list of notebooks as stored in the system database.
+     */
+    static List systemNotebooks(const QString &account = QString());
+
+    /**
+      Delete the notebook as stored by the system. All incidences
+      of the notebook are also removed and associated alarms are
+      cancelled.
+
+      @param notebook to be removed
+      @return true on success
+     */
+    static bool deleteSystemNotebook(const Notebook &notebook);
+
 private:
     //@cond PRIVATE
     class Private;

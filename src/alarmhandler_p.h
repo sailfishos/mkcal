@@ -38,7 +38,7 @@ namespace mKCal {
   @brief
   This class provides an interface to handle alarms.
 */
-class AlarmHandler
+class MKCAL_EXPORT AlarmHandler
 {
 protected:
     AlarmHandler() { }

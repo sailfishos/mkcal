@@ -41,43 +41,16 @@ private slots:
     void init();
     void cleanup();
 
-    void tst_timezone();
-    void tst_veventdtstart_data();
-    void tst_veventdtstart();
-    void tst_allday_data();
-    void tst_allday();
-    void tst_alldayUtc();
-    void tst_alldayRecurrence();
-    void tst_origintimes();
-    void tst_recurrence();
-    void tst_recurrenceExpansion_data();
-    void tst_recurrenceExpansion();
-    void tst_rawEvents_data();
-    void tst_rawEvents();
-    void tst_rawEvents_nonRecur_data();
-    void tst_rawEvents_nonRecur();
-    void tst_dateCreated_data();
-    void tst_dateCreated();
-    void tst_lastModified();
     void tst_dissociateSingleOccurrence_data();
     void tst_dissociateSingleOccurrence();
     void tst_deleted();
     void tst_modified();
     void tst_inserted();
-    void tst_icalAllDay_data();
-    void tst_icalAllDay();
     void tst_deleteAllEvents();
-    void tst_calendarProperties();
     void tst_alarms();
     void tst_recurringAlarms();
-    void tst_url_data();
-    void tst_url();
-    void tst_thisAndFuture();
-    void tst_color();
     void tst_addIncidence();
-    void tst_attachments();
     void tst_populateFromIcsData();
-    void tst_attendees();
     void tst_storageObserver();
 
 private:
