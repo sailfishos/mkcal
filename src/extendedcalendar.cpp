@@ -260,19 +260,9 @@ bool ExtendedCalendar::addJournal(const Journal::Ptr &aJournal, const QString &n
 
 void ExtendedCalendar::deleteAllIncidences()
 {
-    const Event::List events = rawEvents();
-    for (const Event::Ptr &ev : events) {
-        notifyIncidenceDeleted(ev);
+    for (const Incidence::Ptr &incidence : incidences()) {
+        deleteIncidence(incidence);
     }
-    const Todo::List todos = rawTodos();
-    for (const Todo::Ptr &todo : todos) {
-        notifyIncidenceDeleted(todo);
-    }
-    const Journal::List journals = rawJournals();
-    for (const Journal::Ptr &journal : journals) {
-        notifyIncidenceDeleted(journal);
-    }
-    close();
 }
 
 Incidence::List ExtendedCalendar::incidences(const QDate &start, const QDate &end)
