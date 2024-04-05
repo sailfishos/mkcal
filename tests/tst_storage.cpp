@@ -1654,7 +1654,8 @@ void tst_storage::tst_deleteAllEvents()
     QCOMPARE(cal->incidences().count(), 1);
     QCOMPARE(cal->rawEventsForDate(ev->dtStart().date()).count(), 1);
 
-    cal->deleteAllIncidences();
+    for (const KCalendarCore::Incidence::Ptr &incidence : cal->incidences())
+        cal->deleteIncidence(incidence);
     QVERIFY(cal->incidences().isEmpty());
     QVERIFY(cal->rawEventsForDate(ev->dtStart().date()).isEmpty());
 }

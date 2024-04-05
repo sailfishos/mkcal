@@ -273,12 +273,6 @@ public:
     */
     bool addIncidence(const KCalendarCore::Incidence::Ptr &incidence, const QString &notebookUid);
 
-    /**
-      Delete all incidences from the memory cache. They will be deleted from
-      database when save is called.
-    */
-    void deleteAllIncidences();
-
     // Event Specific Methods //
 
     /**
