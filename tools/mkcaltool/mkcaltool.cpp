@@ -25,28 +25,33 @@
 #include <QtCore/QDebug>
 
 // mkcal
-#include <extendedcalendar.h>
-#include <extendedstorage.h>
+#include <singlesqlitebackend_p.h>
 
 MkcalTool::MkcalTool()
 {
 }
 
-int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
+MkcalTool::~MkcalTool()
 {
-    mKCal::ExtendedCalendar::Ptr cal(new mKCal::ExtendedCalendar(QTimeZone::systemTimeZone()));
-    mKCal::ExtendedStorage::Ptr storage = cal->defaultStorage(cal);
-    storage->open();
-    if (!storage->load(eventUid)) {
-        qWarning() << "Unable to load event" << eventUid << "from notebook" << notebookUid;
-        return 1;
-    }
-    KCalendarCore::Event::Ptr event = cal->event(eventUid);
-    if (!event) {
-        qWarning() << "Unable to fetch event" << eventUid << "from notebook" << notebookUid;
-        return 1;
+}
+
+KCalendarCore::Incidence::List MkcalTool::incidencesWithAlarms(const QString &notebookUid,
+                                                               const QString &uid)
+{
+    KCalendarCore::Incidence::List list;
+
+    mKCal::SingleSqliteBackend storage;
+    if (!storage.open()) {
+        qWarning() << "Unable to open storage" << storage.databaseName();
+        return list;
     }
 
-    storage->emitStorageUpdated(KCalendarCore::Incidence::List(), KCalendarCore::Incidence::List() << event, KCalendarCore::Incidence::List());
-    return 0;
+    storage.incidences(&list, notebookUid, uid);
+
+    return list;
+}
+
+int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
+{
+    return setupAlarms(notebookUid, eventUid) ? 0 : 1;
 }

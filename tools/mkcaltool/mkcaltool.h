@@ -26,13 +26,19 @@
 
 #include <QtCore/QString>
 
-class MkcalTool
+#include "alarmhandler_p.h"
+
+class MkcalTool: public mKCal::AlarmHandler
 {
 
 public:
     explicit MkcalTool();
+    ~MkcalTool();
 
     int resetAlarms(const QString &notebookUid, const QString &eventUid);
+
+    KCalendarCore::Incidence::List incidencesWithAlarms(const QString &notebookUid,
+                                                        const QString &uid);
 };
 
 #endif // MKCALTOOL_H

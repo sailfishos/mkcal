@@ -31,6 +31,8 @@
 */
 
 #include "notebook.h"
+#include "alarmhandler_p.h"
+#include "singlesqlitebackend_p.h"
 #include "logging_p.h"
 using namespace KCalendarCore;
 
@@ -530,4 +532,41 @@ QString Notebook::customProperty(const QByteArray &key, const QString &defaultVa
 QList<QByteArray> Notebook::customPropertyKeys() const
 {
     return d->mCustomProperties.uniqueKeys();
+}
+
+Notebook::List Notebook::systemNotebooks(const QString &account)
+{
+    Notebook::List list;
+    SingleSqliteBackend backend;
+
+    if (!backend.open() || !backend.notebooks(&list)) {
+        qCWarning(lcMkcal) << "cannot open or retrieve notebooks from system database.";
+        return list;
+    }
+
+    if (!account.isEmpty()) {
+        Notebook::List::Iterator it = list.begin();
+        while (it != list.end()) {
+            if ((*it)->account() == account) {
+                it++;
+            } else {
+                it = list.erase(it);
+            }
+        }
+    }
+
+    return list;
+}
+
+bool Notebook::deleteSystemNotebook(const Notebook &notebook)
+{
+    SingleSqliteBackend backend;
+
+    if (!backend.open()) {
+        qCWarning(lcMkcal) << "cannot open system database.";
+        return false;
+    }
+
+    return backend.deleteNotebook(notebook)
+        && (notebook.isRunTimeOnly() || AlarmHandler::clearAlarms(notebook.uid()));
 }
