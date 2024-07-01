@@ -1,30 +1,32 @@
 set(SRC
-	extendedcalendar.cpp
-	extendedstorage.cpp
-	notebook.cpp
-	sqliteformat.cpp
-	sqlitestorage.cpp
-	servicehandler.cpp
+        extendedcalendar.cpp
+        extendedstorage.cpp
+        notebook.cpp
+        sqliteformat.cpp
+        sqlitestorage.cpp
+        singlesqlitebackend.cpp
+        servicehandler.cpp
         alarmhandler.cpp
-	logging.cpp
-	semaphore_p.cpp)
+        logging.cpp
+        semaphore_p.cpp)
 set(HEADERS
-	extendedcalendar.h
-	extendedstorage.h
-	extendedstorageobserver.h
-	notebook.h
-	sqlitestorage.h
-	servicehandlerif.h
-	servicehandler.h
-	dummystorage.h
-	mkcal_export.h
-	invitationhandlerif.h)
+        extendedcalendar.h
+        extendedstorage.h
+        extendedstorageobserver.h
+        notebook.h
+        sqlitestorage.h
+        servicehandlerif.h
+        servicehandler.h
+        dummystorage.h
+        mkcal_export.h
+        invitationhandlerif.h)
 
 set(PRIVATE_HEADERS
         alarmhandler_p.h
         logging_p.h
         semaphore_p.h
         sqliteformat.h
+        singlesqlitebackend_p.h
         )
 
 add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
