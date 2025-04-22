@@ -3,13 +3,13 @@
   <suite name="mkcal-qt5" domain="mw">
     <set name="unit-tests" feature="mkcal">
        <case manual="false" name="tst_storage">
-         <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_storage</step>
+         <step>rm -f /tmp/testdb; MKCAL_STORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_storage</step>
        </case>
        <case manual="false" name="tst_load">
-         <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_load</step>
+         <step>rm -f /tmp/testdb; MKCAL_STORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_load</step>
        </case>
        <case manual="false" name="tst_perf">
-         <step>rm -f /tmp/testdb; SQLITESTORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_perf</step>
+         <step>rm -f /tmp/testdb; MKCAL_STORAGEDB=/tmp/testdb /opt/tests/mkcal/tst_perf</step>
        </case>
      </set>
   </suite>

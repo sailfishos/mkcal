@@ -35,7 +35,7 @@ static const int N_EVENTS = 200;
 
 void tst_perf::initTestCase()
 {
-    QString dbFile = QString::fromLatin1(qgetenv("SQLITESTORAGEDB"));
+    QString dbFile = QString::fromLatin1(qgetenv("MKCAL_STORAGEDB"));
     if (dbFile.isEmpty()) {
         db = new QTemporaryFile();
         db->open();

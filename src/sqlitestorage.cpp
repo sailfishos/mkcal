@@ -164,7 +164,11 @@ static bool directoryIsRW(const QString &dirPath)
 static QString defaultLocation()
 {
     // Environment variable is taking precedence.
-    QString dbFile = QLatin1String(qgetenv("SQLITESTORAGEDB"));
+    QString dbFile = QLatin1String(qgetenv("MKCAL_STORAGEDB"));
+    if (dbFile.isEmpty()) {
+        // older env variable as fallback
+        dbFile = QLatin1String(qgetenv("SQLITESTORAGEDB"));
+    }
     if (dbFile.isEmpty()) {
         // Otherwise, use a central storage location by default
         const QString privilegedDataDir = QString("%1/.local/share/system/privileged/").arg(QDir::homePath());
