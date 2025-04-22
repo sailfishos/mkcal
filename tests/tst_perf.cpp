@@ -80,11 +80,11 @@ void tst_perf::tst_save()
         event->setSummary(QString::fromLatin1("summary"));
         event->setNonKDECustomProperty("X-FOO", QString::fromLatin1("a property value"));
         event->setCustomProperty("VOLATILE", "BAR", QString::fromLatin1("another property value"));
-        if (i%3 == 0) {
+        if (i % 3 == 0) {
             KCalendarCore::Alarm::Ptr alarm = event->newAlarm();
             alarm->setDisplayAlarm(QString::fromLatin1("Driiiiing"));
         }
-        if (i%5 == 0) {
+        if (i % 5 == 0) {
             event->recurrence()->setWeekly(1, cur.date().dayOfWeek());
             event->recurrence()->setEndDateTime(event->dtEnd().addDays((i + 5) * 7));
             KCalendarCore::Incidence::Ptr exc = m_storage->calendar()->createException(event, cur.addDays(7));

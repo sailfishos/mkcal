@@ -58,7 +58,8 @@ public:
         @param body The body of the reply, if any
         @return True if OK, false otherwise.
     */
-  virtual bool sendInvitation(const QString &accountId, const QString &notebookUid, const KCalendarCore::Incidence::Ptr &invitation, const QString &body) =0;
+  virtual bool sendInvitation(const QString &accountId, const QString &notebookUid,
+                              const KCalendarCore::Incidence::Ptr &invitation, const QString &body) = 0;
 
     /** \brief Send a updated invitation to all the participants.
         This is used for updating invitations we sent earlier.
@@ -68,7 +69,8 @@ public:
         @param body The body of the reply, if any
         @return True if OK, false otherwise.
     */
-  virtual bool sendUpdate(const QString &accountId, const KCalendarCore::Incidence::Ptr &invitation, const QString &body) = 0;
+  virtual bool sendUpdate(const QString &accountId, const KCalendarCore::Incidence::Ptr &invitation,
+                          const QString &body) = 0;
 
     /** \brief Send the updated invitation back to the Organiser.
         The attendance values should have been updated earlier by the caller.
@@ -78,7 +80,8 @@ public:
         @param body The body of the reply, if any
         @return True if OK, false otherwise.
       */
-  virtual bool sendResponse(const QString &accountId, const KCalendarCore::Incidence::Ptr &invitation, const QString &body) = 0;
+  virtual bool sendResponse(const QString &accountId, const KCalendarCore::Incidence::Ptr &invitation,
+                            const QString &body) = 0;
 
     /** \brief The name of this plugin.
         It should be a uniq name specifying which plugin to use for sending invitations.

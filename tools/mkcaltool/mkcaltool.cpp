@@ -47,6 +47,7 @@ int MkcalTool::resetAlarms(const QString &notebookUid, const QString &eventUid)
         return 1;
     }
 
-    storage->emitStorageUpdated(KCalendarCore::Incidence::List(), KCalendarCore::Incidence::List() << event, KCalendarCore::Incidence::List());
+    storage->emitStorageUpdated(KCalendarCore::Incidence::List(),
+                                KCalendarCore::Incidence::List() << event, KCalendarCore::Incidence::List());
     return 0;
 }
