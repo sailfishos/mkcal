@@ -79,7 +79,7 @@ public:
         This name is something to be show to the user
         @return true is service supports multiple calendars otherwise false.
     */
-    virtual  bool multiCalendar() const = 0;
+    virtual bool multiCalendar() const = 0;
 
     /** \brief returns the email address that is currently configured in the service,
         it can be different per account.

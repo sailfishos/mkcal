@@ -33,6 +33,7 @@
 #include "tst_storage.h"
 #include "sqlitestorage.h"
 #include "sqliteformat.h"
+
 #ifdef TIMED_SUPPORT
 #include <timed-qt5/interface.h>
 #include <QtCore/QMap>

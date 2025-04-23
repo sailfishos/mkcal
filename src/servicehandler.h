@@ -50,7 +50,6 @@ private:
     ServiceHandlerPrivate *const d;
 
 public:
-
     /** Error Codes that can be returned by the plugins */
     //Right now they are the same as defined in ServiceHandlerIf
     //But semantically it doesn't make sense that they are defined
@@ -79,7 +78,8 @@ public:
       @param body The body of the reply if any
       @return True if OK, false in case of error
       */
-    bool sendInvitation(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
+    bool sendInvitation(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation,
+                        const QString &body);
 
     /** Send the updated invitation to the list of people stated as attendees.
       @param notebook notebook to use for account info
@@ -87,7 +87,8 @@ public:
       @param body The body of the reply if any
       @return True if OK, false in case of error
       */
-    bool sendUpdate(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
+    bool sendUpdate(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation,
+                    const QString &body);
 
     /** Send the updated invitation to the organiser.
       @param notebook notebook to use for account info
@@ -95,7 +96,8 @@ public:
       @param body The body of the reply if any
       @return True if OK, false in case of error
       */
-    bool sendResponse(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation, const QString &body);
+    bool sendResponse(const Notebook::Ptr &notebook, const KCalendarCore::Incidence::Ptr &invitation,
+                      const QString &body);
 
     /** Icon
       @param serviceId the name of the service to use
