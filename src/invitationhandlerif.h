@@ -46,10 +46,9 @@ class QString;
     The user of this interface should take care of updating the invitation. The plugins should
     not modify the invitation object. The invitation is not const only for thecnical reasons.
     */
-class InvitationHandlerInterface {
-
+class InvitationHandlerInterface
+{
 public:
-
     /** \brief Send a new Invitation to all the participants.
 
         @param accountId The unique id of the account

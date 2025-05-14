@@ -204,16 +204,16 @@ Notebook &Notebook::operator=(const Notebook &other)
 bool Notebook::operator==(const Notebook &i2) const
 {
     return
-        d->mUid == i2.uid() &&
-        d->mName == i2.name() &&
-        d->mDescription == i2.description() &&
-        d->mColor == i2.color() &&
-        d->mFlags == i2.d->mFlags &&
-        d->mSyncDate == i2.syncDate() &&
-        d->mPluginName == i2.pluginName() &&
-        d->mModifiedDate == i2.modifiedDate() &&
-        d->mSharedWith == i2.sharedWith() &&
-        d->mCreationDate == i2.creationDate();
+        d->mUid == i2.uid()
+           && d->mName == i2.name()
+           && d->mDescription == i2.description()
+           && d->mColor == i2.color()
+           && d->mFlags == i2.d->mFlags
+           && d->mSyncDate == i2.syncDate()
+           && d->mPluginName == i2.pluginName()
+           && d->mModifiedDate == i2.modifiedDate()
+           && d->mSharedWith == i2.sharedWith()
+           && d->mCreationDate == i2.creationDate();
 }
 
 QString Notebook::uid() const

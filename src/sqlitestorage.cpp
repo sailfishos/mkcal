@@ -576,10 +576,10 @@ bool SqliteStorage::Private::addIncidence(const Incidence::Ptr &incidence, const
     bool added = true;
     bool hasNotebook = mCalendar->hasValidNotebook(notebookUid);
     const QString key = incidence->instanceIdentifier();
-    if (mIncidencesToInsert.contains(key) ||
-        mIncidencesToUpdate.contains(key) ||
-        mIncidencesToDelete.contains(key) ||
-        (mStorage->validateNotebooks() && !hasNotebook)) {
+    if (mIncidencesToInsert.contains(key)
+            || mIncidencesToUpdate.contains(key)
+            || mIncidencesToDelete.contains(key)
+            || (mStorage->validateNotebooks() && !hasNotebook)) {
         qCWarning(lcMkcal) << "not loading" << incidence->uid() << notebookUid
                            << (!hasNotebook ? "(invalidated notebook)" : "(local changes)");
         added = false;
@@ -823,8 +823,8 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
             // notebook. The read-only flag is a hint only. This allows
             // to update a marked as read-only notebook to reflect external
             // changes.
-            if ((notebook && notebook->isRunTimeOnly()) ||
-                (!notebook && mStorage->validateNotebooks())) {
+            if ((notebook && notebook->isRunTimeOnly())
+                || (!notebook && mStorage->validateNotebooks())) {
                 qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
                 continue;
             }
@@ -898,9 +898,9 @@ void SqliteStorage::calendarIncidenceAdded(const Incidence::Ptr &incidence)
 void SqliteStorage::calendarIncidenceChanged(const Incidence::Ptr &incidence)
 {
     const QString key = incidence->instanceIdentifier();
-    if (!d->mIncidencesToUpdate.contains(key) &&
-        !d->mIncidencesToInsert.contains(key) &&
-        !d->mIsLoading) {
+    if (!d->mIncidencesToUpdate.contains(key)
+        && !d->mIncidencesToInsert.contains(key)
+        && !d->mIsLoading) {
         qCDebug(lcMkcal) << "appending incidence" << key << "for database update";
         d->mIncidencesToUpdate.insert(key, incidence);
     }
