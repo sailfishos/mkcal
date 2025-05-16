@@ -112,6 +112,7 @@ Incidence::List ExtendedStorage::Private::incidencesWithAlarms(const QString &no
 {
     Incidence::List list;
     if (!mNotebooks.contains(notebookUid)
+        || !mNotebooks.value(notebookUid)->isEnabled()
         || !mNotebooks.value(notebookUid)->isVisible()) {
         return list;
     }
@@ -378,8 +379,8 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
     }
 
     d->mNotebooks.insert(nb->uid(), nb);
-    if (!calendar()->addNotebook(nb->uid(), nb->isVisible())
-        && !calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
+    if (!calendar()->addNotebook(nb->uid(), nb->isEnabled() && nb->isVisible())
+        && !calendar()->updateNotebook(nb->uid(), nb->isEnabled() && nb->isVisible())) {
         qCWarning(lcMkcal) << "notebook" << nb->uid() << "already in calendar";
     }
 
@@ -398,14 +399,14 @@ bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
     }
 
     bool wasVisible = calendar()->isVisible(nb->uid());
-    if (!calendar()->updateNotebook(nb->uid(), nb->isVisible())) {
+    if (!calendar()->updateNotebook(nb->uid(), nb->isEnabled() && nb->isVisible())) {
         qCWarning(lcMkcal) << "cannot update notebook" << nb->uid() << "in calendar";
         return false;
     }
 
-    if (wasVisible && !nb->isVisible()) {
+    if (wasVisible && (!nb->isEnabled() || !nb->isVisible())) {
         d->clearAlarms(nb->uid());
-    } else if (!wasVisible && nb->isVisible()) {
+    } else if (!wasVisible && nb->isEnabled() && nb->isVisible()) {
         d->setupAlarms(nb->uid());
     }
 

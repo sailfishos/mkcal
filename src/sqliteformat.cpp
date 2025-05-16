@@ -266,6 +266,7 @@ bool SqliteFormat::modifyCalendars(const Notebook &notebook,
         flags |= notebook.isVisible() ? SqliteFormat::Visible : 0;
         flags |= notebook.isRunTimeOnly() ? SqliteFormat::RunTimeOnly : 0;
         flags |= notebook.isShareable() ? SqliteFormat::Shareable : 0;
+        flags |= notebook.isEnabled() ? 0 : SqliteFormat::Disabled;
         SL3_bind_text(stmt, index, name, name.length(), SQLITE_STATIC);
         SL3_bind_text(stmt, index, description, description.length(), SQLITE_STATIC);
         SL3_bind_text(stmt, index, color, color.length(), SQLITE_STATIC);
@@ -1368,6 +1369,7 @@ Notebook::Ptr SqliteFormat::selectCalendars(sqlite3_stmt *stmt, bool *isDefault)
         notebook->setIsVisible(flags & SqliteFormat::Visible);
         notebook->setRunTimeOnly(flags & SqliteFormat::RunTimeOnly);
         notebook->setIsShareable(flags & SqliteFormat::Shareable);
+        notebook->setIsEnabled(!(flags & SqliteFormat::Disabled));
         notebook->setPluginName(plugin);
         notebook->setAccount(account);
         notebook->setAttachmentSize(attachmentSize);
