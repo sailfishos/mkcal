@@ -515,8 +515,8 @@ bool SqliteFormat::modifyComponents(const Incidence &incidence, const QString &n
         category = incidence.categoriesStr().toUtf8();
         SL3_bind_text(stmt1, index, category.constData(), category.length(), SQLITE_STATIC);
 
-        if ((incidence.type() == Incidence::TypeEvent) ||
-                (incidence.type() == Incidence::TypeJournal)) {
+        if ((incidence.type() == Incidence::TypeEvent)
+            || (incidence.type() == Incidence::TypeJournal)) {
             SL3_bind_date_time(this, stmt1, index, incidence.dtStart(), incidence.allDay());
 
             // set HasDueDate to false

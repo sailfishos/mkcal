@@ -49,7 +49,7 @@ public:
     /**
        Destructor.
     */
-    virtual ~ExtendedStorageObserver() {};
+    virtual ~ExtendedStorageObserver() {}
 
     /**
        Notify the Observer that a Storage has been modified by an external
@@ -95,5 +95,5 @@ public:
                                 const KCalendarCore::Incidence::List &deleted);
 };
 
-};
+}
 #endif /* !MKCAL_STORAGEOBSERVER_H */

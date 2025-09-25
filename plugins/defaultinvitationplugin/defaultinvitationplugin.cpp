@@ -21,6 +21,7 @@
 #include <KCalendarCore/ICalFormat>
 
 #include <qmailaccount.h>
+#include <qmailmessage.h>
 #include <qmailstore.h>
 #include <qmailaddress.h>
 #include <qmailserviceaction.h>
@@ -148,7 +149,8 @@ public:
         // Define subject
         message.setSubject(subject);
         message.setMessageType(QMailMessage::Email);
-        message.setMultipartType(cancel ? QMailMessagePartContainerFwd::MultipartAlternative : QMailMessagePartContainerFwd::MultipartRelated);
+        message.setMultipartType(cancel ? QMailMessagePartContainer::MultipartAlternative
+                                        : QMailMessagePartContainer::MultipartRelated);
 
         // Create the MIME part representing the message body
         QMailMessagePart bodyPart = QMailMessagePart::fromData(

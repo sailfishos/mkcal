@@ -388,8 +388,9 @@ bool ExtendedStorage::addNotebook(const Notebook::Ptr &nb)
 
 bool ExtendedStorage::updateNotebook(const Notebook::Ptr &nb)
 {
-    if (!nb || !d->mNotebooks.contains(nb->uid()) ||
-            d->mNotebooks.value(nb->uid()) != nb) {
+    if (!nb
+        || !d->mNotebooks.contains(nb->uid())
+        || d->mNotebooks.value(nb->uid()) != nb) {
         return false;
     }
 
