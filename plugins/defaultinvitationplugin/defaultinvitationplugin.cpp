@@ -119,7 +119,7 @@ public:
         // Get the outbox folder ID
         QMailFolderId folderId = account->standardFolder(QMailFolder::OutboxFolder);
         if (!folderId.isValid()) {
-            folderId = QMailFolder::LocalStorageFolderId;
+            folderId = QMailFolderId::LocalStorageFolderId;
         }
         // Put message to standard outbox folder for that account
         message.setParentFolderId(folderId);
