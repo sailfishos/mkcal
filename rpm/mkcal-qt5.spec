@@ -45,7 +45,7 @@ This package contains unit tests for extended KDE kcal calendar library.
 %setup -q -n %{name}-%{version}
 
 %build
-%cmake -DINSTALL_TESTS=ON
+%cmake . -DINSTALL_TESTS=ON
 %make_build
 
 %install
