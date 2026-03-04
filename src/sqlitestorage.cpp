@@ -96,8 +96,7 @@ class mKCal::SqliteStorage::Private
 {
 public:
     Private(const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
-            const QString &databaseName
-           )
+            const QString &databaseName)
         : mCalendar(calendar),
           mStorage(storage),
           mDatabaseName(databaseName),
@@ -111,7 +110,9 @@ public:
           mFormat(0),
           mIsLoading(false),
           mIsSaved(false)
-    {}
+    {
+    }
+
     ~Private()
     {
     }
@@ -175,9 +176,9 @@ static QString defaultLocation()
 
         QDir databaseDir(privilegedDataDir);
         if (databaseDir.exists() && directoryIsRW(privilegedDataDir)) {
-            databaseDir = privilegedDataDir + QLatin1String("Calendar/mkcal/");
+            databaseDir.setPath(privilegedDataDir + QLatin1String("Calendar/mkcal/"));
         } else {
-            databaseDir = QString("%1/.local/share/system/Calendar/mkcal/").arg(QDir::homePath());
+            databaseDir.setPath(QString("%1/.local/share/system/Calendar/mkcal/").arg(QDir::homePath()));
         }
 
         if (!databaseDir.exists() && !databaseDir.mkpath(QString::fromLatin1("."))) {
