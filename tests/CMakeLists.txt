@@ -12,11 +12,14 @@ target_link_libraries(tst_storage
 	Qt5::Test
 	KF5::CalendarCore
 	PkgConfig::SQLITE3
-	PkgConfig::TIMED
 	mkcal-qt5)
 
+if(TIMED_FOUND)
+    target_link_libraries(tst_storage PkgConfig::TIMED)
+    add_definitions(-DTIMED_SUPPORT)
+endif()
+
 add_test(tst_storage tst_storage)
-add_definitions(-DTIMED_SUPPORT)
 
 set(SRC_PERF
 	tst_perf.cpp)

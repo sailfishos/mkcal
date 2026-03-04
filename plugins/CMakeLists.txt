@@ -1,1 +1,5 @@
-add_subdirectory(defaultinvitationplugin)
+if(QMF_FOUND)
+    add_subdirectory(defaultinvitationplugin)
+else()
+    message("Messagingframework is required for plugins")
+endif()

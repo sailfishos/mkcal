@@ -34,7 +34,6 @@ target_link_libraries(mkcal-qt5
 		PRIVATE
 	Qt5::DBus
 	PkgConfig::SQLITE3
-	PkgConfig::TIMED
 		PUBLIC
 	Qt5::Gui
 	KF5::CalendarCore)
@@ -45,7 +44,11 @@ set_target_properties(mkcal-qt5 PROPERTIES
 
 add_definitions(-fvisibility=hidden -fvisibility-inlines-hidden)
 add_definitions(-DMKCALPLUGINDIR="${CMAKE_INSTALL_FULL_LIBDIR}/mkcalplugins")
-add_definitions(-DTIMED_SUPPORT)
+
+if(TIMED_FOUND)
+    target_link_libraries(mkcal-qt5 PRIVATE PkgConfig::TIMED)
+    add_definitions(-DTIMED_SUPPORT)
+endif()
 
 # Install the library
 install(TARGETS mkcal-qt5
