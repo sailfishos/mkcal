@@ -75,8 +75,15 @@ bool operator<(const QDate &at, const Range &range)
 class mKCal::ExtendedStorage::Private: public AlarmHandler
 {
 public:
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    Private(ExtendedStorage *storage, ExtendedCalendar::Ptr calendar, bool validateNotebooks)
+#else
     Private(ExtendedStorage *storage, bool validateNotebooks)
+#endif
         : mStorage(storage)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+        , mCalendar(calendar)
+#endif
         , mValidateNotebooks(validateNotebooks)
         , mIsRecurrenceLoaded(false)
     {}
@@ -85,6 +92,9 @@ public:
     {}
 
     ExtendedStorage *mStorage;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    ExtendedCalendar::Ptr mCalendar;
+#endif
     bool mValidateNotebooks;
     QList<Range> mRanges;
     bool mIsRecurrenceLoaded;
@@ -153,8 +163,12 @@ Incidence::List ExtendedStorage::Private::incidencesWithAlarms(const QString &no
 //@endcond
 
 ExtendedStorage::ExtendedStorage(const ExtendedCalendar::Ptr &cal, bool validateNotebooks)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    : d(new ExtendedStorage::Private(this, cal, validateNotebooks))
+#else
     : CalStorage(cal),
       d(new ExtendedStorage::Private(this, validateNotebooks))
+#endif
 {
     cal->registerObserver(this);
 }
@@ -164,6 +178,13 @@ ExtendedStorage::~ExtendedStorage()
     calendar()->unregisterObserver(this);
     delete d;
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+ExtendedCalendar::Ptr ExtendedStorage::calendar() const
+{
+    return d->mCalendar;
+}
+#endif
 
 bool ExtendedStorage::close()
 {

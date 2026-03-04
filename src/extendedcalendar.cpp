@@ -54,6 +54,15 @@ public:
     ~Private()
     {
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    // Deprecated notebook API.
+    QMultiHash<QString, Incidence::Ptr> mNotebookIncidences;
+    QHash<QString, QString> mUidToNotebook;
+    QHash<QString, bool> mNotebooks; // name to visibility
+    QHash<Incidence::Ptr, bool> mIncidenceVisibility; // incidence -> visibility
+    QString mDefaultNotebook; // uid of default notebook
+#endif
 };
 
 ExtendedCalendar::ExtendedCalendar(const QTimeZone &timeZone)
@@ -82,6 +91,17 @@ bool ExtendedCalendar::save()
     // Doesn't belong here.
     return false;
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+void ExtendedCalendar::close()
+{
+    d->mNotebookIncidences.clear();
+    d->mUidToNotebook.clear();
+    d->mIncidenceVisibility.clear();
+
+    MemoryCalendar::close();
+}
+#endif
 
 // Dissociate a single occurrence or all future occurrences from a recurring
 // sequence. The new incidence is returned, but not automatically inserted
@@ -295,3 +315,185 @@ Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
     }
     return journalList;
 }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+// Deprecated notebook API.
+Incidence::List ExtendedCalendar::duplicates(const Incidence::Ptr &incidence)
+{
+    if (!incidence) {
+        return {};
+    }
+
+    Incidence::List list;
+    const Incidence::List vals = rawIncidences();
+    std::copy_if(vals.cbegin(), vals.cend(), std::back_inserter(list), [&](const Incidence::Ptr &in) {
+        return (incidence->dtStart() == in->dtStart() || (!incidence->dtStart().isValid() && !in->dtStart().isValid()))
+            && incidence->summary() == in->summary();
+    });
+    return list;
+}
+
+bool ExtendedCalendar::addNotebook(const QString &notebook, bool isVisible)
+{
+    if (d->mNotebooks.contains(notebook)) {
+        return false;
+    } else {
+        d->mNotebooks.insert(notebook, isVisible);
+        return true;
+    }
+}
+
+bool ExtendedCalendar::updateNotebook(const QString &notebook, bool isVisible)
+{
+    if (!d->mNotebooks.contains(notebook)) {
+        return false;
+    } else {
+        d->mNotebooks.insert(notebook, isVisible);
+
+        for (auto  noteIt = d->mNotebookIncidences.find(notebook);
+             noteIt != d->mNotebookIncidences.end() && noteIt.key() == notebook;
+             ++noteIt) {
+            const Incidence::Ptr &incidence = noteIt.value();
+            auto visibleIt = d->mIncidenceVisibility.find(incidence);
+            if (visibleIt != d->mIncidenceVisibility.end()) {
+                *visibleIt = isVisible;
+            }
+        }
+        return true;
+    }
+}
+
+bool ExtendedCalendar::deleteNotebook(const QString &notebook)
+{
+    if (!d->mNotebooks.contains(notebook)) {
+        return false;
+    } else {
+        return d->mNotebooks.remove(notebook);
+    }
+}
+
+bool ExtendedCalendar::setDefaultNotebook(const QString &notebook)
+{
+    if (!d->mNotebooks.contains(notebook)) {
+        return false;
+    } else {
+        d->mDefaultNotebook = notebook;
+        return true;
+    }
+}
+
+QString ExtendedCalendar::defaultNotebook() const
+{
+    return d->mDefaultNotebook;
+}
+
+bool ExtendedCalendar::hasValidNotebook(const QString &notebook) const
+{
+    return d->mNotebooks.contains(notebook);
+}
+
+bool ExtendedCalendar::isVisible(const Incidence::Ptr &incidence) const
+{
+    if (d->mIncidenceVisibility.contains(incidence)) {
+        return d->mIncidenceVisibility[incidence];
+    }
+    const QString nuid = notebook(incidence);
+    bool rv;
+    if (d->mNotebooks.contains(nuid)) {
+        rv = d->mNotebooks.value(nuid);
+    } else {
+        // NOTE returns true also for nonexisting notebooks for compatibility
+        rv = true;
+    }
+    d->mIncidenceVisibility[incidence] = rv;
+    return rv;
+}
+
+bool ExtendedCalendar::isVisible(const QString &notebook) const
+{
+    QHash<QString, bool>::ConstIterator it = d->mNotebooks.constFind(notebook);
+    return (it != d->mNotebooks.constEnd()) ? *it : true;
+}
+
+void ExtendedCalendar::clearNotebookAssociations()
+{
+}
+
+bool ExtendedCalendar::setNotebook(const Incidence::Ptr &inc, const QString &notebook)
+{
+    if (!inc) {
+        return false;
+    }
+
+    if (!notebook.isEmpty() && !incidence(inc->uid(), inc->recurrenceId())) {
+        qCWarning(lcMkcal) << "cannot set notebook until incidence has been added";
+        return false;
+    }
+
+    if (d->mUidToNotebook.contains(inc->uid())) {
+        QString old = d->mUidToNotebook.value(inc->uid());
+        if (!old.isEmpty() && notebook != old) {
+            if (inc->hasRecurrenceId()) {
+                qCWarning(lcMkcal) << "cannot set notebook for child incidences";
+                return false;
+            }
+            // Move all possible children also.
+            const Incidence::List list = instances(inc);
+            for (const auto &incidence : list) {
+                d->mNotebookIncidences.remove(old, incidence);
+                d->mNotebookIncidences.insert(notebook, incidence);
+            }
+            notifyIncidenceChanged(inc); // for removing from old notebook
+            // do not remove from mUidToNotebook to keep deleted incidences
+            d->mNotebookIncidences.remove(old, inc);
+        }
+    }
+    if (!notebook.isEmpty()) {
+        d->mUidToNotebook.insert(inc->uid(), notebook);
+        d->mNotebookIncidences.insert(notebook, inc);
+        qCDebug(lcMkcal) << "setting notebook" << notebook << "for" << inc->uid();
+        notifyIncidenceChanged(inc); // for inserting into new notebook
+        const Incidence::List list = instances(inc);
+        for (const auto &incidence : list) {
+            notifyIncidenceChanged(incidence);
+        }
+    }
+
+    return true;
+}
+
+QString ExtendedCalendar::notebook(const Incidence::Ptr &incidence) const
+{
+    if (incidence) {
+        return d->mUidToNotebook.value(incidence->uid());
+    } else {
+        return QString();
+    }
+}
+
+QString ExtendedCalendar::notebook(const QString &uid) const
+{
+    return d->mUidToNotebook.value(uid);
+}
+
+QStringList ExtendedCalendar::notebooks() const
+{
+    return d->mNotebookIncidences.uniqueKeys();
+}
+
+Incidence::List ExtendedCalendar::incidences(const QString &notebook) const
+{
+    if (notebook.isEmpty()) {
+        return rawIncidences();
+    } else {
+        const QList<Incidence::Ptr> incs = d->mNotebookIncidences.values(notebook);
+        Incidence::List v;
+        v.reserve(incs.size());
+        for (QList<Incidence::Ptr>::ConstIterator it = incs.constBegin(), end = incs.constEnd();
+             it != end; ++it) {
+            v.push_back(*it);
+        }
+        return v;
+    }
+}
+#endif
