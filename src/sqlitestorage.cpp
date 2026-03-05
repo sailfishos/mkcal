@@ -96,8 +96,7 @@ class mKCal::SqliteStorage::Private
 {
 public:
     Private(const ExtendedCalendar::Ptr &calendar, SqliteStorage *storage,
-            const QString &databaseName
-           )
+            const QString &databaseName)
         : mCalendar(calendar),
           mStorage(storage),
           mDatabaseName(databaseName),
@@ -111,7 +110,9 @@ public:
           mFormat(0),
           mIsLoading(false),
           mIsSaved(false)
-    {}
+    {
+    }
+
     ~Private()
     {
     }
@@ -175,9 +176,9 @@ static QString defaultLocation()
 
         QDir databaseDir(privilegedDataDir);
         if (databaseDir.exists() && directoryIsRW(privilegedDataDir)) {
-            databaseDir = privilegedDataDir + QLatin1String("Calendar/mkcal/");
+            databaseDir.setPath(privilegedDataDir + QLatin1String("Calendar/mkcal/"));
         } else {
-            databaseDir = QString("%1/.local/share/system/Calendar/mkcal/").arg(QDir::homePath());
+            databaseDir.setPath(QString("%1/.local/share/system/Calendar/mkcal/").arg(QDir::homePath()));
         }
 
         if (!databaseDir.exists() && !databaseDir.mkpath(QString::fromLatin1("."))) {
@@ -221,7 +222,6 @@ bool SqliteStorage::open()
         return false;
     }
 
-    bool fileExisted = QFile::exists(d->mDatabaseName);
     rv = sqlite3_open(d->mDatabaseName.toUtf8(), &d->mDatabase);
     if (rv) {
         qCWarning(lcMkcal) << "sqlite3_open error:" << rv << "on database" << d->mDatabaseName;
@@ -243,24 +243,6 @@ bool SqliteStorage::open()
         }
         sqlite3_finalize(dbVersion);
 
-        if (version == 0 && fileExisted) {
-            qCWarning(lcMkcal) << "Migrating mkcal database to version 1";
-            query = BEGIN_TRANSACTION;
-            SL3_exec(d->mDatabase);
-            query = "DROP INDEX IF EXISTS IDX_ATTENDEE"; // recreate on new format
-            SL3_exec(d->mDatabase);
-            // insert normal attendee for every organizer
-            query = "INSERT INTO ATTENDEE(ComponentId, Email, Name, IsOrganizer, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom) "
-                    "              SELECT ComponentId, Email, Name, 0, Role, PartStat, Rsvp, DelegatedTo, DelegatedFrom "
-                    "              FROM ATTENDEE WHERE isOrganizer=1";
-            SL3_exec(d->mDatabase);
-            query = "PRAGMA user_version = 1";
-            SL3_exec(d->mDatabase);
-            query = COMMIT_TRANSACTION;
-            SL3_exec(d->mDatabase);
-
-            version = 1;
-        }
         if (version == 1) {
             qCWarning(lcMkcal) << "Migrating mkcal database to version 2";
             query = BEGIN_TRANSACTION;

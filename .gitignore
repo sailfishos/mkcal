@@ -1,6 +1,9 @@
 Makefile
+*.cmake
 libmkcal.so*
 moc_*
+mocs_*.cpp
+*.moc
 *.o
 *-stamp
 debian/files
