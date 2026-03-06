@@ -27,18 +27,19 @@ set(PRIVATE_HEADERS
         sqliteformat.h
         )
 
-add_library(mkcal-qt5 SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
+set(MKCAL_NAME mkcal-qt${QT_VERSION_MAJOR})
+add_library(${MKCAL_NAME} SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
 
-target_compile_definitions(mkcal-qt5 PRIVATE MKCAL_LIBRARY)
-target_link_libraries(mkcal-qt5
+target_compile_definitions(${MKCAL_NAME} PRIVATE MKCAL_LIBRARY)
+target_link_libraries(${MKCAL_NAME}
 		PRIVATE
-	Qt5::DBus
+	Qt${QT_VERSION_MAJOR}::DBus
 	PkgConfig::SQLITE3
 		PUBLIC
-	Qt5::Gui
-	KF5::CalendarCore)
+	Qt${QT_VERSION_MAJOR}::Gui
+	KF${QT_VERSION_MAJOR}::CalendarCore)
 
-set_target_properties(mkcal-qt5 PROPERTIES
+set_target_properties(${MKCAL_NAME} PROPERTIES
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	VERSION ${PROJECT_VERSION})
 
@@ -46,22 +47,22 @@ add_definitions(-fvisibility=hidden -fvisibility-inlines-hidden)
 add_definitions(-DMKCALPLUGINDIR="${CMAKE_INSTALL_FULL_LIBDIR}/mkcalplugins")
 
 if(TIMED_FOUND)
-    target_link_libraries(mkcal-qt5 PRIVATE PkgConfig::TIMED)
+    target_link_libraries(${MKCAL_NAME} PRIVATE PkgConfig::TIMED)
     add_definitions(-DTIMED_SUPPORT)
 endif()
 
 # Install the library
-install(TARGETS mkcal-qt5
+install(TARGETS ${MKCAL_NAME}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 # Install headers
 install(FILES ${HEADERS}
-	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mkcal-qt5
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${MKCAL_NAME}
 	COMPONENT Devel)
 
 ecm_generate_pkgconfig_file(
-	BASE_NAME libmkcal-qt5
-	LIB_NAME mkcal-qt5
-	INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}/mkcal-qt5
+	BASE_NAME lib${MKCAL_NAME}
+	LIB_NAME ${MKCAL_NAME}
+	INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_INCLUDEDIR}/${MKCAL_NAME}
 	DESCRIPTION ${PROJECT_DESCRIPTION}
 	INSTALL)

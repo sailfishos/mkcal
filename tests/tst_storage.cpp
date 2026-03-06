@@ -35,7 +35,11 @@
 #include "sqliteformat.h"
 
 #ifdef TIMED_SUPPORT
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+#include <timed-qt6/interface.h>
+#else
 #include <timed-qt5/interface.h>
+#endif
 #include <QtCore/QMap>
 #include <QtDBus/QDBusReply>
 using namespace Maemo;
