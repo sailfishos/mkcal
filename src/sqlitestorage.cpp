@@ -534,8 +534,6 @@ bool SqliteStorage::search(const QString &key, QStringList *identifiers, int lim
     int rv = 0;
     sqlite3_stmt *stmt1 = NULL;
     int index = 1;
-    Incidence::Ptr incidence;
-    QString nbook;
     int count = -1;
 
     qCDebug(lcMkcal) << "Searching DB for" << s;

@@ -418,7 +418,6 @@ bool SqliteFormat::modifyComponents(const Incidence &incidence, const QString &n
     QByteArray colorstr;
     QByteArray comments;
     QByteArray resources;
-    QDateTime dt;
     sqlite3_int64 secs;
     int rowid = 0;
     sqlite3_stmt *stmt1;
@@ -1139,7 +1138,6 @@ bool SqliteFormat::Private::insertAttendees(const Incidence &incidence, int rowi
 {
     bool success = true;
 
-    QString organizerEmail;
     if (!incidence.organizer().isEmpty()) {
         Attendee organizer = Attendee(incidence.organizer().name(), incidence.organizer().email());
         if (!insertAttendee(rowid, organizer, true)) {
@@ -1437,8 +1435,6 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, QString &note
     int rv = 0;
     int index = 0;
     Incidence::Ptr incidence;
-    QString type;
-    QString timezone;
     int rowid;
 
     SL3_step(stmt1);
@@ -1563,7 +1559,7 @@ Incidence::Ptr SqliteFormat::selectComponents(sqlite3_stmt *stmt1, QString &note
         incidence->setCreated(fromOriginTime(
                                   sqlite3_column_int64(stmt1, index++)));
 
-        QDateTime dtstamp = fromOriginTime(sqlite3_column_int64(stmt1, index++));
+        index++; // skip dtstamp, never used.
 
         incidence->setLastModified(
             fromOriginTime(sqlite3_column_int64(stmt1, index++)));
@@ -1798,9 +1794,6 @@ bool SqliteFormat::Private::selectRecursives(Incidence::Ptr &incidence, int rowi
 {
     int  rv = 0;
     int  index = 1;
-    QString   timezone;
-    QDateTime kdt;
-    QDateTime dt;
 
     if (!mSelectIncRecursives) {
         const char *query = SELECT_RECURSIVE_BY_ID;
@@ -1958,9 +1951,7 @@ bool SqliteFormat::Private::selectAlarms(Incidence::Ptr &incidence, int rowid)
     int rv = 0;
     int index = 1;
     int offset;
-    QString   timezone;
     QDateTime kdt;
-    QDateTime dt;
 
     if (!mSelectIncAlarms) {
         const char *query = SELECT_ALARM_BY_ID;
