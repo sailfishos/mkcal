@@ -529,5 +529,5 @@ QString Notebook::customProperty(const QByteArray &key, const QString &defaultVa
 
 QList<QByteArray> Notebook::customPropertyKeys() const
 {
-    return d->mCustomProperties.uniqueKeys();
+    return d->mCustomProperties.keys();
 }
