@@ -99,7 +99,9 @@ void ExtendedCalendar::close()
     d->mUidToNotebook.clear();
     d->mIncidenceVisibility.clear();
 
+#if KCALENDARCORE_VERSION < QT_VERSION_CHECK(5, 245, 0)
     MemoryCalendar::close();
+#endif
 }
 #endif
 
