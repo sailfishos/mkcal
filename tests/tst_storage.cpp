@@ -1337,7 +1337,9 @@ void tst_storage::tst_deleted()
 
     QVERIFY(m_calendar->deleteIncidence(fetchEvent));
     QVERIFY(!m_calendar->event(fetchEvent->uid()));
+#if KCALENDARCORE_VERSION < QT_VERSION_CHECK(5, 245, 0)
     QVERIFY(m_calendar->deletedEvent(fetchEvent->uid()));
+#endif
 
     // Deleted events are marked as deleted but remains in the DB
     QVERIFY(m_storage->save());
