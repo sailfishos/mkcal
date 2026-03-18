@@ -79,7 +79,8 @@ public:
         Visible       = (1 << 7),
         RunTimeOnly   = (1 << 8),
         Default       = (1 << 9),
-        Shareable     = (1 << 10)
+        Shareable     = (1 << 10),
+        Disabled      = (1 << 11)
     };
 
     SqliteFormat(sqlite3 *database);

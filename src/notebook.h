@@ -197,18 +197,33 @@ public:
     void setIsReadOnly(bool isReadOnly);
 
     /**
-      Returns true if notebook is visible.
+      Returns true if incidence of this notebook are visible.
       @see setIsVisible().
     */
     bool isVisible() const;
 
     /**
-      Set notebook visibility.
+      Set notebook incidence visibility.
       Calendar will check this value for including/excluding incidences
       into search lists.
       @param isVisible true to set visible mode.
     */
     void setIsVisible(bool isVisible);
+
+    /**
+      Returns true if this notebook is enabled (disabling a calendar is
+      a hint not to show the calendar to the user).
+      @see setIsEnabled().
+    */
+    bool isEnabled() const;
+
+    /**
+      Set if notebook is enabled.
+      Disabling a calendar is a hint not to show the calendar to the user. It is
+      kept in the database though and can be reenabled later.
+      @param isEnabled false to stop showing this notebook.
+    */
+    void setIsEnabled(bool isEnabled);
 
     /**
       Returns true if the notebook is never going to be saved; false otherwise.

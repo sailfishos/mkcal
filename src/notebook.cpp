@@ -50,6 +50,7 @@ static const int FLAG_IS_READONLY = (1 << 6);
 static const int FLAG_IS_VISIBLE = (1 << 7);
 static const int FLAG_IS_RUNTIMEONLY = (1 << 8);
 static const int FLAG_IS_SHAREABLE = (1 << 9);
+static const int FLAG_IS_ENABLED = (1 << 10);
 
 #define NOTEBOOK_FLAGS_ALLOW_ALL        \
   ( FLAG_ALLOW_EVENT |                  \
@@ -59,7 +60,8 @@ static const int FLAG_IS_SHAREABLE = (1 << 9);
 #define DEFAULT_NOTEBOOK_FLAGS          \
   ( NOTEBOOK_FLAGS_ALLOW_ALL |          \
     FLAG_IS_MASTER |                    \
-    FLAG_IS_VISIBLE )
+    FLAG_IS_VISIBLE |                   \
+    FLAG_IS_ENABLED)
 
 #define SET_BIT_OR_RETURN(var,bit,value)          \
 do {                                              \
@@ -309,6 +311,17 @@ bool Notebook::isVisible() const
 void Notebook::setIsVisible(bool isVisible)
 {
     SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_VISIBLE, isVisible);
+    d->updateModified();
+}
+
+bool Notebook::isEnabled() const
+{
+    return d->mFlags & FLAG_IS_ENABLED;
+}
+
+void Notebook::setIsEnabled(bool isEnabled)
+{
+    SET_BIT_OR_RETURN(d->mFlags, FLAG_IS_ENABLED, isEnabled);
     d->updateModified();
 }
 
