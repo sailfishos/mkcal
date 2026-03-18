@@ -1401,7 +1401,11 @@ static QDateTime getDateTime(SqliteFormat *format, sqlite3_stmt *stmt, int index
         date = sqlite3_column_int64(stmt, index + 1);
         if (date || sqlite3_column_int64(stmt, index)) {
             dateTime = format->fromOriginTime(date);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+            dateTime.setTimeZone(QTimeZone::LocalTime);
+#else
             dateTime.setTimeSpec(Qt::LocalTime);
+#endif
         }
         if (isDate) {
             *isDate = false;
@@ -1409,7 +1413,11 @@ static QDateTime getDateTime(SqliteFormat *format, sqlite3_stmt *stmt, int index
     } else if (timezone == QStringLiteral(FLOATING_DATE)) {
         date = sqlite3_column_int64(stmt, index + 1);
         dateTime = format->fromOriginTime(date);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        dateTime.setTimeZone(QTimeZone::LocalTime);
+#else
         dateTime.setTimeSpec(Qt::LocalTime);
+#endif
         dateTime.setTime(QTime(0, 0, 0));
         if (isDate) {
             *isDate = dateTime.isValid();
@@ -2204,20 +2212,38 @@ sqlite3_int64 SqliteFormat::toOriginTime(const QDateTime &dt)
 
 sqlite3_int64 SqliteFormat::toLocalOriginTime(const QDateTime &dt)
 {
-    return toOriginTime(QDateTime(dt.date(), dt.time(), Qt::UTC));
+    return toOriginTime(QDateTime(dt.date(), dt.time(),
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        QTimeZone::UTC
+#else
+        Qt::UTC
+#endif
+    ));
 }
 
 QDateTime SqliteFormat::fromLocalOriginTime(sqlite3_int64 seconds)
 {
     // Note: don't call toClockTime() as that implies a conversion first to the local time zone.
     const QDateTime local = fromOriginTime(seconds);
-    return QDateTime(local.date(), local.time(), Qt::LocalTime);
+    return QDateTime(local.date(), local.time(),
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        QTimeZone::LocalTime
+#else
+        Qt::LocalTime
+#endif
+    );
 }
 
 QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds)
 {
     //qCDebug(lcMkcal) << "fromOriginTime" << seconds << d->mOriginTime.addSecs( seconds ).toUtc();
-    return QDateTime::fromMSecsSinceEpoch(seconds * 1000, Qt::UTC);
+    return QDateTime::fromMSecsSinceEpoch(seconds * 1000,
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        QTimeZone::UTC
+#else
+        Qt::UTC
+#endif
+    );
 }
 
 QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds, const QByteArray &zonename)
@@ -2236,12 +2262,20 @@ QDateTime SqliteFormat::fromOriginTime(sqlite3_int64 seconds, const QByteArray &
             qCWarning(lcMkcal) << "invalid timezone" << zonename
                                << ", assuming local time";
             dt = fromOriginTime(seconds);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+            dt.setTimeZone(QTimeZone::LocalTime);
+#else
             dt.setTimeSpec(Qt::LocalTime);
+#endif
         }
     } else {
         // Empty zonename, use floating time.
         dt = fromOriginTime(seconds);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        dt.setTimeZone(QTimeZone::LocalTime);
+#else
         dt.setTimeSpec(Qt::LocalTime);
+#endif
     }
 //  qCDebug(lcMkcal) << "fromOriginTime" << seconds << zonename << dt;
     return dt;
