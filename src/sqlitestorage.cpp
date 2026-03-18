@@ -534,8 +534,6 @@ bool SqliteStorage::search(const QString &key, QStringList *identifiers, int lim
     int rv = 0;
     sqlite3_stmt *stmt1 = NULL;
     int index = 1;
-    Incidence::Ptr incidence;
-    QString nbook;
     int count = -1;
 
     qCDebug(lcMkcal) << "Searching DB for" << s;
@@ -810,12 +808,13 @@ bool SqliteStorage::Private::saveIncidences(QHash<QString, Incidence::Ptr> &list
                 qCWarning(lcMkcal) << "invalid notebook - not saving incidence" << (*it)->uid();
                 continue;
             }
-         }
-         (*savedIncidences) << *it;
+        }
+        (*savedIncidences) << *it;
 
         qCDebug(lcMkcal) << operation << "incidence" << (*it)->uid() << "notebook" << notebookUid;
         if (!mFormat->modifyComponents(**it, notebookUid, dbop)) {
-            qCWarning(lcMkcal) << sqlite3_errmsg(mDatabase) << "for incidence" << (*it)->uid();
+            qCWarning(lcMkcal) << QString::fromLatin1("Sqlite error status: '%1'").arg(sqlite3_errmsg(mDatabase))
+                               << "for error while modifying incidence" << (*it)->uid();
             errors++;
         }
     }

@@ -287,14 +287,24 @@ private:
 #define CREATE_METADATA \
   "CREATE TABLE IF NOT EXISTS Metadata(transactionId INTEGER)"
 #define CREATE_CALENDARS \
-  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, sharedWith TEXT, syncProfile TEXT, createdDate INTEGER, extra1 STRING, extra2 STRING)"
+  "CREATE TABLE IF NOT EXISTS Calendars(CalendarId TEXT PRIMARY KEY, Name TEXT, Description TEXT, Color INTEGER, " \
+    "Flags INTEGER, syncDate INTEGER, pluginName TEXT, account TEXT, attachmentSize INTEGER, modifiedDate INTEGER, " \
+    "sharedWith TEXT, syncProfile TEXT, createdDate INTEGER, extra1 STRING, extra2 STRING)"
 
 //Extra fields added for future use in case they are needed. They will be documented here
 //So we can add something without breaking the schema and not adding tables
 //extra1: used to store the color of a single component.
 
 #define CREATE_COMPONENTS \
-  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER, extra1 STRING, extra2 STRING, extra3 INTEGER, thisAndFuture INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Components(ComponentId INTEGER PRIMARY KEY AUTOINCREMENT, Notebook TEXT, Type TEXT, " \
+    "Summary TEXT, Category TEXT, DateStart INTEGER, DateStartLocal INTEGER, StartTimeZone TEXT, HasDueDate INTEGER, " \
+    "DateEndDue INTEGER, DateEndDueLocal INTEGER, EndDueTimeZone TEXT, Duration INTEGER, Classification INTEGER, " \
+    "Location TEXT, Description TEXT, Status INTEGER, GeoLatitude REAL, GeoLongitude REAL, Priority INTEGER, " \
+    "Resources TEXT, DateCreated INTEGER, DateStamp INTEGER, DateLastModified INTEGER, Sequence INTEGER, Comments TEXT, " \
+    "Attachments TEXT, Contact TEXT, InvitationStatus INTEGER, RecurId INTEGER, RecurIdLocal INTEGER, " \
+    "RecurIdTimeZone TEXT, RelatedTo TEXT, URL TEXT, UID TEXT, Transparency INTEGER, LocalOnly INTEGER, Percent INTEGER, " \
+    "DateCompleted INTEGER, DateCompletedLocal INTEGER, CompletedTimeZone TEXT, DateDeleted INTEGER, " \
+    "extra1 STRING, extra2 STRING, extra3 INTEGER, thisAndFuture INTEGER)"
 
 //Extra fields added for future use in case they are needed. They will be documented here
 //So we can add something without breaking the schema and not adding tables
@@ -304,15 +314,23 @@ private:
 #define CREATE_CUSTOMPROPERTIES \
   "CREATE TABLE IF NOT EXISTS Customproperties(ComponentId INTEGER, Name TEXT, Value TEXT, Parameters TEXT)"
 #define CREATE_RECURSIVE \
-  "CREATE TABLE IF NOT EXISTS Recursive(ComponentId INTEGER, RuleType INTEGER, Frequency INTEGER, Until INTEGER, UntilLocal INTEGER, untilTimeZone TEXT, Count INTEGER, Interval INTEGER, BySecond TEXT, ByMinute TEXT, ByHour TEXT, ByDay TEXT, ByDayPos Text, ByMonthDay TEXT, ByYearDay TEXT, ByWeekNum TEXT, ByMonth TEXT, BySetPos TEXT, WeekStart INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Recursive(ComponentId INTEGER, RuleType INTEGER, Frequency INTEGER, Until INTEGER, " \
+    "UntilLocal INTEGER, untilTimeZone TEXT, Count INTEGER, Interval INTEGER, BySecond TEXT, ByMinute TEXT, " \
+    "ByHour TEXT, ByDay TEXT, ByDayPos Text, ByMonthDay TEXT, ByYearDay TEXT, ByWeekNum TEXT, ByMonth TEXT, " \
+    "BySetPos TEXT, WeekStart INTEGER)"
 #define CREATE_ALARM \
-  "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, Offset INTEGER, Relation TEXT, DateTrigger INTEGER, DateTriggerLocal INTEGER, triggerTimeZone TEXT, Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
+  "CREATE TABLE IF NOT EXISTS Alarm(ComponentId INTEGER, Action INTEGER, Repeat INTEGER, Duration INTEGER, " \
+    "Offset INTEGER, Relation TEXT, DateTrigger INTEGER, DateTriggerLocal INTEGER, triggerTimeZone TEXT, " \
+    "Description TEXT, Attachment TEXT, Summary TEXT, Address TEXT, CustomProperties TEXT, isEnabled INTEGER)"
 #define CREATE_ATTENDEE \
-"CREATE TABLE IF NOT EXISTS Attendee(ComponentId INTEGER, Email TEXT, Name TEXT, IsOrganizer INTEGER, Role INTEGER, PartStat INTEGER, Rsvp INTEGER, DelegatedTo TEXT, DelegatedFrom TEXT)"
+"CREATE TABLE IF NOT EXISTS Attendee(ComponentId INTEGER, Email TEXT, Name TEXT, IsOrganizer INTEGER, Role INTEGER, " \
+    "PartStat INTEGER, Rsvp INTEGER, DelegatedTo TEXT, DelegatedFrom TEXT)"
 #define CREATE_ATTACHMENTS \
-"CREATE TABLE IF NOT EXISTS Attachments(ComponentId INTEGER, Data BLOB, Uri TEXT, MimeType TEXT, ShowInLine INTEGER, Label TEXT, Local INTEGER)"
+"CREATE TABLE IF NOT EXISTS Attachments(ComponentId INTEGER, Data BLOB, Uri TEXT, MimeType TEXT, " \
+    "ShowInLine INTEGER, Label TEXT, Local INTEGER)"
 #define CREATE_CALENDARPROPERTIES \
-  "CREATE TABLE IF NOT EXISTS Calendarproperties(CalendarId REFERENCES Calendars(CalendarId) ON DELETE CASCADE, Name TEXT NOT NULL, Value TEXT, UNIQUE (CalendarId, Name))"
+  "CREATE TABLE IF NOT EXISTS Calendarproperties(CalendarId REFERENCES Calendars(CalendarId) " \
+    "ON DELETE CASCADE, Name TEXT NOT NULL, Value TEXT, UNIQUE (CalendarId, Name))"
 
 #define INDEX_CALENDAR \
 "CREATE INDEX IF NOT EXISTS IDX_CALENDAR on Calendars(CalendarId)"
@@ -340,7 +358,8 @@ private:
 #define INSERT_CALENDARS \
 "insert into Calendars values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '')"
 #define INSERT_COMPONENTS \
-"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0, ?)"
+"insert into Components values (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " \
+    "?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, '', 0, ?)"
 #define INSERT_CUSTOMPROPERTIES \
 "insert into Customproperties values (?, ?, ?, ?)"
 #define INSERT_CALENDARPROPERTIES \
@@ -359,9 +378,15 @@ private:
 #define UPDATE_METADATA \
 "replace into Metadata (rowid, transactionId) values (1, ?)"
 #define UPDATE_CALENDARS \
-"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
+"update Calendars set Name=?, Description=?, Color=?, Flags=?, syncDate=?, pluginName=?, account=?, attachmentSize=?, " \
+    "modifiedDate=?, sharedWith=?, syncProfile=?, createdDate=? where CalendarId=?"
 #define UPDATE_COMPONENTS \
-"update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, CompletedTimeZone=?, extra1=?, thisAndFuture=? where ComponentId=?"
+    "update Components set Notebook=?, Type=?, Summary=?, Category=?, DateStart=?, DateStartLocal=?, StartTimeZone=?, " \
+    "HasDueDate=?, DateEndDue=?, DateEndDueLocal=?, EndDueTimeZone=?, Duration=?, Classification=?, Location=?, " \
+    "Description=?, Status=?, GeoLatitude=?, GeoLongitude=?, Priority=?, Resources=?, DateCreated=?, DateStamp=?, " \
+    "DateLastModified=?, Sequence=?, Comments=?, Attachments=?, Contact=?, RecurId=?, RecurIdLocal=?, RecurIdTimeZone=?, " \
+    "RelatedTo=?, URL=?, UID=?, Transparency=?, LocalOnly=?, Percent=?, DateCompleted=?, DateCompletedLocal=?, " \
+    "CompletedTimeZone=?, extra1=?, thisAndFuture=? where ComponentId=?"
 #define UPDATE_COMPONENTS_AS_DELETED \
 "update Components set DateDeleted=? where ComponentId=?"
 //"update Components set DateDeleted=strftime('%s','now') where ComponentId=?"
@@ -396,7 +421,8 @@ private:
 #define SELECT_COMPONENTS_ALL_DELETED_BY_NOTEBOOK \
 "select * from Components where Notebook=? and DateDeleted<>0"
 #define SELECT_COMPONENTS_BY_RECURSIVE \
-"select * from Components where ((ComponentId in (select DISTINCT ComponentId from Recursive)) or (ComponentId in (select DISTINCT ComponentId from Rdates)) or (RecurId!=0)) and DateDeleted=0"
+"select * from Components where ((ComponentId in (select DISTINCT ComponentId from Recursive)) "\
+    "or (ComponentId in (select DISTINCT ComponentId from Rdates)) or (RecurId!=0)) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_BOTH \
 "select * from Components where DateStart<? and (DateEndDue>=? or (DateEndDue=0 and DateStart>=?)) and DateDeleted=0"
 #define SELECT_COMPONENTS_BY_DATE_START \
