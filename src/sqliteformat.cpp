@@ -819,7 +819,7 @@ bool SqliteFormat::Private::insertRdates(const Incidence &incidence, int rowid)
     DateList dateList = incidence.recurrence()->rDates();
     DateList::ConstIterator dt;
     for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
-        if (!insertRdate(rowid, type, QDateTime((*dt)), true)) {
+        if (!insertRdate(rowid, type, QDateTime((*dt), QTime(0, 0)), true)) {
             qCWarning(lcMkcal) << "failed to modify rdates for incidence" << incidence.uid();
             success = false;
         }
@@ -828,7 +828,7 @@ bool SqliteFormat::Private::insertRdates(const Incidence &incidence, int rowid)
     type = SqliteFormat::XDate;
     dateList = incidence.recurrence()->exDates();
     for (dt = dateList.constBegin(); dt != dateList.constEnd(); ++dt) {
-        if (!insertRdate(rowid, type, QDateTime((*dt)), true)) {
+        if (!insertRdate(rowid, type, QDateTime((*dt), QTime(0, 0)), true)) {
             qCWarning(lcMkcal) << "failed to modify xdates for incidence" << incidence.uid();
             success = false;
         }

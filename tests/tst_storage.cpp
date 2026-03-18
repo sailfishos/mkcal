@@ -85,7 +85,7 @@ void tst_storage::tst_timezone()
 {
     // for test sanity, verify kdatetime actually agrees timezone is for helsinki.
     QDateTime localTime(QDate(2014, 1, 1), QTime(), QTimeZone("Europe/Helsinki"));
-    QCOMPARE(localTime.utcOffset(), 7200);
+    QCOMPARE(localTime.timeZone().offsetFromUtc(localTime), 7200);
 }
 
 Q_DECLARE_METATYPE(QDateTime)
@@ -98,7 +98,7 @@ void tst_storage::tst_veventdtstart_data()
     QTest::newRow("clock time") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), Qt::LocalTime);
     QTest::newRow("UTC") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), Qt::UTC);
     QTest::newRow("time zone") << QDateTime(QDate(2020, 5, 29), QTime(10, 15), QTimeZone("Europe/Paris"));
-    QTest::newRow("date only") << QDateTime(QDate(2020, 5, 29));
+    QTest::newRow("date only") << QDateTime(QDate(2020, 5, 29), QTime(0, 0));
     QTest::newRow("origin date time") << format.fromOriginTime(0);
     // Not allowed by RFC, will be converted to origin of time after save.
     QTest::newRow("bogus QDateTime") << QDateTime();
@@ -239,7 +239,7 @@ void tst_storage::tst_alldayRecurrence()
     auto event = KCalendarCore::Event::Ptr(new KCalendarCore::Event);
 
     QDate startDate(2013, 12, 1);
-    event->setDtStart(QDateTime(startDate));
+    event->setDtStart(QDateTime(startDate, QTime(0, 0)));
     event->setAllDay(true);
 
     KCalendarCore::Recurrence *recurrence = event->recurrence();
@@ -258,9 +258,9 @@ void tst_storage::tst_alldayRecurrence()
     KCalendarCore::Recurrence *fetchRecurrence = fetchEvent->recurrence();
     QVERIFY(fetchRecurrence);
     QCOMPARE(*recurrence, *fetchRecurrence);
-    QDateTime match = fetchRecurrence->getNextDateTime(QDateTime(startDate));
-    QCOMPARE(match, QDateTime(startDate.addDays(2)));
-    match = fetchRecurrence->getNextDateTime(QDateTime(startDate.addDays(3)));
+    QDateTime match = fetchRecurrence->getNextDateTime(QDateTime(startDate, QTime(0, 0)));
+    QCOMPARE(match, QDateTime(startDate.addDays(2), QTime(0, 0)));
+    match = fetchRecurrence->getNextDateTime(QDateTime(startDate.addDays(3), QTime(0, 0)));
     QCOMPARE(match, QDateTime(startDate.addDays(7), QTime(), Qt::LocalTime));
 }
 
@@ -480,7 +480,7 @@ void tst_storage::tst_recurrenceExpansion()
     QCOMPARE(match, event->dtStart().addDays(3)); // skip the weekend
 
     ExpandedIncidenceList expandedEvents
-        = rawExpandedIncidences(*m_calendar, QDateTime(QDate(2019, 11, 05)),
+        = rawExpandedIncidences(*m_calendar, QDateTime(QDate(2019, 11, 05), QTime(0, 0)),
                                 QDateTime(QDate(2019, 11, 18), QTime(23, 59, 59)));
 
     const KCalendarCore::DateTimeList timesInInterval = event->recurrence()->timesInInterval(
@@ -758,7 +758,7 @@ void tst_storage::tst_rawEvents()
             event->setAllDay(true);
         }
     } else {
-        event->setDtStart(QDateTime(date));
+        event->setDtStart(QDateTime(date, QTime(0, 0)));
         event->setAllDay(true);
     }
     event->setSummary(QStringLiteral("testing rawExpandedIncidences()"));
@@ -794,7 +794,7 @@ void tst_storage::tst_rawEvents()
 
     // should return occurrence for expected days and omit exceptions
     ExpandedIncidenceList events
-        = rawExpandedIncidences(*m_calendar, QDateTime(date),
+        = rawExpandedIncidences(*m_calendar, QDateTime(date, QTime(0, 0)),
                                 QDateTime(date.addDays(3), QTime(23, 59, 59)));
 
     // note that if the range cuts off the first event, we expect an "extra" recurrence at the end to make up for it.
@@ -1107,7 +1107,7 @@ void tst_storage::tst_rawEvents_nonRecur()
     }
 
     ExpandedIncidenceList events
-        = rawExpandedIncidences(*m_calendar, QDateTime(rangeStartDate),
+        = rawExpandedIncidences(*m_calendar, QDateTime(rangeStartDate, QTime(0, 0)),
                                 QDateTime(rangeEndDate, QTime(23, 59, 59)));
 
     QCOMPARE(events.size(), expectFound ? 1 : 0);
@@ -1655,7 +1655,7 @@ void tst_storage::tst_deleteAllEvents()
     ev->setLastModified(QDateTime::currentDateTimeUtc().addSecs(-42));
     ev->setGeoLatitude(42.);
     ev->setGeoLongitude(42.);
-    ev->setDtStart(QDateTime(QDate(2019, 10, 10)));
+    ev->setDtStart(QDateTime(QDate(2019, 10, 10), QTime(0, 0)));
     KCalendarCore::Attendee bob(QStringLiteral("Bob"), QStringLiteral("bob@example.org"));
     ev->addAttendee(bob);
 

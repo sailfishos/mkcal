@@ -295,8 +295,8 @@ ExtendedStorage::Ptr ExtendedCalendar::defaultStorage(const ExtendedCalendar::Pt
 Journal::List ExtendedCalendar::journals(const QDate &start, const QDate &end)
 {
     Journal::List journalList;
-    QDateTime startK(start);
-    QDateTime endK(end);
+    QDateTime startK(start, QTime(0, 0));
+    QDateTime endK(end, QTime(0, 0));
 
     const Journal::List journals(rawJournals());
     for (const Journal::Ptr &journal: journals) {
