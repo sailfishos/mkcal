@@ -8,14 +8,16 @@ add_executable(tst_storage ${SRC_STORAGE} ${HEADERS_STORAGE})
 target_include_directories(tst_storage PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(tst_storage
-	Qt${QT_VERSION_MAJOR}::DBus
 	Qt${QT_VERSION_MAJOR}::Test
 	KF${QT_VERSION_MAJOR}::CalendarCore
 	PkgConfig::SQLITE3
 	mkcal-qt${QT_VERSION_MAJOR})
 
 if(TIMED_FOUND)
-    target_link_libraries(tst_storage PkgConfig::TIMED)
+    target_link_libraries(tst_storage
+        Qt${QT_VERSION_MAJOR}::DBus
+        PkgConfig::TIMED
+    )
     add_definitions(-DTIMED_SUPPORT)
 endif()
 

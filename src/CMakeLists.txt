@@ -33,10 +33,8 @@ add_library(${MKCAL_NAME} SHARED ${SRC} ${HEADERS} ${PRIVATE_HEADERS})
 target_compile_definitions(${MKCAL_NAME} PRIVATE MKCAL_LIBRARY)
 target_link_libraries(${MKCAL_NAME}
 		PRIVATE
-	Qt${QT_VERSION_MAJOR}::DBus
 	PkgConfig::SQLITE3
 		PUBLIC
-	Qt${QT_VERSION_MAJOR}::Gui
 	KF${QT_VERSION_MAJOR}::CalendarCore)
 
 set_target_properties(${MKCAL_NAME} PROPERTIES
@@ -47,7 +45,11 @@ add_definitions(-fvisibility=hidden -fvisibility-inlines-hidden)
 add_definitions(-DMKCALPLUGINDIR="${CMAKE_INSTALL_FULL_LIBDIR}/mkcalplugins")
 
 if(TIMED_FOUND)
-    target_link_libraries(${MKCAL_NAME} PRIVATE PkgConfig::TIMED)
+    target_link_libraries(${MKCAL_NAME}
+        PRIVATE
+            Qt${QT_VERSION_MAJOR}::DBus
+            PkgConfig::TIMED
+    )
     add_definitions(-DTIMED_SUPPORT)
 endif()
 
