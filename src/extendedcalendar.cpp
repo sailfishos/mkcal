@@ -83,6 +83,35 @@ bool ExtendedCalendar::save()
     return false;
 }
 
+void debugRecurrenceTimes(const KCalendarCore::Incidence::Ptr &incidence)
+{
+    KCalendarCore::Recurrence *recurrence = incidence->recurrence();
+    if (!recurrence || !incidence->recurs()) {
+        qCWarning(lcMkcal) << "Incidence does not recur";
+        return;
+    }
+
+    // Define a range to search — adjust as needed
+    QDateTime start = incidence->dtStart().addYears(2);
+    QDateTime end   = incidence->dtStart().addYears(1);
+
+    QList<QDateTime> times = recurrence->timesInInterval(start, end);
+
+    qCWarning(lcMkcal) << "Recurrence times for:" << incidence->summary()
+                        << "uid:" << incidence->uid();
+    qCWarning(lcMkcal) << "  dtStart:     " << incidence->dtStart();
+    qCWarning(lcMkcal) << "  count in range:" << times.size();
+
+    for (const QDateTime &dt : times) {
+        qCWarning(lcMkcal) << "  occurrence:" << dt;
+    }
+
+    qCWarning(lcMkcal) << "  EXDATEs:" << recurrence->exDateTimes();
+    qCWarning(lcMkcal) << "  RDATEs: " << recurrence->rDateTimes();
+    qCWarning(lcMkcal) << "  EXRules count:" << recurrence->exRules().count();
+    qCWarning(lcMkcal) << "  RRules count: " << recurrence->rRules().count();
+}
+
 // Dissociate a single occurrence or all future occurrences from a recurring
 // sequence. The new incidence is returned, but not automatically inserted
 // into the calendar, which is left to the calling application.
@@ -90,6 +119,8 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
                                                             const QDateTime &dateTime)
 {
     if (!incidence) {
+        qCWarning(lcMkcal) << "Null incidence, cannot disassociate.";
+        debugRecurrenceTimes(incidence);
         return Incidence::Ptr();
     }
 
@@ -101,16 +132,21 @@ Incidence::Ptr ExtendedCalendar::dissociateSingleOccurrence(const Incidence::Ptr
 
     if (!incidence->allDay()) {
         if (!incidence->recursAt(recId)) {
+            debugRecurrenceTimes(incidence);
+            qCWarning(lcMkcal) << "Incidence recur time mismatch, cannot dissociate.";
             return Incidence::Ptr();
         }
     } else {
         if (!incidence->recursOn(recId.date(), recId.timeZone())) {
+            debugRecurrenceTimes(incidence);
+            qCWarning(lcMkcal) << "Incidence recur date mismatch, cannot dissociate.";
             return Incidence::Ptr();
         }
     }
     const Incidence::List exceptions = instances(incidence);
     for (const Incidence::Ptr &exception : exceptions) {
         if (exception->recurrenceId() == dateTime) {
+            debugRecurrenceTimes(incidence);
             qCWarning(lcMkcal) << "Exception already exists, cannot dissociate.";
             return Incidence::Ptr();
         }
