@@ -34,10 +34,12 @@ const QString name("DefaultInvitationPlugin");
 class DefaultInvitationPlugin::Private
 {
 public:
-    Private() : mStore(0), mDefaultAccount(0), mInit(false),
-        mErrorCode(ServiceInterface::ErrorOk)
+    Private()
+        : mStore(nullptr), mDefaultAccount(0), mInit(false),
+          mErrorCode(ServiceInterface::ErrorOk)
     {
     }
+
     ~Private()
     {
         uninit();
@@ -64,7 +66,7 @@ public:
 
     void uninit()
     {
-        mStore = 0;
+        mStore = nullptr;
         delete mDefaultAccount;
         mDefaultAccount = 0;
         mInit = false;
@@ -392,7 +394,6 @@ QString DefaultInvitationPlugin::DefaultInvitationPlugin::serviceName() const
     d->mErrorCode = ServiceInterface::ErrorOk;
     return name;
 }
-
 
 QString DefaultInvitationPlugin::defaultNotebook() const
 {
