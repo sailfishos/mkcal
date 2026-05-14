@@ -23,6 +23,7 @@
 
 #include "extendedcalendar.h"
 #include "extendedstorage.h"
+#include "compat.h"
 
 using namespace mKCal;
 
@@ -198,7 +199,7 @@ void tst_load::testSeries()
 void tst_load::testByInstanceIdentifier()
 {
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
-    event->setDtStart(QDateTime(QDate(2021, 4, 26), QTime(16, 49), Qt::UTC));
+    event->setDtStart(QDateTime(QDate(2021, 4, 26), QTime(16, 49), QDATETIME_CTOR_UTC_TZ));
     event->setSummary("Parent event");
     event->setCreated(event->dtStart().addSecs(-3));
     event->recurrence()->setDaily(1);
@@ -248,21 +249,21 @@ void tst_load::testByDate()
 
     // Plain event within the day.
     KCalendarCore::Event::Ptr event(new KCalendarCore::Event);
-    event->setDtStart(QDateTime(date, QTime(11, 56), Qt::UTC));
+    event->setDtStart(QDateTime(date, QTime(11, 56), QDATETIME_CTOR_UTC_TZ));
     QVERIFY(mStorage->calendar()->addEvent(event));
     // Plain event the day after at 00:00.
     KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
-    event2->setDtStart(QDateTime(date.addDays(1), QTime(), Qt::UTC));
+    event2->setDtStart(QDateTime(date.addDays(1), QTime(), QDATETIME_CTOR_UTC_TZ));
     QVERIFY(mStorage->calendar()->addEvent(event2));
     // Recurring daily event, intersecting date.
     KCalendarCore::Event::Ptr event3(new KCalendarCore::Event);
-    event3->setDtStart(QDateTime(date.addDays(-30), QTime(12, 07), Qt::UTC));
+    event3->setDtStart(QDateTime(date.addDays(-30), QTime(12, 07), QDATETIME_CTOR_UTC_TZ));
     event3->recurrence()->setDaily(1);
     QVERIFY(mStorage->calendar()->addEvent(event3));
     // Multi-day event intersecting day.
     KCalendarCore::Event::Ptr event4(new KCalendarCore::Event);
-    event4->setDtStart(QDateTime(date.addDays(-2), QTime(), Qt::UTC));
-    event4->setDtEnd(QDateTime(date.addDays(+2), QTime(), Qt::UTC));
+    event4->setDtStart(QDateTime(date.addDays(-2), QTime(), QDATETIME_CTOR_UTC_TZ));
+    event4->setDtEnd(QDateTime(date.addDays(+2), QTime(), QDATETIME_CTOR_UTC_TZ));
     QVERIFY(mStorage->calendar()->addEvent(event4));
     // All day event at day.
     KCalendarCore::Event::Ptr event5(new KCalendarCore::Event);
@@ -275,8 +276,8 @@ void tst_load::testByDate()
     QVERIFY(mStorage->calendar()->addEvent(event6));
     // Recurring event defined with rdates.
     KCalendarCore::Event::Ptr event7(new KCalendarCore::Event);
-    event7->setDtStart(QDateTime(date.addDays(-3), QTime(12, 0), Qt::UTC));
-    event7->recurrence()->addRDateTime(QDateTime(date, QTime(9, 0), Qt::UTC));
+    event7->setDtStart(QDateTime(date.addDays(-3), QTime(12, 0), QDATETIME_CTOR_UTC_TZ));
+    event7->recurrence()->addRDateTime(QDateTime(date, QTime(9, 0), QDATETIME_CTOR_UTC_TZ));
     QVERIFY(mStorage->calendar()->addEvent(event7));
 
     QVERIFY(mStorage->save());
@@ -392,7 +393,7 @@ void tst_load::testSearch()
     event->setSummary(QString::fromLatin1("Test summary with string 'azerty_'\\ %plop"));
     QVERIFY(mStorage->calendar()->addEvent(event));
     KCalendarCore::Event::Ptr event2(new KCalendarCore::Event);
-    event2->setDtStart(QDateTime(QDate(2023,2,27), QTime(8, 41), Qt::UTC));
+    event2->setDtStart(QDateTime(QDate(2023,2,27), QTime(8, 41), QDATETIME_CTOR_UTC_TZ));
     event2->setSummary(QString::fromLatin1("Test summary with string 'azertyu'\\ fooplop"));
     event2->recurrence()->setDaily(1);
     QVERIFY(mStorage->calendar()->addEvent(event2));

@@ -59,7 +59,11 @@ namespace mKCal {
   notified about the action done.
 */
 class MKCAL_EXPORT ExtendedStorage
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    : public QObject, public KCalendarCore::Calendar::CalendarObserver
+#else
     : public KCalendarCore::CalStorage, public KCalendarCore::Calendar::CalendarObserver
+#endif
 {
     Q_OBJECT
 
@@ -99,6 +103,14 @@ public:
       Destructor.
     */
     virtual ~ExtendedStorage();
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    /**
+      @copydoc
+      CalStorage::calendar()
+    */
+    ExtendedCalendar::Ptr calendar() const;
+#endif
 
     /**
       @copydoc

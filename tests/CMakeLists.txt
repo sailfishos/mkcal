@@ -8,14 +8,16 @@ add_executable(tst_storage ${SRC_STORAGE} ${HEADERS_STORAGE})
 target_include_directories(tst_storage PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(tst_storage
-	Qt5::DBus
-	Qt5::Test
-	KF5::CalendarCore
+	Qt${QT_VERSION_MAJOR}::Test
+	KF${QT_VERSION_MAJOR}::CalendarCore
 	PkgConfig::SQLITE3
-	mkcal-qt5)
+	mkcal-qt${QT_VERSION_MAJOR})
 
 if(TIMED_FOUND)
-    target_link_libraries(tst_storage PkgConfig::TIMED)
+    target_link_libraries(tst_storage
+        Qt${QT_VERSION_MAJOR}::DBus
+        PkgConfig::TIMED
+    )
     add_definitions(-DTIMED_SUPPORT)
 endif()
 
@@ -31,9 +33,9 @@ add_executable(tst_perf ${SRC_PERF} ${HEADERS_PERF})
 target_include_directories(tst_perf PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(tst_perf
-	Qt5::Test
-	KF5::CalendarCore
-	mkcal-qt5)
+	Qt${QT_VERSION_MAJOR}::Test
+	KF${QT_VERSION_MAJOR}::CalendarCore
+	mkcal-qt${QT_VERSION_MAJOR})
 
 add_test(tst_perf tst_perf)
 
@@ -42,9 +44,9 @@ add_executable(tst_load tst_load.cpp)
 target_include_directories(tst_load PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
 target_link_libraries(tst_load
-	Qt5::Test
-	KF5::CalendarCore
-	mkcal-qt5)
+	Qt${QT_VERSION_MAJOR}::Test
+	KF${QT_VERSION_MAJOR}::CalendarCore
+	mkcal-qt${QT_VERSION_MAJOR})
 
 add_test(tst_load tst_load)
 
