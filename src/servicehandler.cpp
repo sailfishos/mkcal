@@ -21,21 +21,23 @@ using namespace KCalendarCore;
 class ServiceHandlerPrivate
 {
 public:
+    ServiceHandlerPrivate();
+
+    void loadPlugins();
+    InvitationHandlerInterface* invitationPlugin(const QString &pluginName);
+
     QHash<QString, InvitationHandlerInterface *> mPlugins;
     QHash<QString, ServiceInterface *> mServices;
 
     bool mLoaded;
     int mDownloadId;
     ServiceHandler::ErrorCode mError;
-
-    void loadPlugins();
-    InvitationHandlerInterface* invitationPlugin(const QString &pluginName);
-
-    ServiceHandlerPrivate();
 };
 
-ServiceHandlerPrivate::ServiceHandlerPrivate() : mLoaded(false), mDownloadId(0),
-    mError(ServiceHandler::ErrorOk)
+ServiceHandlerPrivate::ServiceHandlerPrivate()
+    : mLoaded(false)
+    , mDownloadId(0)
+    , mError(ServiceHandler::ErrorOk)
 {
 }
 
