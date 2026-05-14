@@ -12,7 +12,6 @@ Requires(postun): /sbin/ldconfig
 BuildRequires:  cmake
 BuildRequires:  extra-cmake-modules >= 5.75.0
 BuildRequires:  pkgconfig(Qt5Core)
-BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5DBus)
 BuildRequires:  pkgconfig(KF5CalendarCore)
 BuildRequires:  pkgconfig(sqlite3)
