@@ -35,19 +35,14 @@ static const int N_EVENTS = 200;
 
 void tst_perf::initTestCase()
 {
-    QString dbFile = QString::fromLatin1(qgetenv("MKCAL_STORAGEDB"));
-    if (dbFile.isEmpty()) {
+    if (qgetenv("MKCAL_STORAGEDB").isEmpty()) {
         db = new QTemporaryFile();
-        db->open();
-        dbFile = db->fileName();
+        QVERIFY(db->open());
     }
-    ExtendedCalendar::Ptr cal(new ExtendedCalendar(QTimeZone::systemTimeZone()));
-    m_storage = ExtendedStorage::Ptr(new SqliteStorage(cal, dbFile, true));
 }
 
 void tst_perf::cleanupTestCase()
 {
-    m_storage.clear();
     if (db)
         QFile::remove(db->fileName() + ".changed");
     delete db;
@@ -55,15 +50,18 @@ void tst_perf::cleanupTestCase()
 
 void tst_perf::init()
 {
-    QVERIFY(m_storage->calendar()->rawEvents().isEmpty());
+    ExtendedCalendar::Ptr cal(new ExtendedCalendar(QTimeZone::systemTimeZone()));
+    if (db)
+        m_storage = ExtendedStorage::Ptr(new SqliteStorage(cal, db->fileName(), true));
+    else
+        m_storage = ExtendedStorage::Ptr(new SqliteStorage(cal, QString::fromLatin1(qgetenv("MKCAL_STORAGEDB")), true));
     QVERIFY(m_storage->open());
 }
 
 void tst_perf::cleanup()
 {
     QVERIFY(m_storage->close());
-    m_storage->calendar()->close();
-    QVERIFY(m_storage->calendar()->rawEvents().isEmpty());
+    m_storage.clear();
 }
 
 void tst_perf::tst_save()
