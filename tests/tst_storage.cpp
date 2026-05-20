@@ -484,7 +484,9 @@ void tst_storage::tst_recurrenceExpansion()
         = rawExpandedIncidences(*m_calendar, QDateTime(QDate(2019, 11, 05), QTime(0, 0)),
                                 QDateTime(QDate(2019, 11, 18), QTime(23, 59, 59)));
 
-    const KCalendarCore::DateTimeList timesInInterval = event->recurrence()->timesInInterval(
+    KCalendarCore::Incidence::Ptr inc = m_calendar->incidence(event->uid());
+    QVERIFY(inc);
+    const KCalendarCore::DateTimeList timesInInterval = inc->recurrence()->timesInInterval(
             QDateTime::fromString(QStringLiteral("2019-11-05T00:00:00Z"), Qt::ISODate),
             QDateTime::fromString(intervalEnd, Qt::ISODate));
 
