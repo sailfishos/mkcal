@@ -31,22 +31,25 @@ if(ENABLE_QT6)
     set(QT_VERSION_MAJOR 6)
     find_package(Qt6 ${QT_MIN_VERSION} COMPONENTS Core Test REQUIRED)
     find_package(KF6 COMPONENTS CalendarCore REQUIRED)
+
+    set(QMFCLIENT_NAME QmfClient-qt6)
 else()
     set(QT_MIN_VERSION "5.6.0")
     set(QT_VERSION_MAJOR 5)
     find_package(Qt5 ${QT_MIN_VERSION} COMPONENTS Core Test REQUIRED)
     find_package(KF5 COMPONENTS CalendarCore REQUIRED)
 
-    pkg_check_modules(QMF QmfClient IMPORTED_TARGET)
+    set(QMFCLIENT_NAME QmfClient)
 endif()
 
 pkg_check_modules(SQLITE3 sqlite3 IMPORTED_TARGET REQUIRED)
 set_property(GLOBAL APPEND PROPERTY _CMAKE_sqlite3_TYPE REQUIRED)
 
+pkg_check_modules(QMF ${QMFCLIENT_NAME} IMPORTED_TARGET)
 if(QMF_FOUND)
-    set_property(GLOBAL APPEND PROPERTY PACKAGES_FOUND QmfClient)
+    set_property(GLOBAL APPEND PROPERTY PACKAGES_FOUND ${QMFCLIENT_NAME})
 else()
-    set_property(GLOBAL APPEND PROPERTY PACKAGES_NOT_FOUND QmfClient)
+    set_property(GLOBAL APPEND PROPERTY PACKAGES_NOT_FOUND ${QMFCLIENT_NAME})
 endif()
 
 pkg_check_modules(TIMED timed-qt${QT_VERSION_MAJOR} IMPORTED_TARGET)
